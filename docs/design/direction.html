@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- デザインの方向の見本(2026-11-15、承認待ち)。このファイルはブラウザーで直接開く。架空の見本データだけを使っている -->
+<!-- デザインの方向の見本(2026-11-15、承認済み:案A、ダークを主、地は midnight blue、端末フォント、テロップ採用)。このファイルはブラウザーで直接開く。架空の見本データだけを使っている -->
 <title>AIネタ帳 デザイン見本</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -13,17 +13,17 @@
      ========================================================= */
   :root {
     /* 色(ライト = 朝の放送) */
-    --color-bg: #F2F4F7;          /* 画面の地。わずかに青みのある白 */
+    --color-bg: #F3F4F9;          /* 画面の地。わずかに青みのある白 */
     --color-surface: #FFFFFF;     /* 行・パネルの面 */
-    --color-ink: #14213D;         /* 本文。紺のインク */
-    --color-ink-muted: #525B6A;   /* 補助の文字。地の上で 6.2:1 */
-    --color-line: #CBD2DC;        /* 罫線 */
-    --color-band: #14213D;        /* テロップの帯 */
+    --color-ink: #141A4F;         /* 本文。紺のインク */
+    --color-ink-muted: #525A80;   /* 補助の文字。地の上で 6.2:1 */
+    --color-line: #CDD2E6;        /* 罫線 */
+    --color-band: #141A4F;        /* テロップの帯 */
     --color-on-band: #FFFFFF;     /* 帯の上の文字 16.0:1 */
     --color-accent: #C8401A;      /* 番組カラー「朝焼け」。白文字 5.0:1、地の上の文字 4.5:1 */
     --color-on-accent: #FFFFFF;
     --color-highlight: #FFD23F;   /* 強調テロップの黄。紺文字 11.1:1 */
-    --color-on-highlight: #14213D;
+    --color-on-highlight: #141A4F;
     --color-warn: #B45309;        /* 「未確認」など注意の文字。地の上で 4.6:1 */
     --color-focus: #1D4ED8;       /* キーボードの焦点の枠 */
     --shadow-float: 0 2px 8px rgb(20 33 61 / 0.18);
@@ -65,54 +65,54 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --color-bg: #0F1420;
-      --color-surface: #171E2E;
-      --color-ink: #E8ECF2;
-      --color-ink-muted: #A3ACBC;
-      --color-line: #343E52;
-      --color-band: #243352;
+      --color-bg: #0D1233;
+      --color-surface: #161C45;
+      --color-ink: #ECEEF9;
+      --color-ink-muted: #AEB5DA;
+      --color-line: #2B3375;
+      --color-band: #242C66;
       --color-on-band: #FFFFFF;
       --color-accent: #FF7A50;
       --color-on-accent: #1A0D08;
       --color-highlight: #FFD23F;
       --color-on-highlight: #1A1300;
-      --color-warn: #F0A040;
-      --color-focus: #8AB4FF;
+      --color-warn: #F2A74B;
+      --color-focus: #9DBBFF;
       --shadow-float: 0 2px 8px rgb(0 0 0 / 0.5);
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --color-bg: #0F1420;
-    --color-surface: #171E2E;
-    --color-ink: #E8ECF2;
-    --color-ink-muted: #A3ACBC;
-    --color-line: #343E52;
-    --color-band: #243352;
+    --color-bg: #0D1233;
+    --color-surface: #161C45;
+    --color-ink: #ECEEF9;
+    --color-ink-muted: #AEB5DA;
+    --color-line: #2B3375;
+    --color-band: #242C66;
     --color-on-band: #FFFFFF;
     --color-accent: #FF7A50;
     --color-on-accent: #1A0D08;
     --color-highlight: #FFD23F;
     --color-on-highlight: #1A1300;
-    --color-warn: #F0A040;
-    --color-focus: #8AB4FF;
+    --color-warn: #F2A74B;
+    --color-focus: #9DBBFF;
     --shadow-float: 0 2px 8px rgb(0 0 0 / 0.5);
   }
 
   /* 比較用の見本パネル:ページのテーマに関わらず、ライト/ダークを固定で見せる */
   .theme-light {
     color-scheme: light;
-    --color-bg: #F2F4F7; --color-surface: #FFFFFF; --color-ink: #14213D; --color-ink-muted: #525B6A;
-    --color-line: #CBD2DC; --color-band: #14213D; --color-on-band: #FFFFFF; --color-accent: #C8401A;
-    --color-on-accent: #FFFFFF; --color-highlight: #FFD23F; --color-on-highlight: #14213D; --color-warn: #B45309;
+    --color-bg: #F3F4F9; --color-surface: #FFFFFF; --color-ink: #141A4F; --color-ink-muted: #525A80;
+    --color-line: #CDD2E6; --color-band: #141A4F; --color-on-band: #FFFFFF; --color-accent: #C8401A;
+    --color-on-accent: #FFFFFF; --color-highlight: #FFD23F; --color-on-highlight: #141A4F; --color-warn: #B45309;
     --color-focus: #1D4ED8; --shadow-float: 0 2px 8px rgb(20 33 61 / 0.18);
   }
   .theme-dark {
     color-scheme: dark;
-    --color-bg: #0F1420; --color-surface: #171E2E; --color-ink: #E8ECF2; --color-ink-muted: #A3ACBC;
-    --color-line: #343E52; --color-band: #243352; --color-on-band: #FFFFFF; --color-accent: #FF7A50;
-    --color-on-accent: #1A0D08; --color-highlight: #FFD23F; --color-on-highlight: #1A1300; --color-warn: #F0A040;
-    --color-focus: #8AB4FF; --shadow-float: 0 2px 8px rgb(0 0 0 / 0.5);
+    --color-bg: #0D1233; --color-surface: #161C45; --color-ink: #ECEEF9; --color-ink-muted: #AEB5DA;
+    --color-line: #2B3375; --color-band: #242C66; --color-on-band: #FFFFFF; --color-accent: #FF7A50;
+    --color-on-accent: #1A0D08; --color-highlight: #FFD23F; --color-on-highlight: #1A1300; --color-warn: #F2A74B;
+    --color-focus: #9DBBFF; --shadow-float: 0 2px 8px rgb(0 0 0 / 0.5);
   }
   /* 代案 B「スタジオブルー」:番組カラーだけを差し替える */
   .alt-b.theme-light { --color-accent: #1D4ED8; --color-on-accent: #FFFFFF; }
@@ -305,7 +305,7 @@
 <div class="wrap">
   <header class="page-head">
     <h1>AIネタ帳 デザインの方向(案)</h1>
-    <span class="meta">2026-11-15 ・ ベータ版 進め方 1 ・ 承認待ち</span>
+    <span class="meta">2026-11-15 ・ ベータ版 進め方 1 ・ 2026-11-15 承認:A・ダークを主・midnight blue。最終の値は src/styles/tokens.css が正</span>
   </header>
 
   <section class="section">
@@ -327,31 +327,31 @@
       <div class="panel theme-light">
         <div class="panel-title">ライト = 朝の放送</div>
         <div class="swatches">
-          <div class="swatch sw-bg"><b>地(bg)</b><span><code>#F2F4F7</code> 文字 <span class="ratio">14.5</span></span></div>
+          <div class="swatch sw-bg"><b>地(bg)</b><span><code>#F3F4F9</code> 文字 <span class="ratio">14.5</span></span></div>
           <div class="swatch sw-surface"><b>面(surface)</b><span><code>#FFFFFF</code> 文字 <span class="ratio">16.0</span></span></div>
-          <div class="swatch sw-surface"><b>本文(ink)</b><span><code>#14213D</code> 紺のインク</span></div>
-          <div class="swatch sw-muted"><b>補助の文字</b><span><code>#525B6A</code> 地の上 <span class="ratio">6.2</span></span></div>
-          <div class="swatch sw-band"><b>テロップの帯</b><span><code>#14213D</code> 白文字 <span class="ratio">16.0</span></span></div>
+          <div class="swatch sw-surface"><b>本文(ink)</b><span><code>#141A4F</code> 紺のインク</span></div>
+          <div class="swatch sw-muted"><b>補助の文字</b><span><code>#525A80</code> 地の上 <span class="ratio">6.2</span></span></div>
+          <div class="swatch sw-band"><b>テロップの帯</b><span><code>#141A4F</code> 白文字 <span class="ratio">16.0</span></span></div>
           <div class="swatch sw-accent"><b>番組カラー</b><span><code>#C8401A</code> 白文字 <span class="ratio">5.0</span></span></div>
           <div class="swatch sw-accent-text"><b>番組カラーの文字</b><span><code>#C8401A</code> 地の上 <span class="ratio">4.5</span></span></div>
           <div class="swatch sw-highlight"><b>強調テロップ</b><span><code>#FFD23F</code> 紺文字 <span class="ratio">11.1</span></span></div>
           <div class="swatch sw-warn"><b>注意の文字</b><span><code>#B45309</code> 地の上 <span class="ratio">4.6</span></span></div>
-          <div class="swatch sw-line"><b>罫線</b><span><code>#CBD2DC</code> 1px の線</span></div>
+          <div class="swatch sw-line"><b>罫線</b><span><code>#CDD2E6</code> 1px の線</span></div>
         </div>
       </div>
       <div class="panel theme-dark">
         <div class="panel-title">ダーク = 深夜の再放送(反転ではなく、同じ番組の夜版)</div>
         <div class="swatches">
-          <div class="swatch sw-bg"><b>地(bg)</b><span><code>#0F1420</code> 文字 <span class="ratio">15.5</span></span></div>
-          <div class="swatch sw-surface"><b>面(surface)</b><span><code>#171E2E</code> 文字 <span class="ratio">14.0</span></span></div>
-          <div class="swatch sw-surface"><b>本文(ink)</b><span><code>#E8ECF2</code></span></div>
-          <div class="swatch sw-muted"><b>補助の文字</b><span><code>#A3ACBC</code> 面の上 <span class="ratio">7.3</span></span></div>
-          <div class="swatch sw-band"><b>テロップの帯</b><span><code>#243352</code> 白文字 <span class="ratio">12.3</span></span></div>
+          <div class="swatch sw-bg"><b>地(bg)</b><span><code>#0D1233</code> 文字 <span class="ratio">15.5</span></span></div>
+          <div class="swatch sw-surface"><b>面(surface)</b><span><code>#161C45</code> 文字 <span class="ratio">14.0</span></span></div>
+          <div class="swatch sw-surface"><b>本文(ink)</b><span><code>#ECEEF9</code></span></div>
+          <div class="swatch sw-muted"><b>補助の文字</b><span><code>#AEB5DA</code> 面の上 <span class="ratio">7.3</span></span></div>
+          <div class="swatch sw-band"><b>テロップの帯</b><span><code>#242C66</code> 白文字 <span class="ratio">12.3</span></span></div>
           <div class="swatch sw-accent"><b>番組カラー</b><span><code>#FF7A50</code> 濃い文字 <span class="ratio">7.4</span></span></div>
           <div class="swatch sw-accent-text"><b>番組カラーの文字</b><span><code>#FF7A50</code> 地の上 <span class="ratio">7.1</span></span></div>
           <div class="swatch sw-highlight"><b>強調テロップ</b><span><code>#FFD23F</code> 濃い文字 <span class="ratio">12.8</span></span></div>
-          <div class="swatch sw-warn"><b>注意の文字</b><span><code>#F0A040</code> 地の上 <span class="ratio">8.6</span></span></div>
-          <div class="swatch sw-line"><b>罫線</b><span><code>#343E52</code> 1px の線</span></div>
+          <div class="swatch sw-warn"><b>注意の文字</b><span><code>#F2A74B</code> 地の上 <span class="ratio">8.6</span></span></div>
+          <div class="swatch sw-line"><b>罫線</b><span><code>#2B3375</code> 1px の線</span></div>
         </div>
       </div>
     </div>

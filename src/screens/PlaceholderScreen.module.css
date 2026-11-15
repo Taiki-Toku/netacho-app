@@ -1,0 +1,14 @@
+.wrap {
+  padding-block: var(--space-5);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.title {
+  font-size: var(--text-title);
+  font-weight: var(--weight-black);
+}
+
+.note {
+  color: var(--color-ink-muted);
+}

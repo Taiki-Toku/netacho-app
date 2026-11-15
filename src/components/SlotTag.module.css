@@ -1,0 +1,26 @@
+.tag {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 var(--space-2);
+  background: var(--color-band);
+  color: var(--color-on-band);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-body);
+  transform: skewX(var(--skew));
+}
+
+.text {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+  transform: skewX(calc(-1 * var(--skew)));
+}
+
+.muted {
+  background: var(--color-ink-muted);
+  color: var(--color-bg);
+}

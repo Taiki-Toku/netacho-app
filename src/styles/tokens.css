@@ -1,0 +1,115 @@
+/*
+  デザイントークン。色・文字・余白・形・動きの値は、ここにだけ書く。
+  既定はダーク(midnight blue)。<html data-theme="light"> でライト、
+  data-theme="system" で端末の設定に従う(2026-11-15 承認:案A「朝焼け」、ダークを主)。
+*/
+:root {
+  color-scheme: dark;
+
+  /* 色(ダーク = 深夜の再放送) */
+  --color-bg: #0D1233;            /* 地。midnight blue */
+  --color-surface: #161C45;       /* 行・パネルの面 */
+  --color-surface-hover: #1B2252; /* 行を押したとき */
+  --color-ink: #ECEEF9;           /* 本文 15.8:1 */
+  --color-ink-muted: #AEB5DA;     /* 補助の文字 8.1:1 */
+  --color-line: #2B3375;          /* 罫線 */
+  --color-band: #242C66;          /* テロップの帯 */
+  --color-on-band: #FFFFFF;       /* 帯の上の文字 12.9:1 */
+  --color-accent: #FF7A50;        /* 番組カラー「朝焼け」 地の上 7.1:1 */
+  --color-on-accent: #1A0D08;     /* 番組カラーの上の文字 7.4:1 */
+  --color-highlight: #FFD23F;     /* 強調テロップ */
+  --color-on-highlight: #1A1300;  /* 強調テロップの上の文字 12.8:1 */
+  --color-warn: #F2A74B;          /* 注意の文字 8.1:1 */
+  --color-focus: #9DBBFF;         /* キーボードの焦点の枠 */
+  --shadow-float: 0 2px 8px rgb(0 0 0 / 0.5);
+  --shadow-nav: 0 -2px 8px rgb(0 0 0 / 0.4);
+
+  /* 文字 */
+  --font-body: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  --weight-regular: 400;
+  --weight-bold: 700;
+  --weight-black: 800;
+  --text-caption: 12px;
+  --text-small: 14px;
+  --text-body: 16px;
+  --text-lead: 18px;
+  --text-title: 22px;
+  --text-headline: 28px;
+  --text-display: 40px;
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-body: 1.7;
+
+  /* 余白(4px 刻み) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* 形 */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --line-thin: 1px;
+  --line-strong: 2px;
+  --line-tab: 3px;
+  --skew: -12deg;
+  --tap-min: 44px;
+  --icon-size: 24px;
+  --nav-height: 56px;
+  --content-width: 720px;
+
+  /* 動き */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* 重なり */
+  --z-header: 10;
+  --z-nav: 10;
+  --z-skip: 20;
+}
+
+/* ライト = 朝の放送 */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #F3F4F9;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #EDEFF7;
+  --color-ink: #141A4F;
+  --color-ink-muted: #525A80;
+  --color-line: #CDD2E6;
+  --color-band: #141A4F;
+  --color-on-band: #FFFFFF;
+  --color-accent: #C8401A;
+  --color-on-accent: #FFFFFF;
+  --color-highlight: #FFD23F;
+  --color-on-highlight: #141A4F;
+  --color-warn: #B45309;
+  --color-focus: #2A4BD7;
+  --shadow-float: 0 2px 8px rgb(20 26 79 / 0.18);
+  --shadow-nav: 0 -2px 8px rgb(20 26 79 / 0.12);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --color-bg: #F3F4F9;
+    --color-surface: #FFFFFF;
+    --color-surface-hover: #EDEFF7;
+    --color-ink: #141A4F;
+    --color-ink-muted: #525A80;
+    --color-line: #CDD2E6;
+    --color-band: #141A4F;
+    --color-on-band: #FFFFFF;
+    --color-accent: #C8401A;
+    --color-on-accent: #FFFFFF;
+    --color-highlight: #FFD23F;
+    --color-on-highlight: #141A4F;
+    --color-warn: #B45309;
+    --color-focus: #2A4BD7;
+    --shadow-float: 0 2px 8px rgb(20 26 79 / 0.18);
+    --shadow-nav: 0 -2px 8px rgb(20 26 79 / 0.12);
+  }
+}
