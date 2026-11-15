@@ -1,0 +1,36 @@
+.meter {
+  display: grid;
+  grid-template-columns: 4.5em 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--space-6);
+}
+
+.label {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+
+.cells {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+  max-width: 160px;
+}
+
+.on,
+.off {
+  height: var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--color-line);
+}
+
+.on {
+  background: var(--color-accent);
+}
+
+.value {
+  font-size: var(--text-small);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}

@@ -22,6 +22,32 @@ export function broadcastDates(items: readonly Item[]): string[] {
   return [...new Set(items.map((item) => item.date))].sort((a, b) => b.localeCompare(a))
 }
 
+export function findItem(items: readonly Item[], id: string): Item | null {
+  return items.find((item) => item.id === id) ?? null
+}
+
+export interface Neighbors {
+  /** 同じ放送日の進行表の中での位置(1 から) */
+  position: number
+  /** 同じ放送日の本数 */
+  total: number
+  prev: Item | null
+  next: Item | null
+}
+
+/** 同じ放送日の進行表の中で、前後のネタを返す。詳細の画面の前後移動に使う */
+export function neighbors(items: readonly Item[], item: Item): Neighbors {
+  const list = itemsOnDate(items, item.date)
+  const index = list.findIndex((candidate) => candidate.id === item.id)
+  if (index === -1) return { position: 1, total: 1, prev: null, next: null }
+  return {
+    position: index + 1,
+    total: list.length,
+    prev: list[index - 1] ?? null,
+    next: list[index + 1] ?? null,
+  }
+}
+
 export function isRated(item: Item): boolean {
   return item.rating !== ''
 }

@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav.tsx'
 import { ProgramHeader } from './components/ProgramHeader.tsx'
 import { DataProvider } from './data/DataProvider.tsx'
 import type { LoadedData } from './data/source.ts'
+import { ItemScreen } from './screens/ItemScreen.tsx'
 import { PlaceholderScreen } from './screens/PlaceholderScreen.tsx'
 import { TodayScreen } from './screens/TodayScreen.tsx'
 import styles from './App.module.css'
@@ -13,7 +14,7 @@ function screenFor(route: Route) {
     case 'today':
       return <TodayScreen />
     case 'item':
-      return <PlaceholderScreen title="ネタの詳細" />
+      return <ItemScreen id={route.id} />
     case 'archive':
     case 'archive-date':
       return <PlaceholderScreen title="バックナンバー" />

@@ -1,9 +1,11 @@
 // 画面で使うアイコン。絵文字は使わず、線の太さをそろえた SVG を自前で持つ
 import type { SVGProps } from 'react'
 
-export type IconName = 'rundown' | 'archive' | 'search' | 'settings'
+export type IconName = 'rundown' | 'archive' | 'search' | 'settings' | 'back'
 
 const PATHS: Record<IconName, string> = {
+  // 戻る:左向きの山形
+  back: 'M15 5l-7 7 7 7',
   // 進行表:番号つきの行
   rundown: 'M4 6h2M9 6h11M4 12h2M9 12h11M4 18h2M9 18h11',
   // バックナンバー:めくるカレンダー
