@@ -12,3 +12,5 @@ __pycache__/
 # Playwright
 test-results/
 playwright-report/
+# 試験のカバレッジ
+coverage/
