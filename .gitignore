@@ -1,0 +1,14 @@
+# 本物のネタのデータ(リポジトリに入れない。いずれ公開するため)
+local-data/
+# 作業用
+.tmp/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+logs/
+__pycache__/
+# Playwright
+test-results/
+playwright-report/

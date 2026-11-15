@@ -1,0 +1,42 @@
+[
+ {
+  "id": "work",
+  "label": "仕事・自動化",
+  "sortOrder": 10
+ },
+ {
+  "id": "agent",
+  "label": "エージェント",
+  "sortOrder": 20
+ },
+ {
+  "id": "local-llm",
+  "label": "ローカルLLM",
+  "sortOrder": 30
+ },
+ {
+  "id": "security-news",
+  "label": "セキュリティニュース",
+  "sortOrder": 40
+ },
+ {
+  "id": "product",
+  "label": "プロダクト",
+  "sortOrder": 50
+ },
+ {
+  "id": "vuln",
+  "label": "脆弱性",
+  "sortOrder": 60
+ },
+ {
+  "id": "creative",
+  "label": "VTuber・創作",
+  "sortOrder": 70
+ },
+ {
+  "id": "tools",
+  "label": "ツール・業界",
+  "sortOrder": 80
+ }
+]

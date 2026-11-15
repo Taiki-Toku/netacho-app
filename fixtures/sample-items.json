@@ -1,0 +1,285 @@
+[
+ {
+  "id": "2026-01-02-01",
+  "date": "2026-01-02",
+  "order": 1,
+  "slot": "取り組みに効く",
+  "genre": "work",
+  "title": "架空:手順書の差分チェックを半自動にする",
+  "lead": "見本のリード文です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "最初の一歩の見本です。",
+  "caution": "注意点の見本です。",
+  "categories": [
+   "業務自動化",
+   "Copilot"
+  ],
+  "projects": [
+   "自動化パイプライン"
+  ],
+  "tags": [
+   "業務効率◎",
+   "無料"
+  ],
+  "sourceUrl": "https://example.com/a",
+  "sourceTitle": "見本の出典A",
+  "trust": "公式",
+  "stars": {
+   "hot": 3,
+   "use": 5,
+   "fun": 2
+  },
+  "rating": "hot",
+  "status": "plan",
+  "memo": "見本のメモ"
+ },
+ {
+  "id": "2026-01-02-02",
+  "date": "2026-01-02",
+  "order": 2,
+  "slot": "製品ニュース",
+  "genre": "tools",
+  "title": "架空:ノートアプリ「サンプルノート」2.0 が登場",
+  "lead": "何が変わったのかを1行で。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "ノートアプリ"
+  ],
+  "projects": [],
+  "tags": [
+   "無料"
+  ],
+  "sourceUrl": "https://example.com/b",
+  "sourceTitle": "見本の出典B",
+  "trust": "報道",
+  "stars": {
+   "hot": 4,
+   "use": 3,
+   "fun": 3
+  },
+  "rating": "good",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-02-03",
+  "date": "2026-01-02",
+  "order": 3,
+  "slot": "新着",
+  "genre": "agent",
+  "title": "架空:エージェントに「やらないこと」を教える書き方",
+  "lead": "見本のリード文です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "エージェント設計",
+   "Claude"
+  ],
+  "projects": [
+   "手順書スキル"
+  ],
+  "tags": [
+   "業務効率◎"
+  ],
+  "sourceUrl": "https://example.com/c",
+  "sourceTitle": "",
+  "trust": "個人ブログ・コミュニティ",
+  "stars": {
+   "hot": 3,
+   "use": 4,
+   "fun": 2
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-02-04",
+  "date": "2026-01-02",
+  "order": 4,
+  "slot": "新着",
+  "genre": "creative",
+  "title": "架空:配信の字幕を自動で付けるしくみ",
+  "lead": "見本のリード文です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "VTuber",
+   "動画"
+  ],
+  "projects": [
+   "VTuber活動"
+  ],
+  "tags": [
+   "VTuber活動に使える",
+   "動画あり"
+  ],
+  "sourceUrl": "https://example.com/d",
+  "sourceTitle": "見本の出典D",
+  "trust": "公式",
+  "stars": {
+   "hot": 5,
+   "use": 3,
+   "fun": 5
+  },
+  "rating": "meh",
+  "status": "interest",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-02-05",
+  "date": "2026-01-02",
+  "order": 5,
+  "slot": "組み合わせ",
+  "genre": "local-llm",
+  "title": "架空:ローカルLLM×検索で自分専用の調べものAI",
+  "lead": "見本のリード文です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "ローカルLLM"
+  ],
+  "projects": [
+   "ローカルLLMエージェント"
+  ],
+  "tags": [
+   "ラボで試せる"
+  ],
+  "sourceUrl": "https://example.com/e",
+  "sourceTitle": "見本の出典E",
+  "trust": "提案",
+  "stars": {
+   "hot": 2,
+   "use": 4,
+   "fun": 4
+  },
+  "rating": "",
+  "status": "tried",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-02-06",
+  "date": "2026-01-02",
+  "order": 6,
+  "slot": "掛け算",
+  "genre": "security-news",
+  "title": "架空:とても長い見出しの見本です。見出しが2行や3行に折り返しても、進行表や詳細の画面が崩れないことを確かめるために、わざと長くしてあります",
+  "lead": "見本のリード文です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "業界ニュース"
+  ],
+  "projects": [],
+  "tags": [],
+  "sourceUrl": "http://example.com/not-https",
+  "sourceTitle": "https ではない出典(リンクにしない)",
+  "trust": "未確認",
+  "stars": {
+   "hot": 1,
+   "use": 1,
+   "fun": 1
+  },
+  "rating": "no",
+  "status": "skip",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-02-07",
+  "date": "2026-01-02",
+  "order": 7,
+  "slot": "道具箱",
+  "genre": "product",
+  "title": "架空:表示の安全確認 <script>alert(1)</script> <b>太字</b> &amp;",
+  "lead": "記号がそのまま文字として出ること(HTML として解釈されないこと)を確かめる見本です。",
+  "summary": "<img src=x onerror=alert(1)> この行は、HTML として解釈されずに、文字のまま表示されるのが正しい動きです。\n改行も入っています。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "セキュリティ×AI"
+  ],
+  "projects": [
+   "CyberArk"
+  ],
+  "tags": [
+   "プレビュー版"
+  ],
+  "sourceUrl": "javascript:alert(1)",
+  "sourceTitle": "危ない形の URL(リンクにしない)",
+  "trust": "未確認",
+  "stars": {
+   "hot": 1,
+   "use": 2,
+   "fun": 1
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-01-01",
+  "date": "2026-01-01",
+  "order": 1,
+  "slot": "取り組みに効く",
+  "genre": "work",
+  "title": "架空:前の日の放送の1本目",
+  "lead": "バックナンバーの確認用です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "業務自動化"
+  ],
+  "projects": [
+   "インフラ学習ラボ"
+  ],
+  "tags": [
+   "ラボで試せる"
+  ],
+  "sourceUrl": "https://example.com/f",
+  "sourceTitle": "見本の出典F",
+  "trust": "公式",
+  "stars": {
+   "hot": 3,
+   "use": 3,
+   "fun": 3
+  },
+  "rating": "good",
+  "status": "adopted",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-01-02",
+  "date": "2026-01-01",
+  "order": 2,
+  "slot": "新着",
+  "genre": "creative",
+  "title": "架空:前の日の放送の2本目",
+  "lead": "バックナンバーの確認用です。",
+  "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "音声・音楽"
+  ],
+  "projects": [],
+  "tags": [],
+  "sourceUrl": "",
+  "sourceTitle": "",
+  "trust": "提案",
+  "stars": {
+   "hot": 2,
+   "use": 2,
+   "fun": 5
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ }
+]
