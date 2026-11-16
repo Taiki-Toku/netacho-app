@@ -45,3 +45,27 @@ export function formatDateLong(value: string): string {
   const date = parseIsoDate(value)
   return date === null ? value : longFormatter.format(date)
 }
+
+const shortFormatter = new Intl.DateTimeFormat('ja-JP', { month: 'numeric', day: 'numeric' })
+
+/** 「1/2」の形(一覧の添え書き用)。読めない日付は元の文字列のまま */
+export function formatDateShort(value: string): string {
+  const date = parseIsoDate(value)
+  return date === null ? value : shortFormatter.format(date)
+}
+
+// 公式フィードの公開日時(UTC の ISO 8601)を、端末の設定に依らず日本時間で出す
+const jstFormatter = new Intl.DateTimeFormat('ja-JP', {
+  timeZone: 'Asia/Tokyo',
+  month: 'numeric',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
+/** 「1/3 11:00」の形(日本時間)。読めない日時は空文字 */
+export function formatJstDateTime(iso: string): string {
+  const time = Date.parse(iso)
+  return Number.isNaN(time) ? '' : jstFormatter.format(new Date(time))
+}

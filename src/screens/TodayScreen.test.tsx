@@ -2,24 +2,35 @@ import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { App } from '../App.tsx'
 import type { LoadedData } from '../data/source.ts'
-import { parseGenres, parseItems } from '../data/parse.ts'
-import sampleItems from '../../fixtures/sample-items.json'
-import genresJson from '../../fixtures/genres.json'
+import { baseSample, fullSample } from '../test/sampleData.ts'
 
-const sample: LoadedData = {
-  items: parseItems(sampleItems),
-  genres: parseGenres(genresJson),
-  source: 'fixtures',
-}
+// 基本の 9 本(最新日 2026-01-02 の 7 本に「表示の安全確認」のネタがある)で、画面の作りと安全性を確かめる
+const sample: LoadedData = baseSample
 
-async function renderToday() {
+async function renderToday(data: LoadedData = sample) {
   window.location.hash = ''
-  render(<App load={() => Promise.resolve(sample)} />)
+  render(<App load={() => Promise.resolve(data)} />)
   await screen.findByRole('heading', { level: 1, name: '今日の放送' })
   return screen.getByRole('list', { name: '進行表' })
 }
 
 describe('今日の放送', () => {
+  it('見本の一式(追加の 6 本を含む)では、最新日 2026-01-03 の 6 本だけを出す', async () => {
+    const list = await renderToday(fullSample)
+    const links = within(list).getAllByRole('link')
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '#/item/2026-01-03-01',
+      '#/item/2026-01-03-02',
+      '#/item/2026-01-03-03',
+      '#/item/2026-01-03-04',
+      '#/item/2026-01-03-05',
+      '#/item/2026-01-03-06',
+    ])
+    expect(screen.getByText('6本')).toBeInTheDocument()
+    // 決まった値以外のコーナー名も、そのまま出す
+    expect(within(list).getAllByText('セキュリティ速報')).toHaveLength(2)
+  })
+
   it('最新日(2026-01-02)の7本だけを、順番どおりに出す', async () => {
     const list = await renderToday()
     const rows = within(list).getAllByRole('listitem')
@@ -74,7 +85,7 @@ describe('今日の放送', () => {
 
   it('ネタが1本も無いときは、その旨を出す', async () => {
     window.location.hash = ''
-    render(<App load={() => Promise.resolve({ items: [], genres: [], source: 'fixtures' })} />)
+    render(<App load={() => Promise.resolve({ items: [], genres: [], feed: [], source: 'fixtures' })} />)
     expect(await screen.findByText('今日の放送はまだありません。')).toBeInTheDocument()
   })
 })

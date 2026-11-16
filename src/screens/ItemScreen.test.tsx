@@ -2,15 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { App } from '../App.tsx'
 import type { LoadedData } from '../data/source.ts'
-import { parseGenres, parseItems } from '../data/parse.ts'
-import sampleItems from '../../fixtures/sample-items.json'
-import genresJson from '../../fixtures/genres.json'
+import { baseSample } from '../test/sampleData.ts'
 
-const sample: LoadedData = {
-  items: parseItems(sampleItems),
-  genres: parseGenres(genresJson),
-  source: 'fixtures',
-}
+// 基本の 9 本(最新日 2026-01-02)。「表示の安全確認」のネタ(2026-01-02-07)が最新日にあり、前後の移動と一緒に確かめられる
+const sample: LoadedData = baseSample
 
 async function renderItem(id: string) {
   window.location.hash = `#/item/${id}`

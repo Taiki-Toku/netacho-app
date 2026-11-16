@@ -1,45 +1,61 @@
 // データを読む所(1か所)。画面からは loadData() だけを使う。あとで Supabase に差し替える。
 //
-// 読み込み方(docs/beta_brief.md 2.1):
+// 読み込み方(docs/beta_brief.md 2.1、.tmp/request2.md 3章):
 //   1. local-data/items.json(本物。git に入らない)を、実行時に fetch で取りに行く
 //      - 開発サーバー(vite)はプロジェクト直下のファイルをそのまま配るので、開発中はこれが読める
 //      - 本番のビルド(dist/)には含まれない(import していないため)。取りに行っても 404 で、2 に落ちる
-//   2. 無ければ fixtures/sample-items.json(架空の見本。ビルドに含まれる)
+//   2. 無ければ fixtures/sample-items.json + fixtures/sample-items-extra.json(架空の見本。ビルドに含まれる)
+//   公式フィードも同じ作り:local-data/feed.json があればそれ、無ければ fixtures/sample-feed.json
 import sampleItems from '../../fixtures/sample-items.json'
+import sampleItemsExtra from '../../fixtures/sample-items-extra.json'
+import sampleFeed from '../../fixtures/sample-feed.json'
 import genresJson from '../../fixtures/genres.json'
-import { parseGenres, parseItems } from './parse.ts'
-import type { Genre, Item } from './types.ts'
+import { parseFeed, parseGenres, parseItems } from './parse.ts'
+import type { FeedEntry, Genre, Item } from './types.ts'
 
 export type DataSource = 'local' | 'fixtures'
 
 export interface LoadedData {
   items: Item[]
   genres: Genre[]
+  feed: FeedEntry[]
   source: DataSource
 }
 
-const LOCAL_DATA_PATH = 'local-data/items.json'
+const LOCAL_ITEMS_PATH = 'local-data/items.json'
+const LOCAL_FEED_PATH = 'local-data/feed.json'
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
-export async function loadData(fetchFn: FetchLike = (input, init) => fetch(input, init)): Promise<LoadedData> {
-  const genres = parseGenres(genresJson)
-  const local = await tryLoadLocal(fetchFn)
-  if (local !== null) return { items: local, genres, source: 'local' }
-  return { items: parseItems(sampleItems), genres, source: 'fixtures' }
+/** 見本のデータ一式(fixtures)。試験と、本物のデータが無いときの表示に使う */
+export function fixtureData(): LoadedData {
+  return {
+    items: parseItems([...sampleItems, ...sampleItemsExtra]),
+    genres: parseGenres(genresJson),
+    feed: parseFeed(sampleFeed),
+    source: 'fixtures',
+  }
 }
 
-async function tryLoadLocal(fetchFn: FetchLike): Promise<Item[] | null> {
+export async function loadData(fetchFn: FetchLike = (input, init) => fetch(input, init)): Promise<LoadedData> {
+  const fixtures = fixtureData()
+  const localItems = parseItems(await tryLoadLocal(fetchFn, LOCAL_ITEMS_PATH))
+  if (localItems.length === 0) return fixtures
+  // 本物のネタがあるときは、フィードも本物だけを使う(見本のフィードを混ぜない)。無ければ空
+  const localFeed = parseFeed(await tryLoadLocal(fetchFn, LOCAL_FEED_PATH))
+  return { items: localItems, genres: fixtures.genres, feed: localFeed, source: 'local' }
+}
+
+/** local-data の JSON を取りに行く。無い・読めない・JSON でないときは null */
+async function tryLoadLocal(fetchFn: FetchLike, path: string): Promise<unknown> {
   try {
-    const url = new URL(LOCAL_DATA_PATH, document.baseURI).toString()
+    const url = new URL(path, document.baseURI).toString()
     const response = await fetchFn(url, { cache: 'no-store' })
     if (!response.ok) return null
     // 開発サーバーは無いパスにも index.html を 200 で返すため、JSON であることを確かめる
     const contentType = response.headers.get('content-type') ?? ''
     if (!contentType.includes('json')) return null
-    const json: unknown = await response.json()
-    const items = parseItems(json)
-    return items.length > 0 ? items : null
+    return (await response.json()) as unknown
   } catch {
     return null
   }

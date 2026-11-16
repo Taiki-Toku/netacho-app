@@ -2,6 +2,7 @@
 local-data/
 # 作業用
 .tmp/
+tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example

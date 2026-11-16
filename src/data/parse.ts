@@ -1,6 +1,18 @@
 // 外から来た JSON(信用しないデータ)を、Item / Genre の形に整える。
 // 方針:型が合わない項目は捨てるか空にする。例外は投げない。文字列の中身は一切解釈しない(表示側でテキストとして出す)。
-import { RATINGS, STATUSES, type Genre, type Item, type Rating, type Status } from './types.ts'
+import {
+  FEED_KINDS,
+  RATINGS,
+  SEVERITIES,
+  STATUSES,
+  type FeedEntry,
+  type FeedKind,
+  type Genre,
+  type Item,
+  type Rating,
+  type Severity,
+  type Status,
+} from './types.ts'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -75,6 +87,49 @@ export function parseItems(value: unknown): Item[] {
     items.push(item)
   }
   return items
+}
+
+function asFeedKind(value: unknown): FeedKind | null {
+  return typeof value === 'string' && (FEED_KINDS as readonly string[]).includes(value) ? (value as FeedKind) : null
+}
+
+function asSeverity(value: unknown): Severity {
+  return typeof value === 'string' && (SEVERITIES as readonly string[]).includes(value) ? (value as Severity) : ''
+}
+
+/** 公式フィード1本を整える。id・kind・publishedAt が形になっていなければ null(その1本は捨てる) */
+export function parseFeedEntry(value: unknown): FeedEntry | null {
+  if (!isRecord(value)) return null
+  const id = asString(value.id)
+  const kind = asFeedKind(value.kind)
+  const publishedAt = asString(value.publishedAt)
+  if (id === '' || kind === null || Number.isNaN(Date.parse(publishedAt))) return null
+  return {
+    id,
+    kind,
+    product: asString(value.product),
+    vendor: asString(value.vendor),
+    title: asString(value.title),
+    publishedAt,
+    url: asString(value.url),
+    // severity は vuln のとき、status は outage のときだけ持つ。それ以外の種類に付いていても捨てる
+    severity: kind === 'vuln' ? asSeverity(value.severity) : '',
+    status: kind === 'outage' ? asString(value.status) : '',
+  }
+}
+
+/** 配列でなければ空。形の崩れた要素は捨てる。同じ id が重なったら先のものを残す */
+export function parseFeed(value: unknown): FeedEntry[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const entries: FeedEntry[] = []
+  for (const raw of value) {
+    const entry = parseFeedEntry(raw)
+    if (entry === null || seen.has(entry.id)) continue
+    seen.add(entry.id)
+    entries.push(entry)
+  }
+  return entries
 }
 
 export function parseGenres(value: unknown): Genre[] {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadData, type FetchLike } from './source.ts'
+import { fixtureData, loadData, type FetchLike } from './source.ts'
 
 function jsonResponse(body: unknown, init: { status?: number; contentType?: string } = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -9,24 +9,41 @@ function jsonResponse(body: unknown, init: { status?: number; contentType?: stri
 }
 
 const localItems = [{ id: '2026-03-01-01', date: '2026-03-01', order: 1, title: 'ローカルの1本' }]
+const localFeed = [{ id: 'local-feed-1', kind: 'vuln', publishedAt: '2026-03-01T00:00:00Z', title: 'ローカルのフィード' }]
 
 describe('loadData(データを読む所)', () => {
-  it('local-data/items.json が読めれば、それを使う', async () => {
+  it('local-data/items.json と feed.json が読めれば、それを使う', async () => {
+    const requested: string[] = []
     const fetchFn: FetchLike = (input) => {
-      expect(input).toBe('http://localhost:3000/local-data/items.json')
-      return Promise.resolve(jsonResponse(localItems))
+      requested.push(input)
+      if (input.endsWith('/local-data/items.json')) return Promise.resolve(jsonResponse(localItems))
+      if (input.endsWith('/local-data/feed.json')) return Promise.resolve(jsonResponse(localFeed))
+      return Promise.resolve(new Response('not found', { status: 404 }))
     }
     const data = await loadData(fetchFn)
+    expect(requested).toEqual(['http://localhost:3000/local-data/items.json', 'http://localhost:3000/local-data/feed.json'])
     expect(data.source).toBe('local')
     expect(data.items).toHaveLength(1)
     expect(data.items[0]?.title).toBe('ローカルの1本')
+    expect(data.feed).toHaveLength(1)
+    expect(data.feed[0]?.title).toBe('ローカルのフィード')
     expect(data.genres.length).toBeGreaterThan(0)
   })
 
-  it('404 なら見本データに落ちる', async () => {
+  it('本物のネタがあってフィードが無いときは、フィードは空(見本のフィードを混ぜない)', async () => {
+    const fetchFn: FetchLike = (input) =>
+      Promise.resolve(input.endsWith('/local-data/items.json') ? jsonResponse(localItems) : new Response('', { status: 404 }))
+    const data = await loadData(fetchFn)
+    expect(data.source).toBe('local')
+    expect(data.feed).toEqual([])
+  })
+
+  it('404 なら見本データに落ちる(ネタ 9+6 本、フィード 13 本)', async () => {
     const data = await loadData(() => Promise.resolve(new Response('not found', { status: 404 })))
     expect(data.source).toBe('fixtures')
-    expect(data.items).toHaveLength(9)
+    expect(data.items).toHaveLength(15)
+    expect(data.feed).toHaveLength(13)
+    expect(data).toEqual(fixtureData())
   })
 
   it('開発サーバーが index.html を 200 で返しても(JSON でない)、見本データに落ちる', async () => {

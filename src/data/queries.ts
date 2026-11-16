@@ -1,5 +1,5 @@
-// 読み込んだネタの一覧から、画面が使う形に取り出す純粋な関数
-import type { Genre, Item } from './types.ts'
+// 読み込んだネタ・公式フィードの一覧から、画面が使う形に取り出す純粋な関数
+import type { FeedEntry, FeedKind, Genre, Item } from './types.ts'
 
 /** 最新の放送日(YYYY-MM-DD は文字列の比較で日付順になる) */
 export function latestDate(items: readonly Item[]): string | null {
@@ -54,4 +54,25 @@ export function isRated(item: Item): boolean {
 
 export function genreLabelMap(genres: readonly Genre[]): ReadonlyMap<string, string> {
   return new Map(genres.map((genre) => [genre.id, genre.label]))
+}
+
+/** ジャンルのタブ用:その genre のネタを新しい順(日付の新しい順、同じ日なら order 順)に並べる */
+export function itemsInGenre(items: readonly Item[], genre: string): Item[] {
+  return items
+    .filter((item) => item.genre === genre)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.order - b.order || a.id.localeCompare(b.id))
+}
+
+/** 公式フィードから、指定した種類だけを新しい順に取り出す */
+export function feedOfKinds(feed: readonly FeedEntry[], kinds: readonly FeedKind[]): FeedEntry[] {
+  return feed
+    .filter((entry) => kinds.includes(entry.kind))
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || a.id.localeCompare(b.id))
+}
+
+/** フィードに出てくる製品名(重複なし、名前順)。プロダクトのタブの絞り込みに使う */
+export function feedProducts(feed: readonly FeedEntry[]): string[] {
+  return [...new Set(feed.map((entry) => entry.product).filter((product) => product !== ''))].sort((a, b) =>
+    a.localeCompare(b, 'ja'),
+  )
 }

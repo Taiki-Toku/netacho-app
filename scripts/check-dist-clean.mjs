@@ -6,6 +6,7 @@ import { join } from 'node:path'
 
 const DIST = 'dist'
 const LOCAL = join('local-data', 'items.json')
+const LOCAL_FEED = join('local-data', 'feed.json')
 const MIN_NEEDLE_LENGTH = 12
 
 function walk(dir) {
@@ -54,6 +55,23 @@ for (const item of items) {
   for (const key of ['title', 'lead', 'summary', 'memo']) {
     const value = item[key]
     if (typeof value === 'string' && value.length >= MIN_NEEDLE_LENGTH) needles.add(value)
+  }
+}
+
+// 公式フィード(local-data/feed.json)があれば、その見出しも手がかりに足す。無ければ飛ばす
+if (existsSync(LOCAL_FEED)) {
+  let feed = []
+  try {
+    feed = JSON.parse(readFileSync(LOCAL_FEED, 'utf8'))
+  } catch {
+    console.error('check:dist 失敗。local-data/feed.json を JSON として読めません')
+    process.exit(1)
+  }
+  if (Array.isArray(feed)) {
+    for (const entry of feed) {
+      if (typeof entry !== 'object' || entry === null) continue
+      if (typeof entry.title === 'string' && entry.title.length >= MIN_NEEDLE_LENGTH) needles.add(entry.title)
+    }
   }
 }
 

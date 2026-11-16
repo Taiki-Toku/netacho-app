@@ -40,3 +40,25 @@ export interface Genre {
   label: string
   sortOrder: number
 }
+
+// 公式フィード1本の形(.tmp/request2.md 2章)。ネタとは別の種類のデータで、公式の発表をそのまま時系列で並べる
+export const FEED_KINDS = ['release', 'eol', 'change', 'exam', 'vuln', 'outage'] as const
+export type FeedKind = (typeof FEED_KINDS)[number]
+
+export const SEVERITIES = ['critical', 'high', 'medium', 'low', ''] as const
+export type Severity = (typeof SEVERITIES)[number]
+
+export interface FeedEntry {
+  id: string
+  kind: FeedKind
+  product: string
+  vendor: string
+  title: string
+  /** 公開日時(ISO 8601、UTC)。表示は日本時間にする */
+  publishedAt: string
+  url: string
+  /** kind が vuln のときだけ。それ以外は空 */
+  severity: Severity
+  /** kind が outage のときだけ(「調査中」「復旧済み」など、自由な文字列)。それ以外は空 */
+  status: string
+}

@@ -1,0 +1,186 @@
+[
+ {
+  "id": "2026-01-03-01",
+  "date": "2026-01-03",
+  "order": 1,
+  "slot": "セキュリティ速報",
+  "genre": "security-news",
+  "title": "架空:サンプル商事で不正アクセス、会員情報およそ12万件が流出か",
+  "lead": "同社の発表によると、外部に公開していた古い管理画面が入口でした。",
+  "summary": "これは画面確認用の架空のネタです。実在の企業・製品・出来事ではありません。原因と被害の範囲は調査中で、続報で変わる可能性があります。",
+  "tryit": "",
+  "caution": "初報の段階です。件数や原因は、続報で変わることがあります。",
+  "categories": [
+   "業界ニュース"
+  ],
+  "projects": [],
+  "tags": [
+   "続報待ち"
+  ],
+  "sourceUrl": "https://example.com/incident-a",
+  "sourceTitle": "サンプル商事のお知らせ(架空)",
+  "trust": "公式",
+  "stars": {
+   "hot": 5,
+   "use": 4,
+   "fun": 1
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-03-02",
+  "date": "2026-01-03",
+  "order": 2,
+  "slot": "セキュリティ速報",
+  "genre": "security-news",
+  "title": "架空:見本市病院でランサムウェア被害、外来の受付を一部停止",
+  "lead": "バックアップからの復旧を進めていると発表しています。",
+  "summary": "これは画面確認用の架空のネタです。実在の企業・製品・出来事ではありません。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "業界ニュース"
+  ],
+  "projects": [],
+  "tags": [],
+  "sourceUrl": "https://example.com/incident-b",
+  "sourceTitle": "見本市病院のお知らせ(架空)",
+  "trust": "報道",
+  "stars": {
+   "hot": 4,
+   "use": 3,
+   "fun": 1
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-03-03",
+  "date": "2026-01-03",
+  "order": 3,
+  "slot": "IT企業動向",
+  "genre": "security-news",
+  "title": "架空:サンプル銀行、特権 ID 管理の製品を全店に導入",
+  "lead": "委託先の作業者のアクセスを、申請と承認のうえで時間を区切って許可する運用に変えます。",
+  "summary": "これは画面確認用の架空のネタです。実在の企業・製品・出来事ではありません。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "業界ニュース"
+  ],
+  "projects": [
+   "CyberArk"
+  ],
+  "tags": [
+   "導入事例"
+  ],
+  "sourceUrl": "https://example.com/case-a",
+  "sourceTitle": "サンプル銀行の発表(架空)",
+  "trust": "公式",
+  "stars": {
+   "hot": 3,
+   "use": 5,
+   "fun": 1
+  },
+  "rating": "good",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-03-04",
+  "date": "2026-01-03",
+  "order": 4,
+  "slot": "IT企業動向",
+  "genre": "security-news",
+  "title": "架空:見本テクノロジーズ、検知サービスの見本セキュリティを買収",
+  "lead": "料金体系は当面変えないとしています。",
+  "summary": "これは画面確認用の架空のネタです。実在の企業・製品・出来事ではありません。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "業界ニュース"
+  ],
+  "projects": [],
+  "tags": [
+   "買収"
+  ],
+  "sourceUrl": "https://example.com/ma-a",
+  "sourceTitle": "見本テクノロジーズの発表(架空)",
+  "trust": "公式",
+  "stars": {
+   "hot": 3,
+   "use": 2,
+   "fun": 1
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-03-05",
+  "date": "2026-01-03",
+  "order": 5,
+  "slot": "道具箱",
+  "genre": "product",
+  "title": "架空:認定資格「サンプル管理者試験」が4月に改定、出題範囲に新機能を追加",
+  "lead": "現行の試験は3月末まで受けられます。",
+  "summary": "これは画面確認用の架空のネタです。実在の企業・製品・出来事ではありません。",
+  "tryit": "受験の予定がある場合は、改定の前後どちらで受けるかを決める。",
+  "caution": "",
+  "categories": [
+   "業界ニュース"
+  ],
+  "projects": [
+   "CyberArk"
+  ],
+  "tags": [
+   "試験の変更"
+  ],
+  "sourceUrl": "https://example.com/exam-a",
+  "sourceTitle": "サンプル認定プログラムのお知らせ(架空)",
+  "trust": "公式",
+  "stars": {
+   "hot": 3,
+   "use": 5,
+   "fun": 1
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ },
+ {
+  "id": "2026-01-03-06",
+  "date": "2026-01-03",
+  "order": 6,
+  "slot": "取り組みに効く",
+  "genre": "work",
+  "title": "架空:手順書のレビュー観点を1枚にまとめる",
+  "lead": "見本のリード文です。",
+  "summary": "これは画面確認用の架空のネタです。実在の企業・製品・出来事ではありません。",
+  "tryit": "",
+  "caution": "",
+  "categories": [
+   "業務自動化"
+  ],
+  "projects": [
+   "手順書スキル"
+  ],
+  "tags": [
+   "業務効率◎"
+  ],
+  "sourceUrl": "https://example.com/g",
+  "sourceTitle": "見本の出典G",
+  "trust": "個人ブログ・コミュニティ",
+  "stars": {
+   "hot": 2,
+   "use": 4,
+   "fun": 2
+  },
+  "rating": "",
+  "status": "",
+  "memo": ""
+ }
+]

@@ -1,5 +1,5 @@
 // デザイン案の見比べ(仮の画面。案が決まったら消す)。
-// 3つの案を、「今日の放送」「ネタの詳細」× ライト/ダーク × 390px/PC の幅 で切り替えて見られる。
+// 4つの案を、「今日の放送」「ネタの詳細」× ライト/ダーク × 390px/PC の幅 で切り替えて見られる。
 // 既存の画面のコードには触れず、案ごとに部品とスタイルを別に持つ。
 import { useState } from 'react'
 import { useData } from '../../data/DataProvider.tsx'
@@ -7,9 +7,10 @@ import { buildModel, type LabModel, type LabScreen, type LabTheme } from './labD
 import { ProposalLive } from './ProposalLive.tsx'
 import { ProposalFlip } from './ProposalFlip.tsx'
 import { ProposalClock } from './ProposalClock.tsx'
+import { ProposalNews } from './ProposalNews.tsx'
 import styles from './DesignLab.module.css'
 
-type ProposalId = 'live' | 'flip' | 'clock'
+type ProposalId = 'live' | 'flip' | 'clock' | 'news'
 type Width = 'phone' | 'desktop'
 
 const PROPOSALS: { id: ProposalId; name: string; aim: string; look: string[] }[] = [
@@ -44,6 +45,18 @@ const PROPOSALS: { id: ProposalId; name: string; aim: string; look: string[] }[]
       '進行表は横にスナップする帯。1本が1枚で、親指で横に送る',
       '詳細は、PC の幅で本文と指標の2列になる',
       '下は文字だけの帯。選んだ所に赤い下線が滑る',
+    ],
+  },
+  {
+    id: 'news',
+    name: '案4 ニュースアプリ型',
+    aim: 'ニュースアプリ(Yahoo!ニュース、スマートニュース、グノシーなど)に共通する作り:上に横並びのジャンルのタブ、先頭に大きな1本、続いて密度の高い一覧。白い地に黒い文字で、色はタブと先頭の色版だけ。',
+    look: [
+      '上のタブ:ジャンルごとに色があり、選ぶと文字と下線がその色になる。左右のスワイプと矢印キーでも切り替わる',
+      '写真の代わり:先頭の1本をジャンル色の「色版」にして白抜きの大きな見出しを置く。行はジャンル色の「話題度」の5マスと、見出しの太さ(評価済みは細く)で見分ける',
+      '「今日」のタブだけが番組:番号とコーナーの札が主役。ジャンルのタブは分野ごとの新着で、札は出さずジャンルと出どころ・日付を添える',
+      '公式フィードは別の枠:セキュリティニュースの「障害情報」(状態の札)、プロダクトの「公式の発表」(製品で絞り込み)、脆弱性の「公式情報」(深刻さの札)',
+      '下は番号つきのメニュー(案1から)。PC の幅ではネタの列と公式フィードの列が並ぶ',
     ],
   },
 ]
@@ -133,6 +146,7 @@ export function DesignLab() {
             {proposal === 'live' ? <ProposalLive {...props} /> : null}
             {proposal === 'flip' ? <ProposalFlip {...props} /> : null}
             {proposal === 'clock' ? <ProposalClock {...props} /> : null}
+            {proposal === 'news' ? <ProposalNews {...props} data={state.data} /> : null}
           </div>
         </div>
         <aside className={styles.notes} aria-labelledby="lab-notes-title">
@@ -148,6 +162,7 @@ export function DesignLab() {
           </ul>
           <p className={styles.notesFoot}>
             どの案も、機能と安全性(出典のリンクの判定、文字のままの表示)は既存の画面と同じ関数を使っています。
+            案1〜3は最新日の放送だけ、案4は全ジャンルのネタと公式フィードの見本も使います。
           </p>
         </aside>
       </div>
