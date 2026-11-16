@@ -10,6 +10,8 @@ export type Route =
   | { name: 'archive-date'; date: string }
   | { name: 'search' }
   | { name: 'settings' }
+  /** デザイン案の見比べ(仮。案が決まったら消す) */
+  | { name: 'design-lab' }
 
 const TODAY: Route = { name: 'today' }
 
@@ -38,6 +40,8 @@ export function parseHash(hash: string): Route {
       return { name: 'search' }
     case 'settings':
       return { name: 'settings' }
+    case 'design-lab':
+      return { name: 'design-lab' }
     default:
       return TODAY
   }
@@ -57,6 +61,8 @@ export function hrefFor(route: Route): string {
       return '#/search'
     case 'settings':
       return '#/settings'
+    case 'design-lab':
+      return '#/design-lab'
   }
 }
 

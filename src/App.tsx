@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav.tsx'
 import { ProgramHeader } from './components/ProgramHeader.tsx'
 import { DataProvider } from './data/DataProvider.tsx'
 import type { LoadedData } from './data/source.ts'
+import { DesignLab } from './screens/lab/DesignLab.tsx'
 import { ItemScreen } from './screens/ItemScreen.tsx'
 import { PlaceholderScreen } from './screens/PlaceholderScreen.tsx'
 import { TodayScreen } from './screens/TodayScreen.tsx'
@@ -22,11 +23,15 @@ function screenFor(route: Route) {
       return <PlaceholderScreen title="探す" />
     case 'settings':
       return <PlaceholderScreen title="設定" />
+    case 'design-lab':
+      return null
   }
 }
 
 function Shell() {
   const route = useRoute()
+  // デザイン案の見比べは、番組ヘッダーや下の切り替えを持たない独立した画面(仮)
+  if (route.name === 'design-lab') return <DesignLab />
   return (
     <div className={styles.app}>
       <a className={styles.skip} href="#main">

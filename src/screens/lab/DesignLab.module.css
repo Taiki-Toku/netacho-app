@@ -1,0 +1,139 @@
+/* 見比べの画面の枠。中身(3案)の見た目は各案のファイルにある。ここは既存のトークンだけを使う */
+.status {
+  padding-block: var(--space-6);
+  text-align: center;
+  color: var(--color-ink-muted);
+}
+
+.lab {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: var(--line-thin) solid var(--color-line);
+}
+
+.title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  margin-inline-end: var(--space-2);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choiceLegend {
+  float: left;
+  padding: 0;
+  margin-inline-end: var(--space-1);
+  font-size: var(--text-caption);
+  color: var(--color-ink-muted);
+}
+
+.choiceButton {
+  min-height: var(--space-6);
+  padding: 0 var(--space-3);
+  border: var(--line-thin) solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-small);
+  cursor: pointer;
+}
+
+.choiceButton[aria-pressed='true'] {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-color: var(--color-ink);
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+@media (min-width: 1100px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+.framePhone,
+.frameDesktop {
+  justify-self: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* iPhone 14 の論理解像度。枠の中だけをスクロールさせ、案の中の sticky が効くようにする */
+.framePhone {
+  width: 390px;
+  max-width: 100%;
+  height: 780px;
+  border: var(--line-strong) solid var(--color-line);
+  border-radius: var(--space-5);
+}
+
+.frameDesktop {
+  height: calc(100vh - 120px);
+  min-height: 600px;
+  border: var(--line-thin) solid var(--color-line);
+}
+
+.frame {
+  container: lab / inline-size;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.notes {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.notesTitle {
+  font-size: var(--text-lead);
+  font-weight: var(--weight-black);
+}
+
+.notesSub {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-muted);
+}
+
+.notesList {
+  display: grid;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-4);
+  list-style: disc;
+}
+
+.notesFoot {
+  color: var(--color-ink-muted);
+}

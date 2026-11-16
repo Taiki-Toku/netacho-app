@@ -11,6 +11,7 @@ describe('router(ハッシュの読み書き)', () => {
     expect(parseHash('#/archive/2026-01-01')).toEqual({ name: 'archive-date', date: '2026-01-01' })
     expect(parseHash('#/search')).toEqual({ name: 'search' })
     expect(parseHash('#/settings')).toEqual({ name: 'settings' })
+    expect(parseHash('#/design-lab')).toEqual({ name: 'design-lab' })
   })
 
   it('読めないハッシュは「今日」に落とす', () => {
