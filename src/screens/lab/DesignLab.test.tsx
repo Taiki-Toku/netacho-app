@@ -173,6 +173,36 @@ describe('案4 ニュースアプリ型', () => {
     expect(screen.getByRole('tab', { name: 'プロダクト', selected: true })).toBeInTheDocument()
   })
 
+  it('公式フィードの見出しが HTML 入り・URL が javascript: でも、文字のまま出してリンクにしない', async () => {
+    const user = userEvent.setup()
+    // 見本のフィードは書き換えず、試験の中で危ないフィードを1本だけ足す
+    const hostile: LoadedData = {
+      ...fullSample,
+      feed: [
+        {
+          id: 'test-hostile',
+          kind: 'vuln',
+          product: '<img src=x onerror=alert(1)>',
+          vendor: '',
+          title: '<script>alert(1)</script>見本の脆弱性',
+          publishedAt: '2026-01-03T00:00:00Z',
+          url: 'javascript:alert(1)',
+          severity: 'high',
+          status: '',
+        },
+      ],
+    }
+    await renderLab(hostile)
+    await user.click(screen.getByRole('button', { name: '案4 ニュースアプリ型' }))
+    await user.click(screen.getByRole('tab', { name: '脆弱性' }))
+    const frame = screen.getByRole('region', { name: /脆弱性の公式情報/ })
+    expect(within(frame).queryAllByRole('link')).toHaveLength(0)
+    expect(frame.querySelector('script, img')).toBeNull()
+    expect(within(frame).getByText('<script>alert(1)</script>見本の脆弱性')).toBeInTheDocument()
+    expect(within(frame).getByText('<img src=x onerror=alert(1)>')).toBeInTheDocument()
+    expect(within(frame).getByText('javascript:alert(1)')).toBeInTheDocument()
+  })
+
   it('https: の出典はリンクになり、新しいタブで安全に開く', async () => {
     const user = await renderNews()
     await user.click(screen.getByRole('button', { name: 'ネタの詳細' }))

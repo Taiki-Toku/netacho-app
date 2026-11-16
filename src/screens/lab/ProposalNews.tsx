@@ -17,7 +17,7 @@ type Props = LabProps & { data: LoadedData }
 
 const TODAY_TAB = 'today'
 
-/** タブごとの公式フィードの枠(.tmp/request2.md 2章の対応)。genre の id は fixtures/genres.json のもの */
+/** タブごとの公式フィードの枠(追加依頼 2026-11-16 のタブとデータの対応)。genre の id は fixtures/genres.json のもの */
 const FEED_FRAMES: Record<string, { title: string; kinds: readonly FeedKind[]; byProduct: boolean; first: boolean }> = {
   'security-news': { title: '障害情報', kinds: ['outage'], byProduct: false, first: false },
   product: { title: '公式の発表', kinds: ['release', 'eol', 'change', 'exam'], byProduct: true, first: false },

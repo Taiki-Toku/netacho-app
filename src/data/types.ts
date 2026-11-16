@@ -41,7 +41,7 @@ export interface Genre {
   sortOrder: number
 }
 
-// 公式フィード1本の形(.tmp/request2.md 2章)。ネタとは別の種類のデータで、公式の発表をそのまま時系列で並べる
+// 公式フィード1本の形(オーナーの追加依頼 2026-11-16 の形)。ネタとは別の種類のデータで、公式の発表をそのまま時系列で並べる
 export const FEED_KINDS = ['release', 'eol', 'change', 'exam', 'vuln', 'outage'] as const
 export type FeedKind = (typeof FEED_KINDS)[number]
 
