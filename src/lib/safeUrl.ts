@@ -1,4 +1,4 @@
-// 外から来た URL を、リンクにしてよいか判定する(CLAUDE.md セキュリティ規約:https: だけをリンクにする)。
+// 外から来た URL を、リンクや画像にしてよいか判定する(CLAUDE.md セキュリティ規約:https: だけをリンクにする)。
 //
 // 文字列の先頭を見るのではなく、ブラウザーと同じ URL の解釈(new URL)に任せる。
 // 理由:URL の解釈には「先頭の空白や制御文字を捨てる」「大文字小文字を同一視する」などの癖があり、
@@ -19,6 +19,29 @@ export function httpsHref(value: string): string | null {
   // ユーザー名:パスワード@ の形は、見た目で別のサイトに見せかける手口に使われるため、リンクにしない
   if (url.username !== '' || url.password !== '') return null
   if (url.hostname === '') return null
+  return url.href
+}
+
+/**
+ * 画像の src にしてよい URL なら整えた href を、そうでなければ null を返す。
+ * 通すのは、https: の URL(httpsHref と同じ条件)と、同じオリジンに解決される相対パス(見本の画像 fixtures/images/ など)だけ。
+ * "//evil.example/x.png" のような形は別のオリジンに解決されるので通らない。javascript: や data: はオリジンが無いので通らない。
+ */
+export function imageHref(value: string): string | null {
+  if (value === '') return null
+  const https = httpsHref(value)
+  if (https !== null) return https
+  let url: URL
+  let base: URL
+  try {
+    base = new URL(document.baseURI)
+    url = new URL(value, base)
+  } catch {
+    return null
+  }
+  if (url.username !== '' || url.password !== '') return null
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+  if (url.origin === 'null' || url.origin !== base.origin) return null
   return url.href
 }
 

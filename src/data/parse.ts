@@ -1,4 +1,4 @@
-// 外から来た JSON(信用しないデータ)を、Item / Genre の形に整える。
+// 外から来た JSON(信用しないデータ)を、Item / Genre / FeedEntry の形に整える。
 // 方針:型が合わない項目は捨てるか空にする。例外は投げない。文字列の中身は一切解釈しない(表示側でテキストとして出す)。
 import {
   FEED_KINDS,
@@ -37,6 +37,12 @@ function asStatus(value: unknown): Status {
   return typeof value === 'string' && (STATUSES as readonly string[]).includes(value) ? (value as Status) : ''
 }
 
+/** CVSS の基本値。0〜10 の数だけを通し、小数第1位に丸める。それ以外は null */
+function asCvss(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 10) return null
+  return Math.round(value * 10) / 10
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -50,6 +56,7 @@ export function parseItem(value: unknown): Item | null {
 
   const stars = isRecord(value.stars) ? value.stars : {}
   const order = typeof value.order === 'number' && Number.isFinite(value.order) ? value.order : Number.MAX_SAFE_INTEGER
+  const imageUrl = asString(value.imageUrl)
 
   return {
     id,
@@ -72,6 +79,8 @@ export function parseItem(value: unknown): Item | null {
     rating: asRating(value.rating),
     status: asStatus(value.status),
     memo: asString(value.memo),
+    // 画像は無いことが普通なので、空のときは項目ごと持たない。URL の中身はここでは見ない(表示の直前に imageHref で検査する)
+    ...(imageUrl !== '' ? { imageUrl } : {}),
   }
 }
 
@@ -104,6 +113,7 @@ export function parseFeedEntry(value: unknown): FeedEntry | null {
   const kind = asFeedKind(value.kind)
   const publishedAt = asString(value.publishedAt)
   if (id === '' || kind === null || Number.isNaN(Date.parse(publishedAt))) return null
+  const isVuln = kind === 'vuln'
   return {
     id,
     kind,
@@ -112,9 +122,11 @@ export function parseFeedEntry(value: unknown): FeedEntry | null {
     title: asString(value.title),
     publishedAt,
     url: asString(value.url),
-    // severity は vuln のとき、status は outage のときだけ持つ。それ以外の種類に付いていても捨てる
-    severity: kind === 'vuln' ? asSeverity(value.severity) : '',
-    status: kind === 'outage' ? asString(value.status) : '',
+    // severity・cve・cvss は vuln のとき、status は outage と vuln のときだけ持つ。それ以外の種類に付いていても捨てる
+    severity: isVuln ? asSeverity(value.severity) : '',
+    status: isVuln || kind === 'outage' ? asString(value.status) : '',
+    cve: isVuln ? asString(value.cve) : '',
+    cvss: isVuln ? asCvss(value.cvss) : null,
   }
 }
 

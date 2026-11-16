@@ -1,0 +1,138 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar);
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-8);
+  background: var(--surface);
+  border-bottom: var(--line-thin) solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2h);
+  min-height: var(--tap);
+}
+
+.brandName {
+  font-family: var(--font-brand);
+  font-size: var(--fs-19);
+  letter-spacing: var(--ls-brand);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-1);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4h);
+}
+
+.date {
+  font-size: var(--fs-12);
+  letter-spacing: var(--ls-wide);
+  color: var(--muted);
+}
+
+/* 虫めがねのボタンはスマホだけ */
+.searchToggle {
+  display: none;
+  width: var(--tap);
+  height: var(--tap);
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.search,
+.searchOpen {
+  height: var(--tap-sm);
+  width: var(--search-w);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--bg);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--sp-3);
+  color: var(--muted);
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: var(--fs-14);
+  color: var(--ink);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+/* 送信は Enter でできる。ボタンは読み上げと、スマホで欄を開いたときの押し場所のために置く */
+.submit {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  padding: 0 var(--sp-1);
+  min-height: var(--tap-sm);
+  cursor: pointer;
+}
+
+.close {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .topbar {
+    height: var(--topbar-h-mobile);
+    padding: 0 var(--sp-4);
+  }
+
+  .date {
+    display: none;
+  }
+
+  .searchToggle {
+    display: grid;
+  }
+
+  .search {
+    display: none;
+  }
+
+  /* 開いた欄は、上のバーいっぱいに重ねる */
+  .searchOpen {
+    position: absolute;
+    inset: var(--sp-2h) var(--sp-4);
+    width: auto;
+    height: auto;
+    z-index: var(--z-topbar);
+  }
+
+  .close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--tap-sm);
+    height: var(--tap-sm);
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+}

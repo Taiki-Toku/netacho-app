@@ -2,35 +2,36 @@
   display: grid;
   grid-template-columns: 4.5em 1fr auto;
   align-items: center;
-  gap: var(--space-3);
-  min-height: var(--space-6);
+  gap: var(--sp-3);
+  min-height: var(--sp-8);
 }
 
 .label {
-  font-size: var(--text-small);
-  font-weight: var(--weight-bold);
+  font-size: var(--fs-13);
+  color: var(--muted);
 }
 
 .cells {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: var(--space-1);
+  gap: var(--sp-1);
   max-width: 160px;
 }
 
 .on,
 .off {
-  height: var(--space-3);
+  height: var(--sp-2);
   border-radius: var(--radius-xs);
-  background: var(--color-line);
+  background: var(--surface-3);
 }
 
 .on {
-  background: var(--color-accent);
+  background: var(--accent);
 }
 
 .value {
-  font-size: var(--text-small);
-  color: var(--color-ink-muted);
+  font-size: var(--fs-13);
+  color: var(--ink-soft);
+  font-weight: var(--weight-semibold);
   font-variant-numeric: tabular-nums;
 }

@@ -1,115 +1,121 @@
-.status,
-.empty {
-  padding-block: var(--space-6);
-  color: var(--color-ink-muted);
-  text-align: center;
-}
-
-.corner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
-  padding-block: var(--space-5) var(--space-3);
-}
-
-.title {
-  font-size: var(--text-title);
-  font-weight: var(--weight-black);
-}
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  font-size: var(--text-small);
-  color: var(--color-ink-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.rundown {
-  background: var(--color-surface);
-  border-top: var(--line-strong) solid var(--color-ink);
-}
-
-.row {
-  border-bottom: var(--line-thin) solid var(--color-line);
-  content-visibility: auto;
-  contain-intrinsic-size: auto 96px;
-}
-
-.link {
+/* 今朝のトップ:文章 + 画像の大きな枠 */
+.feature {
+  margin-top: var(--sp-6);
   display: grid;
-  grid-template-columns: 2.6em minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  align-items: start;
-  min-height: var(--tap-min);
-  padding: var(--space-3);
+  grid-template-columns: 1fr 1.05fr;
+  min-height: var(--feature-min-h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface);
 }
 
-.link:active {
-  background: var(--color-surface-hover);
+.featureCopy {
+  padding: var(--sp-7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.featureTitle {
+  font-weight: var(--weight-semibold);
+  font-size: var(--fs-feature-heading);
+  line-height: var(--lh-title);
+  margin: var(--sp-3) 0;
 }
 
 @media (hover: hover) {
-  .link:hover {
-    background: var(--color-surface-hover);
+  .featureLink:hover {
+    color: var(--accent-strong);
   }
 }
 
-.no {
-  padding-top: var(--space-1);
-  font-size: var(--text-title);
-  font-weight: var(--weight-black);
-  line-height: 1;
-  color: var(--color-accent);
+.featureDesc {
+  font-size: var(--fs-14);
+  color: var(--muted);
+  line-height: var(--lh-loose);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2h);
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  margin-top: var(--sp-4h);
+  width: 100%;
+}
+
+.metaSave {
+  margin-left: auto;
+}
+
+.featureImage {
+  min-height: var(--feature-min-h);
+  background: var(--surface-3);
+  font-size: var(--fs-28);
+}
+
+/* 脆弱性ウォッチの帯。右の列が隠れる幅(768〜1100px)だけ出す */
+.promo {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4h);
+  padding: var(--sp-3h) var(--sp-4);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.promoTitle {
+  display: block;
+  font-size: var(--fs-14);
+}
+
+.promoText {
+  display: block;
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin-top: var(--sp-0h);
+}
+
+.promoScore {
+  font-size: var(--fs-21);
+  font-weight: var(--weight-bold);
+  color: var(--sev-critical);
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.main {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-1);
-  min-width: 0;
+@media (min-width: 768px) and (max-width: 1100px) {
+  .promo {
+    display: flex;
+  }
 }
 
-.ttl {
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-snug);
-  text-wrap: pretty;
-}
+@media (max-width: 767px) {
+  .feature {
+    display: flex;
+    flex-direction: column-reverse;
+    min-height: 0;
+    margin-top: var(--sp-4h);
+  }
 
-.lead {
-  font-size: var(--text-small);
-  line-height: var(--leading-snug);
-  color: var(--color-ink-muted);
-}
+  .featureImage {
+    height: var(--feature-img-h-mobile);
+    min-height: var(--feature-img-h-mobile);
+  }
 
-.sub {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font-size: var(--text-caption);
-  color: var(--color-ink-muted);
-}
+  .featureCopy {
+    padding: var(--sp-4h) var(--sp-4h) var(--sp-5);
+  }
 
-/* 1本目はトップニュース。見出しとリードを大きく出す */
-.featured .ttl {
-  font-size: var(--text-lead);
-}
-
-.featured .no {
-  font-size: var(--text-headline);
-}
-
-/* 評価済みは薄くする */
-.done .no,
-.done .ttl {
-  color: var(--color-ink-muted);
-  font-weight: var(--weight-regular);
-}
-
-.link > :last-child:not(.main) {
-  align-self: center;
+  .featureTitle {
+    font-size: var(--fs-21);
+    margin: var(--sp-2) 0;
+  }
 }

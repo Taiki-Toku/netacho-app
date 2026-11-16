@@ -1,0 +1,40 @@
+.tabs {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .tabs {
+    position: sticky;
+    top: var(--topbar-h-mobile);
+    z-index: var(--z-tabs);
+    display: flex;
+    gap: var(--sp-5h);
+    padding: 0 var(--sp-4);
+    overflow-x: auto;
+    white-space: nowrap;
+    border-bottom: var(--line-thin) solid var(--line);
+    background: var(--bg);
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab,
+  .tabOn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: var(--tab-h);
+    color: var(--muted);
+    font-size: var(--fs-14);
+    border-bottom: var(--line-strong) solid transparent;
+  }
+
+  .tabOn {
+    color: var(--ink);
+    font-weight: var(--weight-bold);
+    border-bottom-color: var(--accent-strong);
+  }
+}

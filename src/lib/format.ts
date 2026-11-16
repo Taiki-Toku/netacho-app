@@ -1,4 +1,4 @@
-// 日付の整形。決め打ちの書式ではなく Intl を使う
+// 日付の整形。決め打ちの書式ではなく Intl.DateTimeFormat('ja-JP', …) を使う(仕様 7 章)
 export interface DateParts {
   year: string
   month: string
@@ -54,6 +54,17 @@ export function formatDateShort(value: string): string {
   return date === null ? value : shortFormatter.format(date)
 }
 
+const headerFormatter = new Intl.DateTimeFormat('ja-JP', { month: 'long', day: 'numeric', weekday: 'long' })
+
+/** 「1月2日 金曜日」の形(上のバーと「今朝のネタ」の添え書き用)。読めない日付は元の文字列のまま */
+export function formatDateHeader(value: string): string {
+  const date = parseIsoDate(value)
+  if (date === null) return value
+  const parts = headerFormatter.formatToParts(date)
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? ''
+  return `${pick('month')}月${pick('day')}日 ${pick('weekday')}`
+}
+
 // 公式フィードの公開日時(UTC の ISO 8601)を、端末の設定に依らず日本時間で出す
 const jstFormatter = new Intl.DateTimeFormat('ja-JP', {
   timeZone: 'Asia/Tokyo',
@@ -68,4 +79,17 @@ const jstFormatter = new Intl.DateTimeFormat('ja-JP', {
 export function formatJstDateTime(iso: string): string {
   const time = Date.parse(iso)
   return Number.isNaN(time) ? '' : jstFormatter.format(new Date(time))
+}
+
+const jstDateFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', month: 'long', day: 'numeric' })
+
+/** 「1月3日」の形(日本時間。脆弱性の公開日用)。読めない日時は空文字 */
+export function formatJstDate(iso: string): string {
+  const time = Date.parse(iso)
+  return Number.isNaN(time) ? '' : jstDateFormatter.format(new Date(time))
+}
+
+/** CVSS の点数。「9.8」のように小数第1位まで。無ければ「－」 */
+export function formatCvss(value: number | null): string {
+  return value === null ? '－' : value.toFixed(1)
 }

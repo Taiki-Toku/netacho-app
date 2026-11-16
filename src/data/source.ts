@@ -27,10 +27,21 @@ const LOCAL_FEED_PATH = 'local-data/feed.json'
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
+// 見本のネタが参照する画像(fixtures/images/*.svg)。ビルドに取り込み、配られる場所の URL に置き換える。
+// 開発中は "/fixtures/images/desk.svg"、ビルド後は dist の中の assets/ の URL になる(どちらも同じオリジン)
+const FIXTURE_IMAGE_PREFIX = 'fixtures/images/'
+const fixtureImages = import.meta.glob<string>('../../fixtures/images/*.svg', { eager: true, query: '?url', import: 'default' })
+
+function withBundledImage(item: Item): Item {
+  if (!item.imageUrl?.startsWith(FIXTURE_IMAGE_PREFIX)) return item
+  const bundled = fixtureImages[`../../${item.imageUrl}`]
+  return bundled === undefined ? item : { ...item, imageUrl: bundled }
+}
+
 /** 見本のデータ一式(fixtures)。試験と、本物のデータが無いときの表示に使う */
 export function fixtureData(): LoadedData {
   return {
-    items: parseItems([...sampleItems, ...sampleItemsExtra]),
+    items: parseItems([...sampleItems, ...sampleItemsExtra]).map(withBundledImage),
     genres: parseGenres(genresJson),
     feed: parseFeed(sampleFeed),
     source: 'fixtures',

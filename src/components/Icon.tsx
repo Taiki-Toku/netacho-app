@@ -1,36 +1,37 @@
-// 画面で使うアイコン。絵文字は使わず、線の太さをそろえた SVG を自前で持つ
+// 画面で使うアイコン。絵文字は使わず、線の太さをそろえた SVG を自前で持つ(形は docs/design_reference/nodal-prototype.html から)
 import type { SVGProps } from 'react'
+import styles from './Icon.module.css'
 
-export type IconName = 'rundown' | 'archive' | 'search' | 'settings' | 'back'
+export type IconName = 'search' | 'back' | 'bookmark' | 'home' | 'feed' | 'shield' | 'close'
 
 const PATHS: Record<IconName, string> = {
+  // さがす:虫めがね
+  search: 'M17.6 10.8a6.8 6.8 0 1 1-13.6 0 6.8 6.8 0 0 1 13.6 0Zm-1.6 5.2 5 5',
   // 戻る:左向きの山形
-  back: 'M15 5l-7 7 7 7',
-  // 進行表:番号つきの行
-  rundown: 'M4 6h2M9 6h11M4 12h2M9 12h11M4 18h2M9 18h11',
-  // バックナンバー:めくるカレンダー
-  archive: 'M4 7h16v13H4zM4 11h16M8 4v4M16 4v4',
-  // 探す:虫めがね
-  search: 'M15.5 15.5 20 20M4 10.5a6.5 6.5 0 1 0 13 0 6.5 6.5 0 1 0-13 0z',
-  // 設定:つまみ
-  settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M13 4.5v5M7 14.5v5',
+  back: 'm15 18-6-6 6-6',
+  // 保存:しおり
+  bookmark: 'M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4Z',
+  // ホーム:家
+  home: 'm3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1Z',
+  // 公式情報:配信(RSS)の弧
+  feed: 'M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8M7.5 18a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z',
+  // 脆弱性:盾
+  shield: 'M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z',
+  // 閉じる
+  close: 'M6 6l12 12M18 6 6 18',
 }
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName
+  /** 塗りつぶす(保存済みのしおりなど) */
+  filled?: boolean
 }
 
-export function Icon({ name, ...rest }: IconProps) {
+export function Icon({ name, filled = false, className, ...rest }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      className={[styles.icon, filled ? styles.filled : '', className ?? ''].filter(Boolean).join(' ')}
       aria-hidden="true"
       focusable="false"
       {...rest}

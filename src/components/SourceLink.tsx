@@ -5,11 +5,20 @@ import styles from './SourceLink.module.css'
 interface SourceLinkProps {
   url: string
   title: string
+  /** リンクの文字。既定は「元の記事を読む」 */
+  linkLabel?: string
 }
 
-export function SourceLink({ url, title }: SourceLinkProps) {
+export function SourceLink({ url, title, linkLabel = '元の記事を読む' }: SourceLinkProps) {
   if (url === '' && title === '') {
-    return <p className={styles.none}>出典なし</p>
+    return (
+      <div className={styles.source}>
+        <div>
+          <span className={styles.label}>出典</span>
+          <p className={styles.text}>出典なし</p>
+        </div>
+      </div>
+    )
   }
 
   const href = httpsHref(url)
@@ -18,23 +27,28 @@ export function SourceLink({ url, title }: SourceLinkProps) {
   if (href === null) {
     // リンクにできない URL は、文字として出すだけ。href には絶対に入れない
     return (
-      <div className={styles.block}>
-        <p className={styles.text}>{label}</p>
-        {url !== '' && title !== '' ? <p className={styles.url}>{url}</p> : null}
-        {url !== '' ? <p className={styles.note}>この出典はリンクにしていません(https ではない形のため)</p> : null}
+      <div className={styles.source}>
+        <div>
+          <span className={styles.label}>出典</span>
+          <p className={styles.text}>{label}</p>
+          {url !== '' && title !== '' ? <p className={styles.url}>{url}</p> : null}
+          {url !== '' ? <p className={styles.note}>この出典はリンクにしていません(https ではない形のため)</p> : null}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={styles.block}>
+    <div className={styles.source}>
+      <div>
+        <span className={styles.label}>出典</span>
+        <p className={styles.text}>{label}</p>
+        <p className={styles.url}>{hostOf(href)}</p>
+      </div>
       {/* 別タブで開く。rel で、開いた先からこの画面を操作されないようにする */}
-      <a className={styles.link} href={href} target="_blank" rel="noopener noreferrer">
-        <span className={styles.text}>{label}</span>
-        <span className={styles.url}>
-          {hostOf(href)}
-          <span className="visually-hidden">(新しいタブで開く)</span>
-        </span>
+      <a className={styles.action} href={href} target="_blank" rel="noopener noreferrer">
+        {linkLabel}
+        <span className="visually-hidden">(新しいタブで開く)</span>
       </a>
     </div>
   )

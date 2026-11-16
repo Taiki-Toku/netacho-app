@@ -1,0 +1,4 @@
+.cards {
+  display: grid;
+  gap: var(--sp-2h);
+}

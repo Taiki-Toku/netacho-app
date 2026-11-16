@@ -1,0 +1,30 @@
+.toast,
+.toastShown {
+  position: fixed;
+  bottom: var(--sp-6);
+  left: 50%;
+  z-index: var(--z-toast);
+  transform: translate(-50%, var(--sp-3h));
+  padding: var(--sp-2h) var(--sp-4);
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--fs-13);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--duration) var(--ease),
+    transform var(--duration) var(--ease);
+}
+
+.toastShown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 767px) {
+  .toast,
+  .toastShown {
+    bottom: calc(var(--sp-20) + var(--sp-1) + env(safe-area-inset-bottom, 0px));
+  }
+}

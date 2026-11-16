@@ -1,343 +1,216 @@
-.status,
-.notFound {
-  padding-block: var(--space-6);
-  text-align: center;
+.detail {
+  max-width: var(--detail-max);
+  margin: 0 auto;
 }
 
-.status {
-  color: var(--color-ink-muted);
-}
-
-.notFound {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-3);
-}
-
-.notFoundTitle {
-  font-size: var(--text-title);
-  font-weight: var(--weight-black);
-}
-
-.muted {
-  font-size: var(--text-small);
-  color: var(--color-ink-muted);
-}
-
-/* ネタが切り替わるときの「コーナー切り替え」。横ずれ1か所だけ */
-.article {
-  display: grid;
-  gap: var(--space-5);
-  padding-block: var(--space-4) var(--space-6);
-  /* 下に固定の前後ボタンのぶん、本文の末尾を空ける */
-  padding-bottom: calc(var(--nav-height) + var(--space-6));
-  animation: slide-in var(--duration-base) var(--ease-out);
-}
-
-@keyframes slide-in {
-  from {
-    transform: translateX(var(--space-4));
-    opacity: 0;
-  }
-
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-
-.crumb {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-3);
-  font-size: var(--text-small);
-}
-
-.backLink {
+.back {
   display: inline-flex;
   align-items: center;
-  min-height: var(--tap-min);
-  padding-inline: var(--space-2);
-  margin-inline-start: calc(-1 * var(--space-2));
-  color: var(--color-accent);
-  font-weight: var(--weight-bold);
+  gap: var(--sp-2);
+  min-height: var(--tap);
+  color: var(--muted);
+  font-size: var(--fs-13);
+  margin-bottom: var(--sp-3);
 }
 
-.backIcon {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  margin-inline-end: var(--space-1);
+@media (hover: hover) {
+  .back:hover {
+    color: var(--accent);
+  }
 }
 
-.position {
+.title {
+  font-size: var(--fs-detail-heading);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-semibold);
+  margin: var(--sp-3) 0;
+  outline-offset: var(--sp-1);
+}
+
+.metaRow {
   display: flex;
-  gap: var(--space-3);
-  color: var(--color-ink-muted);
+  align-items: center;
+  gap: var(--sp-2h);
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: var(--fs-12);
   font-variant-numeric: tabular-nums;
 }
 
-/* テロップ(承認済みの見本と同じ形):黄色のコーナー札が帯の上に少しかぶり、帯の左上を斜めに切る */
-.telop {
-  display: grid;
-  gap: 0;
+.actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: var(--sp-4) 0;
 }
 
-.corner {
-  justify-self: start;
-  max-width: calc(100% - var(--space-5));
-  margin-left: var(--space-3);
-  padding: var(--space-1) var(--space-3);
-  background: var(--color-highlight);
-  color: var(--color-on-highlight);
-  font-size: var(--text-small);
-  font-weight: var(--weight-black);
-  line-height: var(--leading-snug);
-  transform: skewX(var(--skew));
-}
-
-.cornerText {
-  display: inline-block;
-  max-width: 100%;
+.hero {
+  width: 100%;
+  height: var(--hero-h);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: top;
-  transform: skewX(calc(-1 * var(--skew)));
-}
-
-.band {
-  padding: var(--space-3) var(--space-4) var(--space-4);
-  background: var(--color-band);
-  color: var(--color-on-band);
-  clip-path: polygon(var(--space-3) 0, 100% 0, 100% 100%, 0 100%);
-  font-size: var(--text-headline);
-  font-weight: var(--weight-black);
-  line-height: var(--leading-tight);
-  text-wrap: pretty;
-}
-
-/* clip-path で焦点の枠が切れるため、帯の内側に枠を描く */
-.band:focus-visible {
-  outline-offset: calc(-1 * var(--space-1));
+  margin: var(--sp-2) 0 var(--sp-6);
+  background: var(--surface-3);
+  font-size: var(--fs-32);
 }
 
 .lead {
-  padding: var(--space-3) var(--space-1) 0;
-  font-size: var(--text-lead);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-snug);
+  font-size: var(--fs-16);
+  line-height: var(--lh-text);
+  color: var(--ink-soft);
+  margin: 0 0 var(--sp-4h);
 }
 
-.section {
-  display: grid;
-  gap: var(--space-3);
+.box {
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5) var(--sp-5h);
+  margin: 0 0 var(--sp-7);
 }
 
-/* コーナー見出し。太い短い線を左に */
-.heading {
+.boxText {
+  margin: var(--sp-2h) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  line-height: 1.95;
+  /* 要約は改行を含むことがある。改行は保ち、連続する空白は詰める */
+  white-space: pre-line;
+}
+
+.aiNote {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin: var(--sp-2h) 0 0;
+  min-height: var(--sp-5);
+}
+
+.bodyHeading {
+  font-size: var(--fs-19);
+  font-weight: var(--weight-semibold);
+  margin: var(--sp-8) 0 var(--sp-2h);
+}
+
+.bodyText {
+  margin: 0 0 var(--sp-4h);
+  font-size: var(--fs-16);
+  line-height: var(--lh-text);
+  color: var(--ink-soft);
+  white-space: pre-line;
+}
+
+.fields {
+  margin: 0;
+}
+
+.field {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-small);
-  font-weight: var(--weight-black);
-  letter-spacing: 0.08em;
-  color: var(--color-ink-muted);
+  justify-content: space-between;
+  gap: var(--sp-3h);
+  border-bottom: var(--line-thin) solid var(--line);
+  padding: var(--sp-2h) 0;
+  font-size: var(--fs-13);
 }
 
-.heading::before {
-  content: '';
-  width: var(--space-3);
-  height: var(--line-tab);
-  background: var(--color-accent);
+.field dt {
+  color: var(--muted);
+  flex: none;
 }
 
-.body {
-  /* summary は改行を含むことがある。改行は保ち、連続する空白は詰める */
-  white-space: pre-line;
-  /* 1行は全角 40 字まで(PC の幅で読みにくくならないように) */
-  max-width: 40em;
-}
-
-/* 注意点(承認済みの見本と同じ形):紺の「注意」札 + 黄色の強調テロップ */
-.caution {
-  display: grid;
-  grid-template-columns: auto 1fr;
-}
-
-.cautionTag {
-  display: grid;
-  place-items: center;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-band);
-  color: var(--color-on-band);
-  font-size: var(--text-small);
-  font-weight: var(--weight-black);
-}
-
-.cautionBody {
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-highlight);
-  color: var(--color-on-highlight);
-  font-size: var(--text-small);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-snug);
-  white-space: pre-line;
+.field dd {
+  margin: 0;
+  text-align: right;
+  font-weight: var(--weight-semibold);
+  min-width: 0;
 }
 
 .meters {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
 }
 
-.trust {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  font-size: var(--text-small);
+.rate {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
 }
 
-.trustLabel {
-  color: var(--color-ink-muted);
+.rateButton,
+.rateOn {
+  min-height: var(--tap-lg);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-14);
+  cursor: pointer;
 }
 
-.trustValue {
+.rateOn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: var(--weight-bold);
 }
 
-.facts {
-  display: grid;
-  grid-template-columns: 5em 1fr;
-  gap: var(--space-2) var(--space-3);
-  margin: 0;
-  font-size: var(--text-small);
-}
-
-.facts dt {
-  color: var(--color-ink-muted);
-  padding-top: var(--space-1);
-}
-
-.facts dd {
-  margin: 0;
-  min-width: 0;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.tag {
-  padding: var(--space-1) var(--space-2);
-  border: var(--line-thin) solid var(--color-line);
-  border-radius: var(--radius-xs);
-  line-height: var(--leading-snug);
-}
-
-.badgeAccent,
-.badgeBand {
-  display: inline-block;
-  padding: var(--space-1) var(--space-2);
-  font-weight: var(--weight-black);
-  line-height: var(--leading-snug);
-  transform: skewX(var(--skew));
-}
-
-.badgeText {
-  display: inline-block;
-  transform: skewX(calc(-1 * var(--skew)));
-}
-
-.badgeAccent {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.badgeBand {
-  background: var(--color-band);
-  color: var(--color-on-band);
-}
-
-.unset {
-  color: var(--color-ink-muted);
-}
-
 .memo {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface);
-  border-top: var(--line-thin) solid var(--color-line);
-  border-bottom: var(--line-thin) solid var(--color-line);
+  width: 100%;
+  margin-top: var(--sp-2h);
+  padding: var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-15);
+  line-height: var(--lh-body);
+  resize: vertical;
 }
 
-.memoHeading {
-  font-size: var(--text-caption);
-  font-weight: var(--weight-black);
-  letter-spacing: 0.08em;
-  color: var(--color-ink-muted);
+.memo::placeholder {
+  color: var(--muted);
 }
 
-/* 前後の移動。下の切り替えの直上に固定し、親指で届く位置に置く(REQ-N-03) */
+/* 前後の移動 */
 .pager {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
-  z-index: var(--z-nav);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: var(--space-2);
-  max-width: var(--content-width);
-  margin-inline: auto;
-  padding: var(--space-2) max(var(--space-4), env(safe-area-inset-left, 0px)) var(--space-2)
-    max(var(--space-4), env(safe-area-inset-right, 0px));
-  background: var(--color-bg);
-  border-top: var(--line-thin) solid var(--color-line);
+  gap: var(--sp-2);
+  margin-top: var(--sp-9);
+  padding-top: var(--sp-4);
+  border-top: var(--line-thin) solid var(--line);
 }
 
-.pagerPrimary,
-.pagerQuiet,
+.pagerLink,
 .pagerDisabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--tap-min);
-  padding-inline: var(--space-3);
+  min-height: var(--tap);
+  padding: 0 var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
   border-radius: var(--radius-sm);
-  font-weight: var(--weight-bold);
-  transition: transform var(--duration-fast) var(--ease-out);
+  background: var(--surface);
+  font-size: var(--fs-13);
+  color: var(--ink-soft);
 }
 
-.pagerPrimary {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.pagerQuiet {
-  background: var(--color-surface);
-  color: var(--color-ink);
-  border: var(--line-thin) solid var(--color-line);
-}
-
-.pagerPrimary:active,
-.pagerQuiet:active {
-  transform: translateY(var(--line-thin));
+@media (hover: hover) {
+  .pagerLink:hover {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+  }
 }
 
 .pagerDisabled {
-  color: var(--color-ink-muted);
-  border: var(--line-thin) dashed var(--color-line);
+  color: var(--muted);
+  border-style: dashed;
+  background: transparent;
 }
 
 .pagerPosition {
   min-width: 3em;
   text-align: center;
-  font-size: var(--text-small);
-  color: var(--color-ink-muted);
+  font-size: var(--fs-13);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }

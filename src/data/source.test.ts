@@ -8,7 +8,7 @@ function jsonResponse(body: unknown, init: { status?: number; contentType?: stri
   })
 }
 
-const localItems = [{ id: '2026-03-01-01', date: '2026-03-01', order: 1, title: 'ローカルの1本' }]
+const localItems = [{ id: '2026-03-01-01', date: '2026-03-01', order: 1, title: 'ローカルの1本', imageUrl: 'fixtures/images/desk.svg' }]
 const localFeed = [{ id: 'local-feed-1', kind: 'vuln', publishedAt: '2026-03-01T00:00:00Z', title: 'ローカルのフィード' }]
 
 describe('loadData(データを読む所)', () => {
@@ -25,6 +25,8 @@ describe('loadData(データを読む所)', () => {
     expect(data.source).toBe('local')
     expect(data.items).toHaveLength(1)
     expect(data.items[0]?.title).toBe('ローカルの1本')
+    // 本物のデータの画像 URL は書き換えない(見本の画像への置き換えは fixtures だけ)
+    expect(data.items[0]?.imageUrl).toBe('fixtures/images/desk.svg')
     expect(data.feed).toHaveLength(1)
     expect(data.feed[0]?.title).toBe('ローカルのフィード')
     expect(data.genres.length).toBeGreaterThan(0)
@@ -38,12 +40,21 @@ describe('loadData(データを読む所)', () => {
     expect(data.feed).toEqual([])
   })
 
-  it('404 なら見本データに落ちる(ネタ 9+6 本、フィード 13 本)', async () => {
+  it('404 なら見本データに落ちる(ネタ 9+6 本、フィード 14 本)', async () => {
     const data = await loadData(() => Promise.resolve(new Response('not found', { status: 404 })))
     expect(data.source).toBe('fixtures')
     expect(data.items).toHaveLength(15)
-    expect(data.feed).toHaveLength(13)
+    expect(data.feed).toHaveLength(14)
     expect(data).toEqual(fixtureData())
+  })
+
+  it('見本のネタの画像(fixtures/images/)は、ビルドに取り込んだ場所の URL に置き換える。それ以外の URL はそのまま', () => {
+    const data = fixtureData()
+    const withImage = data.items.find((item) => item.id === '2026-01-02-01')
+    expect(withImage?.imageUrl).toMatch(/fixtures\/images\/desk\.svg$/)
+    expect(withImage?.imageUrl).not.toBe('fixtures/images/desk.svg')
+    expect(data.items.find((item) => item.id === '2026-01-02-07')?.imageUrl).toBe('javascript:alert(1)')
+    expect(data.items.find((item) => item.id === '2026-01-02-03')).not.toHaveProperty('imageUrl')
   })
 
   it('開発サーバーが index.html を 200 で返しても(JSON でない)、見本データに落ちる', async () => {

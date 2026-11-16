@@ -1,47 +1,96 @@
-// アプリの骨組み:番組ヘッダー + 画面 + 下の切り替え
-import { useRoute, type Route } from './app/router.ts'
-import { BottomNav } from './components/BottomNav.tsx'
-import { ProgramHeader } from './components/ProgramHeader.tsx'
-import { DataProvider } from './data/DataProvider.tsx'
+// アプリの骨組み(仕様 3 章):上のバー + 左メニュー(PC)/ジャンルのタブ(スマホ)+ 中央 + 右の列(PC)+ 下のメニュー(スマホ)
+import { useEffect, useMemo } from 'react'
+import { screenKey, useRoute, type Route } from './app/router.ts'
+import { GenreTabs } from './components/GenreTabs.tsx'
+import { MobileNav } from './components/MobileNav.tsx'
+import { RightRail } from './components/RightRail.tsx'
+import { Sidebar } from './components/Sidebar.tsx'
+import { ToastProvider } from './components/Toast.tsx'
+import { TopBar } from './components/TopBar.tsx'
+import pageStyles from './components/page.module.css'
+import { DataProvider, useData } from './data/DataProvider.tsx'
+import { latestDate, menuGenres, vulnerabilities } from './data/queries.ts'
 import type { LoadedData } from './data/source.ts'
-import { DesignLab } from './screens/lab/DesignLab.tsx'
+import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore } from './data/userStore.ts'
+import { formatDateHeader } from './lib/format.ts'
+import { FeedScreen } from './screens/FeedScreen.tsx'
+import { GenreScreen } from './screens/GenreScreen.tsx'
 import { ItemScreen } from './screens/ItemScreen.tsx'
-import { PlaceholderScreen } from './screens/PlaceholderScreen.tsx'
+import { SavedScreen } from './screens/SavedScreen.tsx'
+import { SearchScreen } from './screens/SearchScreen.tsx'
 import { TodayScreen } from './screens/TodayScreen.tsx'
+import { VulnDetailScreen } from './screens/VulnDetailScreen.tsx'
+import { VulnScreen } from './screens/VulnScreen.tsx'
 import styles from './App.module.css'
 
-function screenFor(route: Route) {
+function screenFor(route: Route, data: LoadedData) {
   switch (route.name) {
     case 'today':
-      return <TodayScreen />
+      return <TodayScreen data={data} />
+    case 'genre':
+      return <GenreScreen data={data} id={route.id} kind={route.kind} />
+    case 'feed':
+      return <FeedScreen data={data} kind={route.kind} />
+    case 'vuln':
+      return <VulnScreen data={data} severity={route.severity} />
+    case 'vuln-detail':
+      return <VulnDetailScreen data={data} id={route.id} />
     case 'item':
-      return <ItemScreen id={route.id} />
-    case 'archive':
-    case 'archive-date':
-      return <PlaceholderScreen title="バックナンバー" />
+      return <ItemScreen data={data} id={route.id} />
+    case 'saved':
+      return <SavedScreen data={data} />
     case 'search':
-      return <PlaceholderScreen title="探す" />
-    case 'settings':
-      return <PlaceholderScreen title="設定" />
-    case 'design-lab':
-      return null
+      return <SearchScreen data={data} q={route.q} />
   }
+}
+
+/** 右の列を出す画面(詳細と脆弱性の一覧では出さない) */
+function hasRail(route: Route): boolean {
+  return route.name === 'today' || route.name === 'genre' || route.name === 'feed' || route.name === 'saved' || route.name === 'search'
 }
 
 function Shell() {
   const route = useRoute()
-  // デザイン案の見比べは、番組ヘッダーや下の切り替えを持たない独立した画面(仮)
-  if (route.name === 'design-lab') return <DesignLab />
+  const state = useData()
+  const data = state.status === 'ready' ? state.data : null
+  const genres = useMemo(() => (data === null ? [] : menuGenres(data.genres)), [data])
+  const savedCount = useUserState().saved.length
+  const vulnCount = data === null ? 0 : vulnerabilities(data.feed).length
+  const date = data === null ? null : latestDate(data.items)
+
+  // 画面の種類が変わったら先頭に戻す(絞り込みを変えただけのときは動かさない)
+  const key = screenKey(route)
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [key])
+
   return (
     <div className={styles.app}>
       <a className={styles.skip} href="#main">
         本文へ移動
       </a>
-      <ProgramHeader />
-      <main id="main" className={styles.main} tabIndex={-1}>
-        {screenFor(route)}
-      </main>
-      <BottomNav route={route} />
+      <TopBar route={route} dateLabel={date === null ? '' : formatDateHeader(date)} />
+      <GenreTabs route={route} genres={genres} />
+      <div className={styles.workspace}>
+        <Sidebar route={route} genres={genres} vulnCount={vulnCount} savedCount={savedCount} />
+        <main id="main" className={styles.main} tabIndex={-1}>
+          {state.status === 'loading' ? (
+            <p className={pageStyles.status} role="status">
+              読み込み中…
+            </p>
+          ) : state.status === 'error' ? (
+            <p className={pageStyles.status} role="alert">
+              データを読み込めませんでした。{state.message}
+            </p>
+          ) : (
+            <div className={hasRail(route) ? styles.contentGrid : styles.contentSingle}>
+              <section className={styles.mainColumn}>{screenFor(route, state.data)}</section>
+              {hasRail(route) ? <RightRail data={state.data} /> : null}
+            </div>
+          )}
+        </main>
+      </div>
+      <MobileNav route={route} />
     </div>
   )
 }
@@ -49,12 +98,19 @@ function Shell() {
 interface AppProps {
   /** 試験で差し替えるため */
   load?: () => Promise<LoadedData>
+  /** 保存・評価・メモの置き場。試験で差し替えるため。既定は端末の localStorage */
+  userStore?: UserStore
 }
 
-export function App({ load }: AppProps) {
+export function App({ load, userStore }: AppProps) {
+  const store = useMemo(() => userStore ?? createDefaultUserStore(), [userStore])
   return (
     <DataProvider load={load}>
-      <Shell />
+      <UserStoreProvider value={store}>
+        <ToastProvider>
+          <Shell />
+        </ToastProvider>
+      </UserStoreProvider>
     </DataProvider>
   )
 }

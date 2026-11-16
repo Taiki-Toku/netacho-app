@@ -61,7 +61,10 @@
   "title": "架空:見本ファイアウォールの管理画面に、認証を回避される脆弱性(悪用を確認)",
   "publishedAt": "2026-01-03T04:10:00Z",
   "url": "https://example.com/feed/7",
-  "severity": "critical"
+  "severity": "critical",
+  "cve": "CVE-2026-90001",
+  "cvss": 9.8,
+  "status": "修正版 7.4.3 あり"
  },
  {
   "id": "feed-008",
@@ -71,7 +74,10 @@
   "title": "架空:サンプルOS Server の印刷サービスに、権限を上げられる脆弱性",
   "publishedAt": "2026-01-02T22:00:00Z",
   "url": "https://example.com/feed/8",
-  "severity": "high"
+  "severity": "high",
+  "cve": "CVE-2026-90002",
+  "cvss": 8.1,
+  "status": "修正版あり"
  },
  {
   "id": "feed-009",
@@ -81,7 +87,10 @@
   "title": "架空:サンプルVPN に、遠隔からコードを実行される脆弱性",
   "publishedAt": "2026-01-01T15:45:00Z",
   "url": "https://example.com/feed/9",
-  "severity": "critical"
+  "severity": "critical",
+  "cve": "CVE-2026-90003",
+  "cvss": 9.1,
+  "status": "回避策あり"
  },
  {
   "id": "feed-010",
@@ -91,7 +100,10 @@
   "title": "架空:サンプルDB に、情報が漏れる脆弱性",
   "publishedAt": "2025-12-30T10:00:00Z",
   "url": "https://example.com/feed/10",
-  "severity": "medium"
+  "severity": "medium",
+  "cve": "CVE-2026-90004",
+  "cvss": 6.5,
+  "status": "修正予定"
  },
  {
   "id": "feed-011",
@@ -122,5 +134,18 @@
   "publishedAt": "2025-12-31T18:30:00Z",
   "url": "http://example.com/not-https",
   "status": "復旧済み"
+ },
+ {
+  "id": "feed-014",
+  "kind": "vuln",
+  "product": "サンプルペイント",
+  "vendor": "見本クリエイティブ",
+  "title": "架空:サンプルペイントで、細工したファイルを開くとアプリが止まる脆弱性",
+  "publishedAt": "2025-12-29T07:00:00Z",
+  "url": "https://example.com/feed/14",
+  "severity": "low",
+  "cve": "CVE-2026-90005",
+  "cvss": 3.7,
+  "status": "修正予定"
  }
 ]

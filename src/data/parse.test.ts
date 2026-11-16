@@ -15,6 +15,16 @@ describe('parseItems(信用しないデータの整形)', () => {
     expect(parseItems([...sampleItems, ...sampleItemsExtra])).toHaveLength(15)
   })
 
+  it('imageUrl は文字列のときだけ持ち、無い・空・文字列でないときは項目ごと無い。中身は解釈しない', () => {
+    const items = parseItems(sampleItems)
+    expect(items[0]?.imageUrl).toBe('fixtures/images/desk.svg')
+    // 02-03 は画像なし
+    expect(items[2]).not.toHaveProperty('imageUrl')
+    expect(parseItem({ id: 'a', date: '2026-01-01', imageUrl: '' })).not.toHaveProperty('imageUrl')
+    expect(parseItem({ id: 'a', date: '2026-01-01', imageUrl: 42 })).not.toHaveProperty('imageUrl')
+    expect(parseItem({ id: 'a', date: '2026-01-01', imageUrl: 'javascript:alert(1)' })?.imageUrl).toBe('javascript:alert(1)')
+  })
+
   it('配列でないもの、id や date が無いものは捨てる', () => {
     expect(parseItems(null)).toEqual([])
     expect(parseItems({ id: 'x' })).toEqual([])
@@ -61,12 +71,18 @@ describe('parseItems(信用しないデータの整形)', () => {
 })
 
 describe('parseFeed(公式フィードの整形)', () => {
-  it('見本のフィードは全件読める。severity は vuln、status は outage のときだけ持つ', () => {
+  it('見本のフィードは全件読める。severity・cve・cvss は vuln、status は outage と vuln のときだけ持つ', () => {
     const feed = parseFeed(sampleFeed)
-    expect(feed).toHaveLength(13)
-    expect(feed.find((e) => e.id === 'feed-007')).toMatchObject({ kind: 'vuln', severity: 'critical', status: '' })
-    expect(feed.find((e) => e.id === 'feed-011')).toMatchObject({ kind: 'outage', status: '調査中', severity: '' })
-    expect(feed.find((e) => e.id === 'feed-001')).toMatchObject({ kind: 'release', severity: '', status: '' })
+    expect(feed).toHaveLength(14)
+    expect(feed.find((e) => e.id === 'feed-007')).toMatchObject({
+      kind: 'vuln',
+      severity: 'critical',
+      cve: 'CVE-2026-90001',
+      cvss: 9.8,
+      status: '修正版 7.4.3 あり',
+    })
+    expect(feed.find((e) => e.id === 'feed-011')).toMatchObject({ kind: 'outage', status: '調査中', severity: '', cve: '', cvss: null })
+    expect(feed.find((e) => e.id === 'feed-001')).toMatchObject({ kind: 'release', severity: '', status: '', cve: '', cvss: null })
   })
 
   it('id・kind・publishedAt が形になっていないものは捨てる。知らない kind も捨てる', () => {
@@ -77,12 +93,31 @@ describe('parseFeed(公式フィードの整形)', () => {
     expect(parseFeed([{ id: 'a', kind: 'release', publishedAt: '2026-01-01T00:00:00Z' }])).toHaveLength(1)
   })
 
-  it('種類に合わない severity / status は捨て、知らない severity は空にする', () => {
-    expect(parseFeedEntry({ id: 'a', kind: 'release', publishedAt: '2026-01-01T00:00:00Z', severity: 'critical', status: '調査中' })).toMatchObject({
-      severity: '',
-      status: '',
-    })
+  it('種類に合わない severity / status / cve / cvss は捨て、知らない severity は空にする', () => {
+    expect(
+      parseFeedEntry({
+        id: 'a',
+        kind: 'release',
+        publishedAt: '2026-01-01T00:00:00Z',
+        severity: 'critical',
+        status: '調査中',
+        cve: 'CVE-1',
+        cvss: 9,
+      }),
+    ).toMatchObject({ severity: '', status: '', cve: '', cvss: null })
     expect(parseFeedEntry({ id: 'a', kind: 'vuln', publishedAt: '2026-01-01T00:00:00Z', severity: 'apocalyptic' })?.severity).toBe('')
+  })
+
+  it('cvss は 0〜10 の数だけを通し、小数第1位に丸める', () => {
+    const at = (cvss: unknown) => parseFeedEntry({ id: 'a', kind: 'vuln', publishedAt: '2026-01-01T00:00:00Z', cvss })?.cvss
+    expect(at(9.84)).toBe(9.8)
+    expect(at(0)).toBe(0)
+    expect(at(10)).toBe(10)
+    expect(at(11)).toBeNull()
+    expect(at(-1)).toBeNull()
+    expect(at('9.8')).toBeNull()
+    expect(at(undefined)).toBeNull()
+    expect(at(Number.NaN)).toBeNull()
   })
 
   it('同じ id は先のものを残し、URL や見出しの中身は解釈しない', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hostOf, httpsHref } from './safeUrl.ts'
+import { hostOf, httpsHref, imageHref } from './safeUrl.ts'
 
 describe('httpsHref(リンクにしてよい URL の判定)', () => {
   it('https: の URL だけを通す', () => {
@@ -37,6 +37,28 @@ describe('httpsHref(リンクにしてよい URL の判定)', () => {
   it('ユーザー名やパスワードを含む URL はリンクにしない(別のサイトに見せかける手口)', () => {
     expect(httpsHref('https://example.com@evil.example/')).toBeNull()
     expect(httpsHref('https://user:pass@example.com/')).toBeNull()
+  })
+})
+
+describe('imageHref(画像の src にしてよい URL の判定)', () => {
+  // jsdom の基準の URL は http://localhost:3000/
+  it('https: の URL と、同じオリジンに解決される相対パスを通す', () => {
+    expect(imageHref('https://example.com/a.png')).toBe('https://example.com/a.png')
+    expect(imageHref('fixtures/images/desk.svg')).toBe('http://localhost:3000/fixtures/images/desk.svg')
+    expect(imageHref('/fixtures/images/desk.svg')).toBe('http://localhost:3000/fixtures/images/desk.svg')
+    expect(imageHref('./assets/desk-abc.svg')).toBe('http://localhost:3000/assets/desk-abc.svg')
+    expect(imageHref('http://localhost:3000/same-origin.png')).toBe('http://localhost:3000/same-origin.png')
+  })
+
+  it('別のオリジンの http:、方式のある危ない URL、プロトコル相対は通さない', () => {
+    expect(imageHref('')).toBeNull()
+    expect(imageHref('http://example.com/a.png')).toBeNull()
+    expect(imageHref('//evil.example/a.png')).toBeNull()
+    expect(imageHref('javascript:alert(1)')).toBeNull()
+    expect(imageHref('data:image/svg+xml,<svg onload=alert(1)>')).toBeNull()
+    expect(imageHref('blob:http://localhost:3000/x')).toBeNull()
+    expect(imageHref('https://user:pass@example.com/a.png')).toBeNull()
+    expect(imageHref('http://localhost:3001/other-port.png')).toBeNull()
   })
 })
 

@@ -27,7 +27,8 @@
   },
   "rating": "",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/city.svg"
  },
  {
   "id": "2026-01-03-02",
@@ -55,7 +56,8 @@
   },
   "rating": "",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/lockn.svg"
  },
  {
   "id": "2026-01-03-03",
@@ -72,7 +74,7 @@
    "業界ニュース"
   ],
   "projects": [
-   "CyberArk"
+   "見本の特権ID管理"
   ],
   "tags": [
    "導入事例"
@@ -87,7 +89,8 @@
   },
   "rating": "good",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/aisle.svg"
  },
  {
   "id": "2026-01-03-04",
@@ -117,7 +120,8 @@
   },
   "rating": "",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/dusk.svg"
  },
  {
   "id": "2026-01-03-05",
@@ -134,7 +138,7 @@
    "業界ニュース"
   ],
   "projects": [
-   "CyberArk"
+   "見本の特権ID管理"
   ],
   "tags": [
    "試験の変更"
@@ -181,6 +185,7 @@
   },
   "rating": "",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/desk.svg"
  }
 ]

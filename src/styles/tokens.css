@@ -1,115 +1,147 @@
 /*
-  デザイントークン。色・文字・余白・形・動きの値は、ここにだけ書く。
-  既定はダーク(midnight blue)。<html data-theme="light"> でライト、
-  data-theme="system" で端末の設定に従う(2026-11-15 承認:案A「朝焼け」、ダークを主)。
+  デザイントークン(docs/design_spec.md の 1〜3 章)。色・文字・余白・形・大きさ・動きの値は、ここにだけ書く。
+  暗い版だけ(明るい版と切り替えは作らない)。
 */
 :root {
   color-scheme: dark;
 
-  /* 色(ダーク = 深夜の再放送) */
-  --color-bg: #0D1233;            /* 地。midnight blue */
-  --color-surface: #161C45;       /* 行・パネルの面 */
-  --color-surface-hover: #1B2252; /* 行を押したとき */
-  --color-ink: #ECEEF9;           /* 本文 15.8:1 */
-  --color-ink-muted: #AEB5DA;     /* 補助の文字 8.1:1 */
-  --color-line: #2B3375;          /* 罫線 */
-  --color-band: #242C66;          /* テロップの帯 */
-  --color-on-band: #FFFFFF;       /* 帯の上の文字 12.9:1 */
-  --color-accent: #FF7A50;        /* 番組カラー「朝焼け」 地の上 7.1:1 */
-  --color-on-accent: #1A0D08;     /* 番組カラーの上の文字 7.4:1 */
-  --color-highlight: #FFD23F;     /* 強調テロップ */
-  --color-on-highlight: #1A1300;  /* 強調テロップの上の文字 12.8:1 */
-  --color-warn: #F2A74B;          /* 注意の文字 8.1:1 */
-  --color-focus: #9DBBFF;         /* キーボードの焦点の枠 */
-  --shadow-float: 0 2px 8px rgb(0 0 0 / 0.5);
-  --shadow-nav: 0 -2px 8px rgb(0 0 0 / 0.4);
+  /* 色(仕様 1 章の表と同じ) */
+  --bg: #171917;
+  --surface: #222522;
+  --surface-2: #292d29;
+  --surface-3: #323831;
+  --ink: #e8e9e4;
+  --ink-soft: #c1c8c2;
+  --muted: #a1a69d;
+  --line: #3a403b;
+  --accent: #91a995;
+  --accent-strong: #a5b9a8;
+  --accent-wash: #293a31;
+  /* 深刻度(文字色 / 地の色)。必ず文字のラベルも添える */
+  --sev-critical: #e08b78;
+  --sev-critical-wash: #422d2a;
+  --sev-high: #d6a36d;
+  --sev-high-wash: #3e3428;
+  --sev-medium: #c7b66b;
+  --sev-medium-wash: #3c3928;
+  --sev-low: #91b7a8;
+  --sev-low-wash: #293a34;
+  /* 塗りつぶしのボタン(--accent の上)の文字は、画面の地と同じ色 */
+  --on-accent: var(--bg);
 
   /* 文字 */
-  --font-body: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  --font-body: 'DM Sans', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+  --font-brand: 'Space Grotesk', 'DM Sans', sans-serif;
   --weight-regular: 400;
+  --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-black: 800;
-  --text-caption: 12px;
-  --text-small: 14px;
-  --text-body: 16px;
-  --text-lead: 18px;
-  --text-title: 22px;
-  --text-headline: 28px;
-  --text-display: 40px;
-  --leading-tight: 1.25;
-  --leading-snug: 1.4;
-  --leading-body: 1.7;
+  /* 大きさ(12px 未満は使わない) */
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-15: 15px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-19: 19px;
+  --fs-20: 20px;
+  --fs-21: 21px;
+  --fs-26: 26px;
+  --fs-28: 28px;
+  --fs-32: 32px;
+  --fs-page-heading: clamp(26px, 3vw, 34px);
+  --fs-detail-heading: clamp(24px, 3vw, 34px);
+  --fs-feature-heading: clamp(21px, 2.1vw, 27px);
+  /* 行間 */
+  --lh-1: 1;
+  --lh-tight: 1.2;
+  --lh-heading: 1.3;
+  --lh-title: 1.55;
+  --lh-row: 1.65;
+  --lh-body: 1.7;
+  --lh-loose: 1.9;
+  --lh-text: 2;
+  /* 字間 */
+  --ls-brand: 0.19em;
+  --ls-heading: -0.02em;
+  --ls-score: -0.04em;
+  --ls-label: 0.06em;
+  --ls-wide: 0.08em;
+  --ls-nav-label: 0.1em;
 
-  /* 余白(4px 刻み) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  /* 余白(4px 刻み。半端な値は 2px) */
+  --sp-0h: 2px;
+  --sp-1: 4px;
+  --sp-1h: 6px;
+  --sp-2: 8px;
+  --sp-2h: 10px;
+  --sp-3: 12px;
+  --sp-3h: 14px;
+  --sp-4: 16px;
+  --sp-4h: 18px;
+  --sp-5: 20px;
+  --sp-5h: 22px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+  --sp-9: 36px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-13: 52px;
+  --sp-20: 80px;
+  --sp-26: 104px;
 
   /* 形 */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --line-thin: 1px;
   --line-strong: 2px;
-  --line-tab: 3px;
-  --skew: -12deg;
-  --tap-min: 44px;
-  --icon-size: 24px;
-  --nav-height: 56px;
-  --content-width: 720px;
+
+  /* 大きさ(仕様 3 章) */
+  --topbar-h: 72px;
+  --topbar-h-mobile: 60px;
+  --sidebar-w: 232px;
+  --rail-w: 280px;
+  --main-max: 820px;
+  --content-max: 1320px;
+  --workspace-max: 1680px;
+  --detail-max: 660px;
+  --tap: 44px;
+  --tap-sm: 40px;
+  --tap-lg: 46px;
+  --mobile-nav-item-h: 52px;
+  --tab-h: 46px;
+  --icon: 18px;
+  --icon-stroke: 1.7;
+  --brand-mark-w: 34px;
+  --brand-mark-h: 27px;
+  --search-w: min(300px, 30vw);
+  --thumb-w: 132px;
+  --thumb-h: 92px;
+  --thumb-w-mobile: 96px;
+  --thumb-h-mobile: 76px;
+  --order-w: 22px;
+  --order-w-mobile: 18px;
+  --feature-min-h: 290px;
+  --feature-img-h-mobile: 196px;
+  --hero-h: clamp(210px, 34vw, 360px);
+  --badge: 44px;
+  --main-pad-x: clamp(22px, 3vw, 48px);
+  --scroll-top: 88px;
+
+  /* 画像(仕様 5 章) */
+  --image-filter: saturate(0.62) brightness(0.82);
 
   /* 動き */
-  --duration-fast: 120ms;
-  --duration-base: 180ms;
-  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration: 200ms;
+  --ease: ease;
 
   /* 重なり */
-  --z-header: 10;
-  --z-nav: 10;
-  --z-skip: 20;
-}
-
-/* ライト = 朝の放送 */
-:root[data-theme="light"] {
-  color-scheme: light;
-  --color-bg: #F3F4F9;
-  --color-surface: #FFFFFF;
-  --color-surface-hover: #EDEFF7;
-  --color-ink: #141A4F;
-  --color-ink-muted: #525A80;
-  --color-line: #CDD2E6;
-  --color-band: #141A4F;
-  --color-on-band: #FFFFFF;
-  --color-accent: #C8401A;
-  --color-on-accent: #FFFFFF;
-  --color-highlight: #FFD23F;
-  --color-on-highlight: #141A4F;
-  --color-warn: #B45309;
-  --color-focus: #2A4BD7;
-  --shadow-float: 0 2px 8px rgb(20 26 79 / 0.18);
-  --shadow-nav: 0 -2px 8px rgb(20 26 79 / 0.12);
-}
-
-@media (prefers-color-scheme: light) {
-  :root[data-theme="system"] {
-    color-scheme: light;
-    --color-bg: #F3F4F9;
-    --color-surface: #FFFFFF;
-    --color-surface-hover: #EDEFF7;
-    --color-ink: #141A4F;
-    --color-ink-muted: #525A80;
-    --color-line: #CDD2E6;
-    --color-band: #141A4F;
-    --color-on-band: #FFFFFF;
-    --color-accent: #C8401A;
-    --color-on-accent: #FFFFFF;
-    --color-highlight: #FFD23F;
-    --color-on-highlight: #141A4F;
-    --color-warn: #B45309;
-    --color-focus: #2A4BD7;
-    --shadow-float: 0 2px 8px rgb(20 26 79 / 0.18);
-    --shadow-nav: 0 -2px 8px rgb(20 26 79 / 0.12);
-  }
+  --z-tabs: 15;
+  --z-topbar: 20;
+  --z-mobile-nav: 30;
+  --z-toast: 50;
+  --z-skip: 60;
 }

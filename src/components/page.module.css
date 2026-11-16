@@ -1,0 +1,113 @@
+/* 画面に共通の部品(見出し、区切り、添え書き、空の状態)。各画面から import して使う */
+
+.heading {
+  font-size: var(--fs-page-heading);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-heading);
+  line-height: var(--lh-heading);
+  margin: 0 0 var(--sp-1h);
+}
+
+.subtitle {
+  font-size: var(--fs-14);
+  color: var(--muted);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin: var(--sp-9) 0 var(--sp-3);
+}
+
+.sectionTitle {
+  font-size: var(--fs-18);
+  font-weight: var(--weight-semibold);
+}
+
+.caption {
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+/* ジャンル名などの短い札(文字だけ) */
+.label {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--ls-label);
+  color: var(--accent);
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-sm);
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .textLink:hover {
+    color: var(--accent-strong);
+  }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin: var(--sp-5h) 0 var(--sp-3h);
+}
+
+.sampleNote {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin-top: var(--sp-4h);
+}
+
+.empty,
+.emptySpaced {
+  padding: var(--sp-13) var(--sp-5h);
+  border: var(--line-thin) dashed var(--line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--muted);
+}
+
+.emptySpaced {
+  margin-top: var(--sp-5h);
+}
+
+.emptyTitle {
+  display: block;
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  margin-bottom: var(--sp-1);
+}
+
+.emptyText {
+  font-size: var(--fs-13);
+}
+
+.status {
+  padding: var(--sp-13) 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.list {
+  border-top: var(--line-thin) solid var(--line);
+}
+
+.listSpaced {
+  border-top: var(--line-thin) solid var(--line);
+  margin-top: var(--sp-5h);
+}

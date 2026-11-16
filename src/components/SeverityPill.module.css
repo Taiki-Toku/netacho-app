@@ -1,0 +1,39 @@
+.critical,
+.high,
+.medium,
+.low,
+.plain {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  padding: var(--sp-0h) var(--sp-2);
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+
+.critical {
+  color: var(--sev-critical);
+  background: var(--sev-critical-wash);
+}
+
+.high {
+  color: var(--sev-high);
+  background: var(--sev-high-wash);
+}
+
+.medium {
+  color: var(--sev-medium);
+  background: var(--sev-medium-wash);
+}
+
+.low {
+  color: var(--sev-low);
+  background: var(--sev-low-wash);
+}
+
+.plain {
+  color: var(--ink-soft);
+  background: var(--surface-3);
+  font-weight: var(--weight-regular);
+}
