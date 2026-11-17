@@ -91,7 +91,7 @@ function Shell() {
           ) : state.status === 'error' ? (
             <ErrorState detail={state.message} onRetry={reload} />
           ) : (
-            <div className={hasRail(route) ? styles.contentGrid : styles.contentSingle}>
+            <div className={hasRail(route) ? styles.contentGrid : route.name === 'item' ? styles.contentDetail : styles.contentSingle}>
               <section className={styles.mainColumn}>{screenFor(route, state.data, !homeIntroPlayed)}</section>
               {hasRail(route) ? <RightRail data={state.data} /> : null}
             </div>

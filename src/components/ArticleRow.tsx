@@ -2,8 +2,8 @@
 // 見出しが本物のリンク(a)。行全体をクリックにはしない。保存ボタンはリンクの外(仕様 7 章)。
 // 押せる範囲は、リンクの疑似要素(::after)で行全体に広げ、保存ボタンだけをその上に出す(CSS 側)
 import { hrefFor } from '../app/router.ts'
-import { initialOf, isRated } from '../data/queries.ts'
-import { itemSourceName } from '../data/sourceName.ts'
+import { isRated } from '../data/queries.ts'
+import { itemSourceName, sourceInitial } from '../data/sourceName.ts'
 import type { Item } from '../data/types.ts'
 import { SaveButton } from './SaveButton.tsx'
 import { Thumb } from './Thumb.tsx'
@@ -21,9 +21,9 @@ interface ArticleRowProps {
   oneLineLead?: boolean
 }
 
-/** 画像の無いネタの札に出す頭文字。画面に出す媒体名(URL が無ければジャンル名)と同じ名前から取る(仕様 4〜5 章) */
+/** 画像の無いネタの札に出す頭文字。画面に出す媒体名(URL が無ければジャンル名)の最初の1文字を大文字で(仕様 4〜5 章) */
 export function itemInitial(item: Item, genreLabel: string): string {
-  return initialOf(itemSourceName(item, genreLabel))
+  return sourceInitial(itemSourceName(item, genreLabel))
 }
 
 export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineLead = false }: ArticleRowProps) {

@@ -67,6 +67,9 @@ export function parseItem(value: unknown): Item | null {
     title: asString(value.title),
     lead: asString(value.lead),
     summary: asString(value.summary),
+    // 空白だけの箇条は、空の行が出るだけなので捨てる
+    points: asStringList(value.points).filter((point) => point.trim() !== ''),
+    excerpt: asString(value.excerpt),
     tryit: asString(value.tryit),
     caution: asString(value.caution),
     categories: asStringList(value.categories),

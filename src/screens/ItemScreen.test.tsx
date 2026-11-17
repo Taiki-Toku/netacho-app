@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
+import { parseItems } from '../data/parse.ts'
 import type { LoadedData } from '../data/source.ts'
 import { renderApp } from '../test/renderApp.tsx'
 import { baseSample } from '../test/sampleData.ts'
@@ -20,15 +21,16 @@ function touch(target: Element, type: 'touchstart' | 'touchend', x: number, y: n
 }
 
 describe('ネタの詳細', () => {
-  it('ジャンル名・見出し・出典と日付・要点・試してみる・気をつけること・このネタについて・評価・メモを出す', async () => {
+  it('ジャンル名・見出し・出典と日付・要点・抜粋・試してみる・気をつけること・このネタについて・評価・メモを出す', async () => {
     const article = await renderItem('2026-01-02-01')
     expect(within(article).getByRole('heading', { level: 1 })).toHaveTextContent('架空:手順書の差分チェックを半自動にする')
     expect(within(article).getByText('仕事・自動化')).toBeInTheDocument()
     expect(within(article).getByText('2026年1月2日(金)')).toBeInTheDocument()
     expect(within(article).getByText('見本のリード文です。')).toBeInTheDocument()
     expect(within(article).getByRole('heading', { level: 2, name: '要点' })).toBeInTheDocument()
-    expect(within(article).getByText(/2〜4文の長さの要約が入ります/)).toBeInTheDocument()
+    expect(within(article).getByText('見本の要点の1行目です。')).toBeInTheDocument()
     expect(within(article).getByText('この要点は、元の記事をもとにAIがまとめたものです。')).toBeInTheDocument()
+    expect(within(article).getByRole('heading', { level: 2, name: '元記事の抜粋' })).toBeInTheDocument()
     expect(within(article).getByRole('heading', { level: 2, name: '試してみる' })).toBeInTheDocument()
     expect(within(article).getByText('最初の一歩の見本です。')).toBeInTheDocument()
     expect(within(article).getByRole('heading', { level: 2, name: '気をつけること' })).toBeInTheDocument()
@@ -45,6 +47,111 @@ describe('ネタの詳細', () => {
     expect(within(article).getByLabelText('メモ')).toHaveValue('見本のメモ')
     // 位置は見出しの下と、前後のボタンの間(aria-hidden)の2か所に同じ書き方で出る
     expect(within(article).getAllByText('1 / 7')).toHaveLength(2)
+  })
+
+  it('並び:一覧に戻る(1行)→ジャンル名→見出し→出典と日付→保存→画像→要点→抜粋→試してみる→気をつけること→出典→評価→メモ→前後', async () => {
+    const article = await renderItem('2026-01-02-01')
+    const back = within(article).getAllByRole('link', { name: '一覧に戻る' })[0]
+    const order = [
+      back,
+      within(article).getByText('仕事・自動化'),
+      within(article).getByRole('heading', { level: 1 }),
+      within(article).getByText('2026年1月2日(金)'),
+      within(article).getByRole('button', { name: '保存する' }),
+      article.querySelector('img'),
+      within(article).getByRole('heading', { level: 2, name: '要点' }),
+      within(article).getByRole('heading', { level: 2, name: '元記事の抜粋' }),
+      within(article).getByRole('heading', { level: 2, name: '試してみる' }),
+      within(article).getByRole('heading', { level: 2, name: '気をつけること' }),
+      within(article).getByRole('link', { name: /元の記事を読む/ }),
+      within(article).getByRole('group', { name: 'このニュース、どうでしたか' }),
+      within(article).getByLabelText('メモ'),
+      screen.getByRole('navigation', { name: '前後のニュース' }),
+    ]
+    for (const [index, element] of order.entries()) {
+      if (element === null || element === undefined) throw new Error(`${index} 番目の欄がありません`)
+      const next = order[index + 1]
+      if (next === undefined || next === null) continue
+      expect(element.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+  })
+
+  it('要点が配列なら箇条で出す。抜粋は手を加えずに引用で出す', async () => {
+    const article = await renderItem('2026-01-02-01')
+    const points = within(article).getByRole('heading', { level: 2, name: '要点' }).closest('section')
+    if (points === null) throw new Error('要点の欄がありません')
+    expect(within(points).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      '見本の要点の1行目です。',
+      '見本の要点の2行目です。',
+      '見本の要点の3行目です。',
+    ])
+    // 箇条があるときは summary の段落を出さない(同じ内容を2度出さない)
+    expect(within(points).queryByText(/2〜4文の長さの要約が入ります/)).not.toBeInTheDocument()
+    expect(within(points).getByText('この要点は、元の記事をもとにAIがまとめたものです。')).toBeInTheDocument()
+    const quote = article.querySelector('blockquote')
+    expect(quote?.textContent).toBe('これは架空の元記事から引用した、という体裁の見本の文です。\n改行もそのまま出ます。')
+  })
+
+  it('要点が文字列1つなら段落のまま出す(文を切って箇条にしない)。要点・抜粋の項目が無ければ欄を出さない', async () => {
+    const article = await renderItem('2026-01-02-02')
+    const points = within(article).getByRole('heading', { level: 2, name: '要点' }).closest('section')
+    if (points === null) throw new Error('要点の欄がありません')
+    expect(within(points).queryByRole('list')).not.toBeInTheDocument()
+    expect(within(points).getByText('これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。').tagName).toBe('P')
+    expect(within(article).queryByRole('heading', { level: 2, name: '元記事の抜粋' })).not.toBeInTheDocument()
+    expect(article.querySelector('blockquote')).toBeNull()
+  })
+
+  it('箇条の中の HTML は文字のまま出す。空白だけの箇条は出さない', async () => {
+    renderApp('#/item/html-points', {
+      ...sample,
+      items: parseItems([{ id: 'html-points', date: '2026-01-02', points: ['<a href="javascript:alert(1)">箇条</a>', '  ', '<b>太字</b>'] }]),
+    })
+    const article = await screen.findByRole('article')
+    expect(within(article).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['<a href="javascript:alert(1)">箇条</a>', '<b>太字</b>'])
+    expect(article.querySelector('a[href^="javascript:"]')).toBeNull()
+    expect(article.querySelector('b')).toBeNull()
+  })
+
+  it('要点も抜粋も無いニュースは、どちらの欄も出さない(架空の文で埋めない)', async () => {
+    const [first] = sample.items
+    if (first === undefined) throw new Error('見本のネタがありません')
+    const bare = { ...first, id: 'bare', summary: '', points: [], excerpt: '' }
+    renderApp('#/item/bare', { ...sample, items: [bare, ...sample.items.slice(1)] })
+    const article = await screen.findByRole('article')
+    expect(within(article).queryByRole('heading', { level: 2, name: '要点' })).not.toBeInTheDocument()
+    expect(within(article).queryByText('この要点は、元の記事をもとにAIがまとめたものです。')).not.toBeInTheDocument()
+    expect(within(article).queryByRole('heading', { level: 2, name: '元記事の抜粋' })).not.toBeInTheDocument()
+  })
+
+  it('画像が無いときは大きな枠を出さず、出典の横に小さな札(媒体名の1文字目を大文字)。docs. は外す', async () => {
+    const [first] = sample.items
+    if (first === undefined) throw new Error('見本のネタがありません')
+    const item = { ...first, id: 'no-image', sourceUrl: 'https://docs.ollama.com/x', imageUrl: undefined }
+    renderApp('#/item/no-image', { ...sample, items: [item, ...sample.items.slice(1)] })
+    const article = await screen.findByRole('article')
+    expect(article.querySelector('img')).toBeNull()
+    expect(within(article).getByText('O')).toHaveAttribute('aria-hidden', 'true')
+    // 見出しの下の媒体名と、「出典」の欄のホスト名(こちらは docs. を外さない)
+    expect(within(article).getByText('ollama.com')).toBeInTheDocument()
+    expect(within(article).getByText('docs.ollama.com')).toBeInTheDocument()
+  })
+
+  it('画像の読み込みに失敗したら、大きな枠をやめて出典の横の札に替える', async () => {
+    const article = await renderItem('2026-01-02-01')
+    const img = article.querySelector('img')
+    if (img === null) throw new Error('画像がありません')
+    expect(within(article).queryByText('E')).not.toBeInTheDocument()
+    fireEvent.error(img)
+    expect(article.querySelector('img')).toBeNull()
+    expect(within(article).getByText('E')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('読了バーを出す(読み上げない)', async () => {
+    const article = await renderItem('2026-01-02-01')
+    const bar = article.querySelector('progress')
+    expect(bar).toHaveAttribute('aria-hidden', 'true')
+    expect(bar).toHaveAttribute('max', '1')
   })
 
   it('セキュリティニュース・プロダクトでは「試してみる」が「確かめること」になる', async () => {
@@ -94,6 +201,9 @@ describe('ネタの詳細', () => {
       '架空:表示の安全確認 <script>alert(1)</script> <b>太字</b> &amp;',
     )
     expect(within(article).getByText(/<img src=x onerror=alert\(1\)>/)).toBeInTheDocument()
+    // 抜粋の中の HTML も文字のまま
+    expect(article.querySelector('blockquote')?.textContent).toBe('<iframe src="https://example.com"></iframe> 抜粋の中の HTML も文字のまま出ます。')
+    expect(article.querySelector('iframe')).toBeNull()
     expect(article.querySelector('script')).toBeNull()
     expect(article.querySelector('b')).toBeNull()
   })

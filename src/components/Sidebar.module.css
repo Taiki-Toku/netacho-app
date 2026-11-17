@@ -26,6 +26,8 @@
 .group {
   display: grid;
   gap: var(--sp-0h);
+  /* 項目を区分見出しより約 16px 右に下げ、段差で区分の範囲を示す(仕様 3 章。スマホではメニューごと隠れる) */
+  padding-left: var(--sp-4);
 }
 
 .link,

@@ -1,0 +1,39 @@
+/* 上のバーの下端に重ねる。<progress> の既定の見た目を消して、線だけにする */
+.bar {
+  position: fixed;
+  top: calc(var(--topbar-h) - var(--line-strong));
+  left: 0;
+  z-index: var(--z-topbar);
+  width: 100%;
+  height: var(--line-strong);
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  appearance: none;
+  pointer-events: none;
+}
+
+.bar::-webkit-progress-bar {
+  background: transparent;
+}
+
+.bar::-webkit-progress-value {
+  background: var(--accent);
+}
+
+.bar::-moz-progress-bar {
+  background: var(--accent);
+}
+
+@media (max-width: 767px) {
+  .bar {
+    top: calc(var(--topbar-h-mobile) - var(--line-strong));
+  }
+}
+
+/* 動きを減らす設定では出さない(仕様 4 章末「共通」) */
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    display: none;
+  }
+}

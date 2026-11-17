@@ -132,6 +132,8 @@
   --feature-img-h-mobile: 196px;
   --hero-h: clamp(210px, 34vw, 360px);
   --badge: 44px;
+  /* 詳細の出典の横に出す、小さな頭文字の札 */
+  --badge-sm: 22px;
   --main-pad-x: clamp(22px, 3vw, 48px);
   --scroll-top: 88px;
 

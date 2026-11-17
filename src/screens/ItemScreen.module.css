@@ -4,7 +4,9 @@
 }
 
 .back {
-  display: inline-flex;
+  /* 1行に独立させる(ジャンル名を同じ行に詰めない)。押せる範囲は文字の幅だけ */
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: var(--sp-2);
   min-height: var(--tap);
@@ -25,6 +27,18 @@
   font-weight: var(--weight-semibold);
   margin: var(--sp-3) 0;
   outline-offset: var(--sp-1);
+}
+
+/* 画像が無いときの小さな頭文字の札(出典の横) */
+.initial {
+  display: inline-grid;
+  place-items: center;
+  width: var(--badge-sm);
+  height: var(--badge-sm);
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  color: var(--muted);
+  font-weight: var(--weight-bold);
 }
 
 .metaRow {
@@ -75,6 +89,31 @@
   line-height: 1.95;
   /* 要約は改行を含むことがある。改行は保ち、連続する空白は詰める */
   white-space: pre-line;
+}
+
+.points {
+  margin: var(--sp-2h) 0 0;
+  padding-left: var(--sp-5);
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  line-height: var(--lh-text);
+}
+
+/* 元記事の抜粋:手を加えずに引用するため、改行も空白もそのまま保つ */
+.excerpt {
+  margin: 0 0 var(--sp-7);
+}
+
+.quote {
+  margin: var(--sp-2h) 0 0;
+  padding: var(--sp-4) var(--sp-5);
+  border-left: var(--line-strong) solid var(--line);
+  background: var(--nav);
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  line-height: var(--lh-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .aiNote {

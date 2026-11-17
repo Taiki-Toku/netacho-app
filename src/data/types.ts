@@ -21,6 +21,10 @@ export interface Item {
   title: string
   lead: string
   summary: string
+  /** 要点の箇条(依頼 5-3 でオーナーが決めた項目)。空なら要点は summary を段落で出す */
+  points: string[]
+  /** 元記事の抜粋(依頼 5-3 でオーナーが決めた項目)。手を加えずに引用する。空なら欄を出さない */
+  excerpt: string
   tryit: string
   caution: string
   categories: string[]

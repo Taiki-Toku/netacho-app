@@ -1,10 +1,11 @@
-// ネタの詳細(仕様 4 章 5):ジャンル名、見出し、出典と日付、保存ボタン、画像、要点(AIがまとめたと明記)、
-// 試してみる(確かめること)、気をつけること、出典と元記事へのリンク、評価4つ、メモ(自動保存)。
+// ネタの詳細(仕様 4 章 5):ジャンル名、見出し、出典と日付、保存ボタン、画像(無ければ出典の横に小さな札)、要点(AIがまとめたと明記)、
+// 元記事の抜粋、試してみる(確かめること)、気をつけること、出典と元記事へのリンク、評価4つ、メモ(自動保存)、前後のニュース。上のバーの下端に読了バー。
 // 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このニュースについて」の欄に残す。前後の移動はボタンと左右スワイプ
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { hrefFor, navigate, type Route } from '../app/router.ts'
 import { itemInitial } from '../components/ArticleRow.tsx'
 import { Icon } from '../components/Icon.tsx'
+import { ReadingProgress } from '../components/ReadingProgress.tsx'
 import { SaveButton } from '../components/SaveButton.tsx'
 import { SourceLink } from '../components/SourceLink.tsx'
 import { StarMeter } from '../components/StarMeter.tsx'
@@ -16,6 +17,7 @@ import { itemSourceName } from '../data/sourceName.ts'
 import type { Item, Rating } from '../data/types.ts'
 import { useUserState, useUserStore } from '../data/userStore.ts'
 import { formatDateLong } from '../lib/format.ts'
+import { imageHref } from '../lib/safeUrl.ts'
 import { useSwipe } from '../lib/useSwipe.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './ItemScreen.module.css'
@@ -66,6 +68,10 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
   const rating: Rating = feedback.rating ?? item.rating
   const memo = feedback.memo ?? item.memo
   const memoSaved = feedback.memo !== undefined
+  // 画像が無い・危ない・読み込みに失敗したときは、大きな枠を出さずに出典の横へ小さな札を出す(仕様 4 章-5、5 章)
+  const [imageFailed, setImageFailed] = useState(false)
+  const hasImage = item.imageUrl !== undefined && imageHref(item.imageUrl) !== null && !imageFailed
+  const initial = itemInitial(item, genreLabel)
 
   const swipe = useSwipe({
     onLeft: () => {
@@ -85,6 +91,8 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
 
   return (
     <article className={styles.detail} aria-labelledby="item-title" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
+      <ReadingProgress />
+      {/* 戻るリンクは1行に独立させ、ジャンル名はその下の行(仕様 4 章-5) */}
       <a className={styles.back} href={hrefFor(back)}>
         <Icon name="back" />
         {backLabel}
@@ -94,6 +102,11 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
         {item.title !== '' ? item.title : '(見出しなし)'}
       </h1>
       <div className={styles.metaRow}>
+        {hasImage ? null : (
+          <span className={styles.initial} aria-hidden="true">
+            {initial}
+          </span>
+        )}
         <span>{itemSourceName(item, genreLabel)}</span>
         <span>{formatDateLong(item.date)}</span>
         <span>
@@ -103,19 +116,48 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
       <div className={styles.actions}>
         <SaveButton id={item.id} labelled />
       </div>
-      <div className={styles.hero}>
-        <Thumb url={item.imageUrl} initial={itemInitial(item, genreLabel)} eager />
-      </div>
+      {hasImage ? (
+        <div className={styles.hero}>
+          <Thumb
+            url={item.imageUrl}
+            initial={initial}
+            eager
+            onFail={() => {
+              setImageFailed(true)
+            }}
+          />
+        </div>
+      ) : null}
 
       {item.lead !== '' ? <p className={styles.lead}>{item.lead}</p> : null}
 
-      {item.summary !== '' ? (
+      {item.points.length > 0 || item.summary !== '' ? (
         <section className={styles.box} aria-labelledby="item-points">
           <h2 id="item-points" className={pageStyles.label}>
             要点
           </h2>
-          <p className={styles.boxText}>{item.summary}</p>
+          {/* 箇条のデータ(points)があれば箇条、無ければ summary を段落のまま。文を切って箇条を作らない */}
+          {item.points.length > 0 ? (
+            <ul className={styles.points}>
+              {item.points.map((point, index) => (
+                // 同じ文の箇条が重なることがあるため、順番を鍵にする(並びは変わらない)
+                <li key={index}>{point}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.boxText}>{item.summary}</p>
+          )}
           <p className={styles.aiNote}>この要点は、元の記事をもとにAIがまとめたものです。</p>
+        </section>
+      ) : null}
+
+      {item.excerpt !== '' ? (
+        <section className={styles.excerpt} aria-labelledby="item-excerpt">
+          <h2 id="item-excerpt" className={pageStyles.label}>
+            元記事の抜粋
+          </h2>
+          {/* 原文を手を加えずに引用する。文字のまま出す(HTML として解釈しない) */}
+          <blockquote className={styles.quote}>{item.excerpt}</blockquote>
         </section>
       ) : null}
 

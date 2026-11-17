@@ -112,9 +112,9 @@ describe('トップ(今朝のネタ)', () => {
     // 06 は http:、07 は javascript: の画像 URL。どちらも img にならず、頭文字の札になる
     // 出典の URL も http: / javascript: で媒体名を作れないため、札はジャンル名の頭文字
     expect(rows[5]!.querySelector('img')).toBeNull()
-    expect(within(rows[5]!).getByText('セキ', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[5]!).getByText('セ', { selector: 'div' })).toBeInTheDocument()
     expect(rows[6]!.querySelector('img')).toBeNull()
-    expect(within(rows[6]!).getByText('プロ', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[6]!).getByText('プ', { selector: 'div' })).toBeInTheDocument()
     expect(list.querySelector('img[src^="javascript:"]')).toBeNull()
     expect(list.querySelector('img[src^="http://example.com"]')).toBeNull()
   })
@@ -124,7 +124,7 @@ describe('トップ(今朝のネタ)', () => {
     const rows = within(list).getAllByRole('listitem')
     // 03 は画像も出典名も無いが、URL は https://example.com/c → 媒体名 example.com の2文字
     expect(rows[2]!.querySelector('img')).toBeNull()
-    expect(within(rows[2]!).getByText('ex', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[2]!).getByText('E', { selector: 'div' })).toBeInTheDocument()
     expect(within(rows[2]!).getByText('example.com')).toBeInTheDocument()
     // 07 は URL が javascript: → 媒体名の欄もジャンル名(プロダクト)。ジャンルの札と2か所に出る
     expect(within(rows[6]!).getAllByText('プロダクト')).toHaveLength(2)
@@ -135,12 +135,12 @@ describe('トップ(今朝のネタ)', () => {
     const row = within(list).getAllByRole('listitem')[1]!
     fireEvent.error(row.querySelector('img')!)
     expect(row.querySelector('img')).toBeNull()
-    expect(within(row).getByText('ex', { selector: 'div' })).toBeInTheDocument()
+    expect(within(row).getByText('E', { selector: 'div' })).toBeInTheDocument()
 
     const feature = screen.getByRole('article', { name: '架空:手順書の差分チェックを半自動にする' })
     fireEvent.error(feature.querySelector('img')!)
     expect(feature.querySelector('img')).toBeNull()
-    expect(within(feature).getByText('ex', { selector: 'div' })).toBeInTheDocument()
+    expect(within(feature).getByText('E', { selector: 'div' })).toBeInTheDocument()
   })
 
   it('脆弱性ウォッチの帯:緊急の件数、いちばん新しい CVE と CVSS。深刻度ではなく新しさで選ぶ', async () => {

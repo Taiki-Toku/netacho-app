@@ -25,6 +25,13 @@ describe('parseItems(信用しないデータの整形)', () => {
     expect(parseItem({ id: 'a', date: '2026-01-01', imageUrl: 'javascript:alert(1)' })?.imageUrl).toBe('javascript:alert(1)')
   })
 
+  it('points は文字列の配列だけを持ち、文字列でない要素と空白だけの要素は捨てる。excerpt は文字列だけ。無ければ空', () => {
+    const base = { id: 'x', date: '2026-01-01' }
+    expect(parseItem({ ...base, points: ['一', 2, '  ', '三'], excerpt: '抜粋' })).toMatchObject({ points: ['一', '三'], excerpt: '抜粋' })
+    expect(parseItem({ ...base, points: '一つの文字列', excerpt: ['配列'] })).toMatchObject({ points: [], excerpt: '' })
+    expect(parseItem(base)).toMatchObject({ points: [], excerpt: '' })
+  })
+
   it('配列でないもの、id や date が無いものは捨てる', () => {
     expect(parseItems(null)).toEqual([])
     expect(parseItems({ id: 'x' })).toEqual([])
