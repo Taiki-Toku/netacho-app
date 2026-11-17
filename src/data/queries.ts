@@ -57,6 +57,10 @@ export function genreLabelMap(genres: readonly Genre[]): ReadonlyMap<string, str
   return new Map(genres.map((genre) => [genre.id, genre.label]))
 }
 
+export function genreLabelOf(item: Item, labels: ReadonlyMap<string, string>): string {
+  return item.genre === null ? '未分類' : (labels.get(item.genre) ?? item.genre)
+}
+
 /** メニューとタブに出すジャンル。「脆弱性」は公式情報の画面に一本化するため出さない */
 export function menuGenres(genres: readonly Genre[]): Genre[] {
   return genres.filter((genre) => genre.id !== 'vuln')

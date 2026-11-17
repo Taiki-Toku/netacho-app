@@ -1,5 +1,7 @@
 .row,
 .rowNoOrder {
+  /* 見出しのリンクの ::after を、この行の大きさに広げるための基準 */
+  position: relative;
   display: grid;
   grid-template-columns: var(--order-w) minmax(0, 1fr) var(--thumb-w);
   gap: var(--sp-4);
@@ -36,6 +38,13 @@
   display: block;
 }
 
+/* 押せる範囲を行全体に広げる。フォーカスの枠は見出しのリンクに出る(:focus-visible は消さない) */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
 @media (hover: hover) {
   .link:hover {
     color: var(--accent-strong);
@@ -52,6 +61,15 @@
   overflow: hidden;
 }
 
+.summaryOneLine {
+  font-size: var(--fs-13);
+  line-height: var(--lh-row);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .meta {
   display: flex;
   gap: var(--sp-2h);
@@ -63,6 +81,9 @@
 
 .save {
   margin-left: auto;
+  /* 行全体に広げたリンク(::after)より上に出し、保存ボタンが押せるようにする */
+  position: relative;
+  z-index: var(--z-row-control);
 }
 
 .thumb {

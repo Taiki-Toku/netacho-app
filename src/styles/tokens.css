@@ -143,8 +143,14 @@
   --ease: ease;
   /* スケルトンの明滅の片道 */
   --duration-pulse: 900ms;
+  /* トップの登場(最初の表示だけ)。下から少し浮かび上がる距離と、枠ごとのずれ */
+  --duration-intro: 420ms;
+  --intro-rise: 8px;
+  --intro-stagger: 70ms;
 
   /* 重なり */
+  /* 行の中で、行全体に広げたリンクより上に出す部品(保存ボタン) */
+  --z-row-control: 1;
   --z-tabs: 15;
   --z-topbar: 20;
   --z-mobile-nav: 30;

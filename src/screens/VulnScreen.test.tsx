@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { cleanup, screen, within } from '@testing-library/react'
 import { follow, renderApp, waitForHeading } from '../test/renderApp.tsx'
 import { fullSample as sample } from '../test/sampleData.ts'
 
@@ -47,8 +47,17 @@ describe('脆弱性', () => {
     await waitForHeading('脆弱性')
     expect(await screen.findByText('注意だけを表示中。1件(新しい順)')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'CVE-2026-90005' })).toBeInTheDocument()
+    window.location.hash = ''
+  })
+
+  it('脆弱性が0件(公式フィードが無い)なら、絞り込みに関係なく「公式情報はまだありません」と出す', async () => {
     renderApp('#/vuln', { ...sample, feed: [] })
-    expect(await screen.findByText('脆弱性の情報はありません')).toBeInTheDocument()
+    expect(await screen.findByText('公式情報はまだありません')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: '脆弱性の一覧' })).not.toBeInTheDocument()
+    cleanup()
+    renderApp('#/vuln?sev=critical', { ...sample, feed: [] })
+    expect(await screen.findByText('緊急だけを表示中。0件(新しい順)')).toBeInTheDocument()
+    expect(screen.getByText('公式情報はまだありません')).toBeInTheDocument()
     window.location.hash = ''
   })
 

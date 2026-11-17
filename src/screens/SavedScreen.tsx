@@ -1,10 +1,9 @@
 // 保存:保存したネタの一覧(新しく保存した順)。名前は全ジャンル共通で「保存」(仕様 4 章 6)
 import { ArticleRow } from '../components/ArticleRow.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
-import { findItem, genreLabelMap } from '../data/queries.ts'
+import { findItem, genreLabelMap, genreLabelOf } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { useUserState } from '../data/userStore.ts'
-import { genreLabelOf } from './TodayScreen.tsx'
 import pageStyles from '../components/page.module.css'
 
 export function SavedScreen({ data }: { data: LoadedData }) {

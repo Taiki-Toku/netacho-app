@@ -58,9 +58,9 @@
   font-size: var(--fs-28);
 }
 
-/* 脆弱性ウォッチの帯。右の列が隠れる幅(768〜1100px)だけ出す */
-.promo {
-  display: none;
+/* 脆弱性ウォッチの帯1本(どの幅でも出す) */
+.band {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
@@ -71,19 +71,42 @@
   background: var(--surface);
 }
 
-.promoTitle {
-  display: block;
+@media (hover: hover) {
+  .band:hover .bandTitle {
+    color: var(--accent-strong);
+  }
+}
+
+.bandBody {
+  min-width: 0;
+}
+
+.bandTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2h);
   font-size: var(--fs-14);
 }
 
-.promoText {
+.bandCount {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--ls-label);
+  color: var(--sev-critical);
+}
+
+.bandText {
   display: block;
   font-size: var(--fs-12);
   color: var(--muted);
   margin-top: var(--sp-0h);
+  overflow-wrap: anywhere;
 }
 
-.promoScore {
+.bandScore {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1h);
   font-size: var(--fs-21);
   font-weight: var(--weight-bold);
   color: var(--sev-critical);
@@ -91,9 +114,40 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 768px) and (max-width: 1100px) {
-  .promo {
-    display: flex;
+.bandScoreLabel {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
+}
+
+/* 登場アニメ(トップの最初の表示だけ。HomeScreen の intro が true のときだけクラスが付く)。
+   枠ごとに少しずらして、下から浮かび上がる */
+.intro1,
+.intro2,
+.intro3 {
+  animation: rise var(--duration-intro) var(--ease) both;
+}
+
+.intro2 {
+  animation-delay: var(--intro-stagger);
+}
+
+.intro3 {
+  animation-delay: calc(var(--intro-stagger) * 2);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--intro-rise));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro1,
+  .intro2,
+  .intro3 {
+    animation: none;
   }
 }
 

@@ -1,5 +1,5 @@
 // アプリの骨組み(仕様 3 章):上のバー + 左メニュー(PC)/ジャンルのタブ(スマホ)+ 中央 + 右の列(PC)+ 下のメニュー(スマホ)
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { screenKey, useRoute, type Route } from './app/router.ts'
 import { ErrorState } from './components/ErrorState.tsx'
 import { GenreTabs } from './components/GenreTabs.tsx'
@@ -17,18 +17,18 @@ import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore
 import { formatDateHeader } from './lib/format.ts'
 import { FeedScreen } from './screens/FeedScreen.tsx'
 import { GenreScreen } from './screens/GenreScreen.tsx'
+import { HomeScreen } from './screens/HomeScreen.tsx'
 import { ItemScreen } from './screens/ItemScreen.tsx'
 import { SavedScreen } from './screens/SavedScreen.tsx'
 import { SearchScreen } from './screens/SearchScreen.tsx'
-import { TodayScreen } from './screens/TodayScreen.tsx'
 import { VulnDetailScreen } from './screens/VulnDetailScreen.tsx'
 import { VulnScreen } from './screens/VulnScreen.tsx'
 import styles from './App.module.css'
 
-function screenFor(route: Route, data: LoadedData) {
+function screenFor(route: Route, data: LoadedData, homeIntro: boolean) {
   switch (route.name) {
     case 'home':
-      return <TodayScreen data={data} />
+      return <HomeScreen data={data} intro={homeIntro} />
     case 'genre':
       return <GenreScreen data={data} id={route.id} kind={route.kind} />
     case 'feed':
@@ -61,6 +61,15 @@ function Shell() {
   const vulnCount = data === null ? 0 : vulnerabilities(data.feed).length
   const date = data === null ? null : latestDate(data.items)
 
+  // トップの登場アニメは最初の表示だけ:トップを表示したあとで別の画面に移ったら、以後は付けない。
+  // 描画中に前の画面と比べて state を直す(React の推奨する形。StrictMode の2回の mount でも途中で切れない)
+  const [homeIntroPlayed, setHomeIntroPlayed] = useState(false)
+  const [shownScreen, setShownScreen] = useState(route.name)
+  if (shownScreen !== route.name) {
+    setShownScreen(route.name)
+    if (shownScreen === 'home' && data !== null) setHomeIntroPlayed(true)
+  }
+
   // 画面の種類が変わったら先頭に戻す(絞り込みを変えただけのときは動かさない)
   const key = screenKey(route)
   useEffect(() => {
@@ -83,7 +92,7 @@ function Shell() {
             <ErrorState detail={state.message} onRetry={reload} />
           ) : (
             <div className={hasRail(route) ? styles.contentGrid : styles.contentSingle}>
-              <section className={styles.mainColumn}>{screenFor(route, state.data)}</section>
+              <section className={styles.mainColumn}>{screenFor(route, state.data, !homeIntroPlayed)}</section>
               {hasRail(route) ? <RightRail data={state.data} /> : null}
             </div>
           )}

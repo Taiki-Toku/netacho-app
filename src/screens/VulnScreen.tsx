@@ -60,9 +60,10 @@ export function VulnScreen({ data, severity }: VulnScreenProps) {
         ) : null}
       </div>
       {list.length === 0 ? (
+        // 全体が 0 件(公式フィードがまだ無い)なら、絞り込みに関係なくトップの帯と同じ文言にする
         <EmptyState
-          title={severity === 'all' ? '脆弱性の情報はありません' : '該当する脆弱性がありません'}
-          text={severity === 'all' ? '配信が届くと、ここに並びます。' : '別の深刻度を選ぶか、絞り込みを外してください。'}
+          title={all.length === 0 ? '公式情報はまだありません' : '該当する脆弱性がありません'}
+          text={all.length === 0 ? '配信が届くと、ここに並びます。' : '別の深刻度を選ぶか、絞り込みを外してください。'}
         />
       ) : (
         <ul className={styles.cards} aria-label="脆弱性の一覧">
