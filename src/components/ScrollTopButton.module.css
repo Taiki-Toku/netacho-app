@@ -1,0 +1,52 @@
+.button {
+  position: fixed;
+  right: var(--sp-8);
+  bottom: var(--sp-8);
+  z-index: var(--z-to-top);
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: pointer;
+  /* 出るとき:visibility はすぐ visible にし、不透明度だけをフェードする(仕様 4 章の共通) */
+  transition:
+    opacity var(--duration) var(--ease),
+    visibility 0s linear 0s;
+}
+
+/* 消えている間:押せず、フォーカスも当たらず、読み上げにも出ない。
+   visibility はフェードが終わってから hidden にする(遅らせないと、すぐ消えてフェードが見えない) */
+.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--duration) var(--ease),
+    visibility 0s linear var(--duration);
+}
+
+@media (hover: hover) {
+  .button:hover {
+    color: var(--accent-strong);
+  }
+}
+
+@media (max-width: 767px) {
+  .button {
+    right: max(var(--sp-4), env(safe-area-inset-right, 0px));
+    /* 下のメニューの上に出す */
+    bottom: var(--to-top-bottom-mobile);
+  }
+}
+
+/* 動きを減らす設定では、フェードせずに出し入れする */
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .hidden {
+    transition: none;
+  }
+}

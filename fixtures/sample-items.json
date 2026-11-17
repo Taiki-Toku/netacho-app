@@ -8,6 +8,12 @@
   "title": "架空:手順書の差分チェックを半自動にする",
   "lead": "見本のリード文です。",
   "summary": "これは画面確認用の架空のネタです。実在の製品や出来事ではありません。2〜4文の長さの要約が入ります。",
+  "points": [
+   "見本の要点の1行目です。",
+   "見本の要点の2行目です。",
+   "見本の要点の3行目です。"
+  ],
+  "excerpt": "これは架空の元記事から引用した、という体裁の見本の文です。\n改行もそのまま出ます。",
   "tryit": "最初の一歩の見本です。",
   "caution": "注意点の見本です。",
   "categories": [
@@ -31,7 +37,8 @@
   },
   "rating": "hot",
   "status": "plan",
-  "memo": "見本のメモ"
+  "memo": "見本のメモ",
+  "imageUrl": "fixtures/images/desk.svg"
  },
  {
   "id": "2026-01-02-02",
@@ -61,7 +68,8 @@
   },
   "rating": "good",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/term.svg"
  },
  {
   "id": "2026-01-02-03",
@@ -128,7 +136,8 @@
   },
   "rating": "meh",
   "status": "interest",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/micn.svg"
  },
  {
   "id": "2026-01-02-05",
@@ -160,7 +169,8 @@
   },
   "rating": "",
   "status": "tried",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/term.svg"
  },
  {
   "id": "2026-01-02-06",
@@ -188,7 +198,8 @@
   },
   "rating": "no",
   "status": "skip",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "http://example.com/not-https.svg"
  },
  {
   "id": "2026-01-02-07",
@@ -199,13 +210,14 @@
   "title": "架空:表示の安全確認 <script>alert(1)</script> <b>太字</b> &amp;",
   "lead": "記号がそのまま文字として出ること(HTML として解釈されないこと)を確かめる見本です。",
   "summary": "<img src=x onerror=alert(1)> この行は、HTML として解釈されずに、文字のまま表示されるのが正しい動きです。\n改行も入っています。",
+  "excerpt": "<iframe src=\"https://example.com\"></iframe> 抜粋の中の HTML も文字のまま出ます。",
   "tryit": "",
   "caution": "",
   "categories": [
    "セキュリティ×AI"
   ],
   "projects": [
-   "CyberArk"
+   "見本の特権ID管理"
   ],
   "tags": [
    "プレビュー版"
@@ -220,7 +232,8 @@
   },
   "rating": "",
   "status": "",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "javascript:alert(1)"
  },
  {
   "id": "2026-01-01-01",
@@ -252,7 +265,8 @@
   },
   "rating": "good",
   "status": "adopted",
-  "memo": ""
+  "memo": "",
+  "imageUrl": "fixtures/images/dusk.svg"
  },
  {
   "id": "2026-01-01-02",

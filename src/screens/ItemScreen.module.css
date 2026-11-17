@@ -1,0 +1,286 @@
+.detail {
+  max-width: var(--detail-max);
+  margin: 0 auto;
+  /* 縦のスクロールと拡大はブラウザーに任せ、横の動きはスワイプ(useSwipe)で受ける */
+  touch-action: pan-y pinch-zoom;
+}
+
+/* 左右スワイプ(仕様 7 章)。位置(--swipe-x)と印(data-swipe)は useSwipe が付ける。
+   指で動かしている間(drag)はそのまま付いていき、離したあと(settle)だけなめらかに動かす。
+   印が無いときは transform を付けない */
+.swipe[data-swipe] {
+  transform: translate3d(var(--swipe-x, 0), 0, 0);
+}
+
+.swipe[data-swipe='settle'] {
+  transition: transform var(--duration) var(--ease);
+}
+
+/* スワイプで移ってきた記事は、反対側から入る */
+.swipe[data-swipe-enter='right'] {
+  animation: enter-from-right var(--duration) var(--ease);
+}
+
+.swipe[data-swipe-enter='left'] {
+  animation: enter-from-left var(--duration) var(--ease);
+}
+
+@keyframes enter-from-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes enter-from-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+/* 動きを減らす設定では動かさない(useSwipe も位置を付けない。仕様 4 章末「共通」) */
+@media (prefers-reduced-motion: reduce) {
+  .swipe[data-swipe],
+  .swipe[data-swipe-enter] {
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+}
+
+.back {
+  /* 1行に独立させる(ジャンル名を同じ行に詰めない)。押せる範囲は文字の幅だけ */
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--tap);
+  color: var(--muted);
+  font-size: var(--fs-13);
+  margin-bottom: var(--sp-3);
+}
+
+@media (hover: hover) {
+  .back:hover {
+    color: var(--accent);
+  }
+}
+
+.title {
+  font-size: var(--fs-detail-heading);
+  line-height: var(--lh-title);
+  font-weight: var(--weight-semibold);
+  margin: var(--sp-3) 0;
+  outline-offset: var(--sp-1);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2h);
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: var(--sp-4) 0;
+}
+
+.hero {
+  width: 100%;
+  height: var(--hero-h);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin: var(--sp-2) 0 var(--sp-6);
+  background: var(--surface-3);
+}
+
+.lead {
+  font-size: var(--fs-16);
+  line-height: var(--lh-text);
+  color: var(--ink-soft);
+  margin: 0 0 var(--sp-4h);
+}
+
+.box {
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5) var(--sp-5h);
+  margin: 0 0 var(--sp-7);
+}
+
+.boxText {
+  margin: var(--sp-2h) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  line-height: 1.95;
+  /* 要約は改行を含むことがある。改行は保ち、連続する空白は詰める */
+  white-space: pre-line;
+}
+
+.points {
+  margin: var(--sp-2h) 0 0;
+  padding-left: var(--sp-5);
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  line-height: var(--lh-text);
+}
+
+/* 元記事の抜粋:手を加えずに引用するため、改行も空白もそのまま保つ */
+.excerpt {
+  margin: 0 0 var(--sp-7);
+}
+
+.quote {
+  margin: var(--sp-2h) 0 0;
+  padding: var(--sp-4) var(--sp-5);
+  border-left: var(--line-strong) solid var(--line);
+  background: var(--nav);
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  line-height: var(--lh-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.aiNote {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin: var(--sp-2h) 0 0;
+  min-height: var(--sp-5);
+}
+
+.bodyHeading {
+  font-size: var(--fs-19);
+  font-weight: var(--weight-semibold);
+  margin: var(--sp-8) 0 var(--sp-2h);
+}
+
+.bodyText {
+  margin: 0 0 var(--sp-4h);
+  font-size: var(--fs-16);
+  line-height: var(--lh-text);
+  color: var(--ink-soft);
+  white-space: pre-line;
+}
+
+.fields {
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3h);
+  border-bottom: var(--line-thin) solid var(--line);
+  padding: var(--sp-2h) 0;
+  font-size: var(--fs-13);
+}
+
+.field dt {
+  color: var(--muted);
+  flex: none;
+}
+
+.field dd {
+  margin: 0;
+  text-align: right;
+  font-weight: var(--weight-semibold);
+  min-width: 0;
+}
+
+.meters {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.rate {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.rateButton,
+.rateOn {
+  min-height: var(--tap-lg);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+
+.rateOn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: var(--weight-bold);
+}
+
+.memo {
+  width: 100%;
+  margin-top: var(--sp-2h);
+  padding: var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-15);
+  line-height: var(--lh-body);
+  resize: vertical;
+}
+
+.memo::placeholder {
+  color: var(--muted);
+}
+
+/* 前後の移動 */
+.pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-9);
+  padding-top: var(--sp-4);
+  border-top: var(--line-thin) solid var(--line);
+}
+
+.pagerLink,
+.pagerDisabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-13);
+  color: var(--ink-soft);
+}
+
+@media (hover: hover) {
+  .pagerLink:hover {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+  }
+}
+
+.pagerDisabled {
+  color: var(--muted);
+  border-style: dashed;
+  background: transparent;
+}
+
+.pagerPosition {
+  min-width: 3em;
+  text-align: center;
+  font-size: var(--fs-13);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

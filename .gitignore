@@ -2,6 +2,7 @@
 local-data/
 # 作業用
 .tmp/
+tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example
@@ -12,3 +13,7 @@ __pycache__/
 # Playwright
 test-results/
 playwright-report/
+# 試験のカバレッジ
+coverage/
+# 作業の計画(エージェントが書く。リポジトリに入れない)
+PLAN.md

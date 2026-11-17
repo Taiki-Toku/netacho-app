@@ -1,0 +1,50 @@
+.source {
+  margin: var(--sp-8) 0 0;
+  padding: var(--sp-4) 0;
+  border-top: var(--line-thin) solid var(--line);
+  border-bottom: var(--line-thin) solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.label {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--ls-label);
+  color: var(--accent);
+}
+
+.text {
+  font-size: var(--fs-13);
+  color: var(--muted);
+  margin: var(--sp-1) 0 0;
+}
+
+.url,
+.note {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin: var(--sp-0h) 0 0;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-13);
+  color: var(--ink-soft);
+}
+
+@media (hover: hover) {
+  .action:hover {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+  }
+}

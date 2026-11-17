@@ -1,0 +1,51 @@
+.icon,
+.iconOn {
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.iconOn {
+  color: var(--accent-strong);
+}
+
+@media (hover: hover) {
+  .icon:hover,
+  .iconOn:hover {
+    background: var(--surface-2);
+  }
+}
+
+.action,
+.actionOn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--tap);
+  padding: 0 var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.actionOn {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+}
+
+@media (hover: hover) {
+  .action:hover,
+  .actionOn:hover {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+  }
+}

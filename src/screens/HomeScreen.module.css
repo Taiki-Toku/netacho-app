@@ -1,0 +1,195 @@
+/* トップ:文章 + 画像の大きな枠。画像が無いとき(featureTextOnly)は、文章だけで全幅。
+   画面の一番上に来るので、上の余白は付けない(見出しは読み上げ用だけ) */
+.feature,
+.featureTextOnly {
+  /* 見出しのリンクの ::after を、この枠の大きさに広げるための基準 */
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  min-height: var(--feature-min-h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.featureTextOnly {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.featureCopy {
+  padding: var(--sp-7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.featureTitle {
+  font-weight: var(--weight-semibold);
+  font-size: var(--fs-feature-heading);
+  line-height: var(--lh-title);
+  margin: var(--sp-3) 0;
+}
+
+/* 押せる範囲を枠全体(画像も含む)に広げる。フォーカスの枠は見出しのリンクに出る(:focus-visible は消さない) */
+.featureLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+@media (hover: hover) {
+  .featureLink:hover {
+    color: var(--accent-strong);
+  }
+}
+
+.featureDesc {
+  font-size: var(--fs-14);
+  color: var(--muted);
+  line-height: var(--lh-loose);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2h);
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  margin-top: var(--sp-4h);
+  width: 100%;
+}
+
+.metaSave {
+  margin-left: auto;
+  /* 枠全体に広げたリンク(::after)より上に出し、保存ボタンが押せるようにする */
+  position: relative;
+  z-index: var(--z-row-control);
+}
+
+.featureImage {
+  min-height: var(--feature-min-h);
+  background: var(--surface-3);
+  /* 画像には filter が付き、DOM の順で見出しのリンクの ::after より上に描かれる。
+     押した先が画像にならないよう、押す操作だけ下の ::after へ通す(重なる順は変えない) */
+  pointer-events: none;
+}
+
+/* 脆弱性ウォッチの帯1本(どの幅でも出す) */
+.band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4h);
+  padding: var(--sp-3h) var(--sp-4);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+@media (hover: hover) {
+  .band:hover .bandTitle {
+    color: var(--accent-strong);
+  }
+}
+
+.bandBody {
+  min-width: 0;
+}
+
+.bandTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2h);
+  font-size: var(--fs-14);
+}
+
+.bandCount {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--ls-label);
+  color: var(--sev-critical);
+}
+
+.bandText {
+  display: block;
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin-top: var(--sp-0h);
+  overflow-wrap: anywhere;
+}
+
+.bandScore {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1h);
+  font-size: var(--fs-21);
+  font-weight: var(--weight-bold);
+  color: var(--sev-critical);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bandScoreLabel {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
+}
+
+/* 登場アニメ(トップの最初の表示だけ。HomeScreen の intro が true のときだけクラスが付く)。
+   枠ごとに少しずらして、下から浮かび上がる */
+.intro1,
+.intro2,
+.intro3 {
+  animation: rise var(--duration-intro) var(--ease) both;
+}
+
+.intro2 {
+  animation-delay: var(--intro-stagger);
+}
+
+.intro3 {
+  animation-delay: calc(var(--intro-stagger) * 2);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--intro-rise));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro1,
+  .intro2,
+  .intro3 {
+    animation: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .feature,
+  .featureTextOnly {
+    display: flex;
+    flex-direction: column-reverse;
+    min-height: 0;
+  }
+
+  .featureImage {
+    height: var(--feature-img-h-mobile);
+    min-height: var(--feature-img-h-mobile);
+  }
+
+  .featureCopy {
+    padding: var(--sp-4h) var(--sp-4h) var(--sp-5);
+  }
+
+  .featureTitle {
+    font-size: var(--fs-21);
+    margin: var(--sp-2) 0;
+  }
+}

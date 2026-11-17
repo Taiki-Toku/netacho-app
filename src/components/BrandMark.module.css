@@ -1,0 +1,17 @@
+.mark {
+  width: var(--brand-mark-w);
+  height: var(--brand-mark-h);
+  flex: none;
+  stroke-width: 8;
+  stroke-linejoin: round;
+}
+
+.ink {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+.accent {
+  fill: var(--accent);
+  stroke: var(--accent);
+}

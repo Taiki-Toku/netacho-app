@@ -1,0 +1,7 @@
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 記事の画像は色調をそろえる(仕様 5 章) */
+  filter: var(--image-filter);
+}

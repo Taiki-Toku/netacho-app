@@ -1,0 +1,83 @@
+.app {
+  min-height: 100%;
+}
+
+/* キーボードの人のための「本文へ」。焦点が当たったときだけ見える */
+.skip {
+  position: absolute;
+  top: calc(-1 * var(--sp-26));
+  left: var(--sp-4);
+  z-index: var(--z-skip);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: var(--weight-bold);
+}
+
+.skip:focus-visible {
+  top: var(--sp-2);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  max-width: var(--workspace-max);
+  margin: 0 auto;
+}
+
+.main {
+  min-width: 0;
+  padding: var(--sp-9) var(--main-pad-x) var(--sp-20);
+  outline: none;
+  /* 詳細のスワイプで記事が横に出ても、画面を横にスクロールさせない(clip はスクロールの枠を作らない) */
+  overflow-x: clip;
+}
+
+.contentGrid,
+.contentSingle,
+.contentDetail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  gap: var(--sp-9);
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.contentSingle,
+.contentDetail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mainColumn {
+  min-width: 0;
+  max-width: var(--main-max);
+}
+
+/* 詳細:列の幅は本文(最大 660px)が決め、中央の領域の中で左右中央に寄せる(仕様 3 章) */
+.contentDetail > .mainColumn {
+  max-width: none;
+}
+
+@media (max-width: 1100px) {
+  .contentGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 中央が右端の近くまで広がり、「先頭へ戻る」(右下に固定)がメモ欄のつまみや「前/次のニュース」に重なるため、
+     画面の下にボタンの分(下からの位置 + 高さ)の余白を足す。767px 以下は位置が違うので下で上書きする(仕様 4 章の共通) */
+  .main {
+    padding-bottom: calc(var(--sp-20) + var(--sp-8) + var(--tap));
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace {
+    display: block;
+  }
+
+  .main {
+    /* 下:「先頭へ戻る」(下のメニューの上)の下からの位置 + 高さ + 間。下のメニューもこの中に収まる */
+    padding: var(--sp-5h) max(var(--sp-4), env(safe-area-inset-right, 0px)) calc(var(--to-top-bottom-mobile) + var(--tap) + var(--sp-4)) max(var(--sp-4), env(safe-area-inset-left, 0px));
+  }
+}

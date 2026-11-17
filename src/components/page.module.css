@@ -1,0 +1,137 @@
+/* 画面に共通の部品(見出し、区切り、添え書き、空の状態)。各画面から import して使う */
+
+.heading {
+  font-size: var(--fs-page-heading);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-heading);
+  line-height: var(--lh-heading);
+  margin: 0 0 var(--sp-1h);
+}
+
+.subtitle {
+  font-size: var(--fs-14);
+  color: var(--muted);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin: var(--sp-9) 0 var(--sp-3);
+}
+
+.sectionTitle {
+  font-size: var(--fs-18);
+  font-weight: var(--weight-semibold);
+}
+
+.caption {
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+/* ジャンル名などの短い札(文字だけ) */
+.label {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--ls-label);
+  color: var(--accent);
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-sm);
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .textLink:hover {
+    color: var(--accent-strong);
+  }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin: var(--sp-5h) 0 var(--sp-3h);
+}
+
+.sampleNote {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin-top: var(--sp-4h);
+}
+
+.empty,
+.emptySpaced {
+  padding: var(--sp-13) var(--sp-5h);
+  border: var(--line-thin) dashed var(--line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--muted);
+}
+
+.emptySpaced {
+  margin-top: var(--sp-5h);
+}
+
+/* 帯の形の 0 件(トップの脆弱性ウォッチ)。枠は 0 件と同じ点線で、高さは帯にそろえる */
+.emptyBand {
+  margin-top: var(--sp-4h);
+  padding: var(--sp-3h) var(--sp-4);
+  border: var(--line-thin) dashed var(--line);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+}
+
+.emptyTitle {
+  display: block;
+  color: var(--ink-soft);
+  font-size: var(--fs-15);
+  margin-bottom: var(--sp-1);
+}
+
+.emptyText {
+  font-size: var(--fs-13);
+}
+
+/* 通信エラーの「もう一度読み込む」 */
+.retry {
+  min-height: var(--tap);
+  margin-top: var(--sp-4);
+  padding: 0 var(--sp-4h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .retry:hover {
+    background: var(--surface-2);
+    color: var(--accent-strong);
+  }
+}
+
+.list {
+  border-top: var(--line-thin) solid var(--line);
+}
+
+.listSpaced {
+  border-top: var(--line-thin) solid var(--line);
+  margin-top: var(--sp-5h);
+}

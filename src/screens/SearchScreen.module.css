@@ -1,0 +1,28 @@
+.cards {
+  display: grid;
+  gap: var(--sp-2h);
+}
+
+/* 一致したジャンル。ジャンルのタブと同じく、名前だけを押せる札にする */
+.genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.genreLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-sm);
+  padding: 0 var(--sp-4);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-14);
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .genreLink:hover {
+    background: var(--surface-2);
+  }
+}

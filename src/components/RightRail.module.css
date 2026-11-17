@@ -1,0 +1,101 @@
+.rail {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-4h);
+}
+
+.card {
+  background: var(--surface);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4h);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2h);
+}
+
+.title {
+  font-size: var(--fs-14);
+  font-weight: var(--weight-bold);
+}
+
+.desc {
+  font-size: var(--fs-13);
+  color: var(--muted);
+  margin: var(--sp-1h) 0 0;
+  line-height: var(--lh-body);
+}
+
+.divider {
+  height: var(--line-thin);
+  background: var(--line);
+  margin: var(--sp-3) 0 var(--sp-0h);
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 var(--sp-0h);
+}
+
+.score strong {
+  font-size: var(--fs-32);
+  letter-spacing: var(--ls-score);
+  font-weight: var(--weight-semibold);
+  color: var(--sev-critical);
+  line-height: var(--lh-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.score span {
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+.cve {
+  display: inline-block;
+  font-size: var(--fs-14);
+  font-weight: var(--weight-bold);
+}
+
+@media (hover: hover) {
+  .cve:hover,
+  .miniLink:hover {
+    color: var(--accent-strong);
+  }
+}
+
+.miniList {
+  display: grid;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.miniItem strong {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-title);
+}
+
+.miniItem span {
+  display: block;
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin-top: var(--sp-0h);
+}
+
+.miniLink {
+  display: block;
+}
+
+@media (max-width: 1100px) {
+  .rail {
+    display: none;
+  }
+}

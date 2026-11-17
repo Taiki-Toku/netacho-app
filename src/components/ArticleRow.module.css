@@ -1,0 +1,121 @@
+.row {
+  /* 見出しのリンクの ::after を、この行の大きさに広げるための基準 */
+  position: relative;
+  /* 番号(あれば)・文章・画像(あれば)。番号や画像が無い行は、その場所を取らず文章が広がる */
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-4h) 0;
+  border-bottom: var(--line-thin) solid var(--line-row);
+  /* 500 本でも一覧がもたつかないよう、画面の外の行は描画を後回しにする */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 128px;
+}
+
+.order {
+  flex: none;
+  width: var(--order-w);
+  font-size: var(--fs-14);
+  color: var(--muted);
+  line-height: var(--lh-loose);
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-16);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-row);
+  margin: var(--sp-1) 0 var(--sp-1h);
+}
+
+.link {
+  display: block;
+}
+
+/* 押せる範囲を行全体に広げる。フォーカスの枠は見出しのリンクに出る(:focus-visible は消さない) */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    color: var(--accent-strong);
+  }
+}
+
+.summary {
+  font-size: var(--fs-13);
+  line-height: 1.75;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.summaryOneLine {
+  font-size: var(--fs-13);
+  line-height: var(--lh-row);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  display: flex;
+  gap: var(--sp-2h);
+  align-items: center;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  margin-top: var(--sp-2);
+}
+
+.save {
+  margin-left: auto;
+  /* 行全体に広げたリンク(::after)より上に出し、保存ボタンが押せるようにする */
+  position: relative;
+  z-index: var(--z-row-control);
+}
+
+.thumb {
+  flex: none;
+  width: var(--thumb-w);
+  height: var(--thumb-h);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-3);
+  /* 中の画像には filter が付き、DOM の順で見出しのリンクの ::after より上に描かれる。
+     押した先が画像にならないよう、押す操作だけ下の ::after へ通す(重なる順は変えない) */
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .row {
+    gap: var(--sp-3);
+    padding: var(--sp-4) 0;
+  }
+
+  .order {
+    width: var(--order-w-mobile);
+  }
+
+  .thumb {
+    width: var(--thumb-w-mobile);
+    height: var(--thumb-h-mobile);
+  }
+
+  .title {
+    font-size: var(--fs-15);
+  }
+
+  .summary {
+    display: none;
+  }
+}

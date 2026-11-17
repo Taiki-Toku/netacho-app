@@ -1,0 +1,274 @@
+// ネタの詳細(仕様 4 章 5):ジャンル名、見出し、出典と日付、保存ボタン、画像(無ければ出典の横に小さな札)、要点(AIがまとめたと明記)、
+// 元記事の抜粋、試してみる(確かめること)、気をつけること、出典と元記事へのリンク、評価4つ、メモ(自動保存)、前後のニュース。上のバーの下端に読了バー。
+// 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このニュースについて」の欄に残す。前後の移動はボタンと左右スワイプ
+import { useEffect, useRef } from 'react'
+import { hrefFor, navigate, type Route } from '../app/router.ts'
+import { itemInitial } from '../components/ArticleRow.tsx'
+import { Icon } from '../components/Icon.tsx'
+import { ReadingProgress } from '../components/ReadingProgress.tsx'
+import { SaveButton } from '../components/SaveButton.tsx'
+import { SourceBadge } from '../components/SourceBadge.tsx'
+import { SourceLink } from '../components/SourceLink.tsx'
+import { StarMeter } from '../components/StarMeter.tsx'
+import { Thumb, useThumb } from '../components/Thumb.tsx'
+import { RATING_CHOICES, RATING_LABELS, STAR_AXES, STATUS_LABELS, tryitHeading } from '../data/labels.ts'
+import { findItem, genreLabelMap, genreLabelOf, latestDate, neighbors } from '../data/queries.ts'
+import type { LoadedData } from '../data/source.ts'
+import { itemSourceName } from '../data/sourceName.ts'
+import type { Item, Rating } from '../data/types.ts'
+import { useUserState, useUserStore } from '../data/userStore.ts'
+import { formatDateLong } from '../lib/format.ts'
+import { useSwipe } from '../lib/useSwipe.ts'
+import pageStyles from '../components/page.module.css'
+import styles from './ItemScreen.module.css'
+
+interface ItemScreenProps {
+  data: LoadedData
+  id: string
+}
+
+export function ItemScreen({ data, id }: ItemScreenProps) {
+  const { items, genres } = data
+  const item = findItem(items, id)
+  if (item === null) {
+    return (
+      <section className={styles.detail} aria-labelledby="item-title">
+        <h1 id="item-title" className={pageStyles.heading}>
+          このニュースは見つかりません
+        </h1>
+        <p className={pageStyles.subtitle}>削除されたか、アドレスが違うようです。</p>
+        <a className={styles.back} href={hrefFor({ name: 'home' })}>
+          <Icon name="back" />
+          今日のニュースへ
+        </a>
+      </section>
+    )
+  }
+
+  const genreLabel = genreLabelOf(item, genreLabelMap(genres))
+  // 戻り先:今朝のネタならトップ、前の日のネタならそのジャンル(ジャンルが無ければトップ)
+  const back: Route =
+    item.date === latestDate(items) || item.genre === null ? { name: 'home' } : { name: 'genre', id: item.genre, kind: 'all' }
+
+  return <ItemView key={item.id} item={item} genreLabel={genreLabel} back={back} nav={neighbors(items, item)} />
+}
+
+interface ItemViewProps {
+  item: Item
+  genreLabel: string
+  back: Route
+  nav: ReturnType<typeof neighbors>
+}
+
+function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const store = useUserStore()
+  const feedback = useUserState().feedback[item.id] ?? {}
+  // 自分で付けた評価・メモがあればそれを、無ければネタに元から付いているものを出す
+  const rating: Rating = feedback.rating ?? item.rating
+  const memo = feedback.memo ?? item.memo
+  const memoSaved = feedback.memo !== undefined
+  // 画像が無い・危ない・読み込みに失敗したときは、大きな枠を出さずに出典の横へ小さな札を出す(仕様 4 章-5、5 章)
+  const thumb = useThumb(item.imageUrl)
+
+  // 左右のスワイプで前後のニュースへ(仕様 7 章)。移り方は下の「前後のニュース」のリンクと同じ(URL が変わり、「戻る」で戻れる)
+  const swipeRef = useRef<HTMLDivElement>(null)
+  const swipeHandlers = useSwipe(swipeRef, {
+    canLeft: nav.next !== null,
+    canRight: nav.prev !== null,
+    onLeft: () => {
+      if (nav.next !== null) navigate({ name: 'item', id: nav.next.id })
+    },
+    onRight: () => {
+      if (nav.prev !== null) navigate({ name: 'item', id: nav.prev.id })
+    },
+  })
+
+  // ネタが切り替わったら、見出しに焦点を移す(読み上げにも「新しいネタに移った」と伝わる)
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true })
+  }, [item.id])
+
+  const backLabel = '一覧に戻る'
+
+  return (
+    <article className={styles.detail} aria-labelledby="item-title" {...swipeHandlers}>
+      {/* 読了バーは画面に固定するため、スワイプで動く枠の外に置く(中に置くと、記事と一緒に動く) */}
+      <ReadingProgress />
+      <div ref={swipeRef} className={styles.swipe}>
+        {/* 戻るリンクは1行に独立させ、ジャンル名はその下の行(仕様 4 章-5) */}
+        <a className={styles.back} href={hrefFor(back)}>
+          <Icon name="back" />
+          {backLabel}
+        </a>
+        <span className={pageStyles.label}>{genreLabel}</span>
+        <h1 id="item-title" ref={titleRef} className={styles.title} tabIndex={-1}>
+          {item.title !== '' ? item.title : '(見出しなし)'}
+        </h1>
+        <div className={styles.metaRow}>
+          {thumb.shown ? null : <SourceBadge initial={itemInitial(item, genreLabel)} />}
+          <span>{itemSourceName(item, genreLabel)}</span>
+          <span>{formatDateLong(item.date)}</span>
+          <span>
+            {nav.position} / {nav.total}
+          </span>
+        </div>
+        <div className={styles.actions}>
+          <SaveButton id={item.id} labelled />
+        </div>
+        {thumb.shown ? (
+          <div className={styles.hero}>
+            <Thumb url={item.imageUrl} eager onFail={thumb.onFail} />
+          </div>
+        ) : null}
+
+        {item.lead !== '' ? <p className={styles.lead}>{item.lead}</p> : null}
+
+        {item.points.length > 0 || item.summary !== '' ? (
+          <section className={styles.box} aria-labelledby="item-points">
+            <h2 id="item-points" className={pageStyles.label}>
+              要点
+            </h2>
+            {/* 箇条のデータ(points)があれば箇条、無ければ summary を段落のまま。文を切って箇条を作らない */}
+            {item.points.length > 0 ? (
+              <ul className={styles.points}>
+                {item.points.map((point, index) => (
+                  // 同じ文の箇条が重なることがあるため、順番を鍵にする(並びは変わらない)
+                  <li key={index}>{point}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.boxText}>{item.summary}</p>
+            )}
+            <p className={styles.aiNote}>この要点は、元の記事をもとにAIがまとめたものです。</p>
+          </section>
+        ) : null}
+
+        {item.excerpt !== '' ? (
+          <section className={styles.excerpt} aria-labelledby="item-excerpt">
+            <h2 id="item-excerpt" className={pageStyles.label}>
+              元記事の抜粋
+            </h2>
+            {/* 原文を手を加えずに引用する。文字のまま出す(HTML として解釈しない) */}
+            <blockquote className={styles.quote}>{item.excerpt}</blockquote>
+          </section>
+        ) : null}
+
+        {item.tryit !== '' ? (
+          <section className={styles.box} aria-labelledby="item-tryit">
+            <h2 id="item-tryit" className={pageStyles.label}>
+              {tryitHeading(item.genre)}
+            </h2>
+            <p className={styles.boxText}>{item.tryit}</p>
+          </section>
+        ) : null}
+
+        {item.caution !== '' ? (
+          <section aria-labelledby="item-caution">
+            <h2 id="item-caution" className={styles.bodyHeading}>
+              気をつけること
+            </h2>
+            <p className={styles.bodyText}>{item.caution}</p>
+          </section>
+        ) : null}
+
+        <SourceLink url={item.sourceUrl} title={item.sourceTitle} />
+
+        <section aria-labelledby="item-about">
+          <h2 id="item-about" className={styles.bodyHeading}>
+            このニュースについて
+          </h2>
+          <dl className={styles.fields}>
+            {item.slot !== '' ? <Field label="コーナー" value={item.slot} /> : null}
+            {item.trust !== '' ? <Field label="情報の確かさ" value={item.trust} /> : null}
+            <Field label="扱い" value={STATUS_LABELS[item.status]} />
+            {item.categories.length > 0 ? <Field label="カテゴリ" value={item.categories.join('、')} /> : null}
+            {item.projects.length > 0 ? <Field label="取り組み" value={item.projects.join('、')} /> : null}
+            {item.tags.length > 0 ? <Field label="タグ" value={item.tags.join('、')} /> : null}
+          </dl>
+          <div className={styles.meters}>
+            {STAR_AXES.map((axis) => (
+              <StarMeter key={axis.key} label={axis.label} value={item.stars[axis.key]} />
+            ))}
+          </div>
+        </section>
+
+        <div className={pageStyles.sectionHead}>
+          <h2 id="item-rating" className={pageStyles.sectionTitle}>
+            このニュース、どうでしたか
+          </h2>
+          <span className={pageStyles.caption}>{rating === '' ? '未評価' : `評価:${RATING_LABELS[rating]}`}</span>
+        </div>
+        <div className={styles.rate} role="group" aria-labelledby="item-rating">
+          {RATING_CHOICES.map((choice) => {
+            const on = rating === choice
+            return (
+              <button
+                key={choice}
+                type="button"
+                className={on ? styles.rateOn : styles.rateButton}
+                aria-pressed={on}
+                onClick={() => {
+                  // もう一度押すと外す
+                  store.setRating(item.id, on ? '' : choice)
+                }}
+              >
+                {RATING_LABELS[choice]}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className={pageStyles.sectionHead}>
+          <label className={pageStyles.sectionTitle} htmlFor="item-memo">
+            メモ
+          </label>
+        </div>
+        <textarea
+          id="item-memo"
+          className={styles.memo}
+          rows={3}
+          placeholder="試した結果や、思いついたことを書く"
+          value={memo}
+          onChange={(event) => {
+            store.setMemo(item.id, event.target.value)
+          }}
+        />
+        <p className={styles.aiNote} aria-live="polite">
+          {memoSaved ? 'メモを保存しました' : ''}
+        </p>
+
+        <nav className={styles.pager} aria-label="前後のニュース">
+          {nav.prev !== null ? (
+            <a className={styles.pagerLink} href={hrefFor({ name: 'item', id: nav.prev.id })} rel="prev">
+              前のニュース
+            </a>
+          ) : (
+            <span className={styles.pagerDisabled}>前のニュース</span>
+          )}
+          <span className={styles.pagerPosition} aria-hidden="true">
+            {nav.position} / {nav.total}
+          </span>
+          {nav.next !== null ? (
+            <a className={styles.pagerLink} href={hrefFor({ name: 'item', id: nav.next.id })} rel="next">
+              次のニュース
+            </a>
+          ) : (
+            <a className={styles.pagerLink} href={hrefFor(back)}>
+              {backLabel}
+            </a>
+          )}
+        </nav>
+      </div>
+    </article>
+  )
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.field}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  )
+}

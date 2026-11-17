@@ -1,0 +1,221 @@
+/* 虫めがねのボタンはスマホだけ */
+.toggle {
+  display: none;
+  width: var(--tap);
+  height: var(--tap);
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.search,
+.searchOpen {
+  /* 候補の一覧を、この欄の下に置くための基準 */
+  position: relative;
+  height: var(--tap-sm);
+  width: var(--search-w);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--bg);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--sp-3);
+  color: var(--muted);
+}
+
+/* 入力欄の枠は消している(.input の outline: 0)ので、欄の外枠でフォーカスを示す */
+.search:focus-within,
+.searchOpen:focus-within {
+  outline: var(--line-strong) solid var(--accent-strong);
+  outline-offset: var(--line-strong);
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: var(--fs-14);
+  color: var(--ink);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
+
+/* 送信は Enter でできる。ボタンは読み上げと、スマホで欄を開いたときの押し場所のために置く */
+.submit {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  padding: 0 var(--sp-1);
+  min-height: var(--tap-sm);
+  cursor: pointer;
+}
+
+.close {
+  display: none;
+}
+
+/*
+ * 候補の一覧。欄の右端にそろえ、欄より広く取る。影は付けず、線で地から分ける。
+ * 上端は上のバーの下端にそろえる。100% は欄の線の内側なので、欄の線 + バーの中で欄の下に空いた距離 + バーの下の線を足す
+ *(欄はバーの線の内側の高さ --topbar-h - 線 の中で上下中央にある)。
+ * バーの中から始めると、バーの下の線と読了バーを隠し、バーが伸びたように見える(依頼 5-4b)
+ */
+.popup {
+  position: absolute;
+  top: calc(100% + 2 * var(--line-thin) + (var(--topbar-h) - var(--line-thin) - var(--tap-sm)) / 2);
+  right: calc(-1 * var(--line-thin));
+  width: var(--suggest-w);
+  max-height: var(--suggest-max-h);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  animation: suggest-open var(--duration) var(--ease);
+}
+
+.popup[hidden] {
+  display: none;
+}
+
+@keyframes suggest-open {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--suggest-rise)));
+  }
+}
+
+/* 候補の位置(offsetTop)を、この一覧から測るための基準 */
+.list {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-1h) 0;
+}
+
+.group + .group {
+  border-top: var(--line-thin) solid var(--line-row);
+  margin-top: var(--sp-1h);
+  padding-top: var(--sp-1h);
+}
+
+/* 分類の見出し。押せない見た目(小さく、色を落とす) */
+.groupLabel {
+  font-size: var(--fs-12);
+  font-weight: var(--weight-bold);
+  color: var(--muted);
+  padding: var(--sp-1) var(--sp-4) var(--sp-1);
+}
+
+.option {
+  min-height: var(--tap-sm);
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: var(--sp-2h) var(--sp-4);
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .option:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* 選んでいる候補:左メニューの「いまの画面」と同じ塗りと文字色 */
+.option[aria-selected='true'] {
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+}
+
+.optionLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionNote {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+.hint {
+  flex: none;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-4);
+  border-top: var(--line-thin) solid var(--line-row);
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+@media (max-width: 767px) {
+  .toggle {
+    display: grid;
+  }
+
+  .search {
+    display: none;
+  }
+
+  /* 開いた欄は、上のバーいっぱいに重ねる */
+  .searchOpen {
+    position: absolute;
+    inset: var(--sp-2h) var(--sp-4);
+    width: auto;
+    height: auto;
+  }
+
+  /* スマホの欄は、上のバーの線の内側に上下 --sp-2h ずつ空けて重ねている(欄の線 + 空き + バーの下の線) */
+  .popup {
+    top: calc(100% + 2 * var(--line-thin) + var(--sp-2h));
+    left: calc(-1 * var(--line-thin));
+    width: auto;
+    max-height: var(--suggest-max-h-mobile);
+  }
+
+  .close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--tap-sm);
+    height: var(--tap-sm);
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+}
+
+/* キーボードの案内は PC だけ(仕様 4 章 7):幅の狭い画面と、指で触る端末では出さない */
+@media (max-width: 767px), (pointer: coarse) {
+  .hint {
+    display: none;
+  }
+}
+
+/* 候補が開く動きは止める(仕様 4 章末「共通」) */
+@media (prefers-reduced-motion: reduce) {
+  .popup {
+    animation: none;
+  }
+}

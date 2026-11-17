@@ -1,0 +1,151 @@
+[
+ {
+  "id": "feed-001",
+  "kind": "release",
+  "product": "サンプルOS Server",
+  "vendor": "見本ソフト",
+  "title": "架空:サンプルOS Server 10.2 を公開",
+  "publishedAt": "2026-01-03T02:00:00Z",
+  "url": "https://example.com/feed/1"
+ },
+ {
+  "id": "feed-002",
+  "kind": "eol",
+  "product": "サンプルOS Server",
+  "vendor": "見本ソフト",
+  "title": "架空:サンプルOS Server 8 の標準サポートが 2026年6月30日に終了",
+  "publishedAt": "2026-01-02T09:00:00Z",
+  "url": "https://example.com/feed/2"
+ },
+ {
+  "id": "feed-003",
+  "kind": "release",
+  "product": "見本ファイアウォール",
+  "vendor": "サンプルネットワークス",
+  "title": "架空:見本ファイアウォール OS 7.4.3 を公開(不具合の修正)",
+  "publishedAt": "2026-01-02T05:30:00Z",
+  "url": "https://example.com/feed/3"
+ },
+ {
+  "id": "feed-004",
+  "kind": "change",
+  "product": "サンプルクラウド",
+  "vendor": "見本クラウド",
+  "title": "架空:サンプルクラウドの仮想マシンの料金を 2月1日から改定",
+  "publishedAt": "2026-01-01T12:00:00Z",
+  "url": "https://example.com/feed/4"
+ },
+ {
+  "id": "feed-005",
+  "kind": "exam",
+  "product": "サンプル認定プログラム",
+  "vendor": "見本ソフト",
+  "title": "架空:サンプル管理者試験を 4月に改定(現行の試験は 3月31日まで)",
+  "publishedAt": "2026-01-01T03:00:00Z",
+  "url": "https://example.com/feed/5"
+ },
+ {
+  "id": "feed-006",
+  "kind": "release",
+  "product": "サンプルペイント",
+  "vendor": "見本クリエイティブ",
+  "title": "架空:サンプルペイント 4.1 を公開(ブラシの新機能)",
+  "publishedAt": "2025-12-31T08:00:00Z",
+  "url": "https://example.com/feed/6"
+ },
+ {
+  "id": "feed-007",
+  "kind": "vuln",
+  "product": "見本ファイアウォール",
+  "vendor": "サンプルネットワークス",
+  "title": "架空:見本ファイアウォールの管理画面に、認証を回避される脆弱性(悪用を確認)",
+  "publishedAt": "2026-01-03T04:10:00Z",
+  "url": "https://example.com/feed/7",
+  "severity": "critical",
+  "cve": "CVE-2026-90001",
+  "cvss": 9.8,
+  "status": "修正版 7.4.3 あり"
+ },
+ {
+  "id": "feed-008",
+  "kind": "vuln",
+  "product": "サンプルOS Server",
+  "vendor": "見本ソフト",
+  "title": "架空:サンプルOS Server の印刷サービスに、権限を上げられる脆弱性",
+  "publishedAt": "2026-01-02T22:00:00Z",
+  "url": "https://example.com/feed/8",
+  "severity": "high",
+  "cve": "CVE-2026-90002",
+  "cvss": 8.1,
+  "status": "修正版あり"
+ },
+ {
+  "id": "feed-009",
+  "kind": "vuln",
+  "product": "サンプルVPN",
+  "vendor": "見本セキュア",
+  "title": "架空:サンプルVPN に、遠隔からコードを実行される脆弱性",
+  "publishedAt": "2026-01-01T15:45:00Z",
+  "url": "https://example.com/feed/9",
+  "severity": "critical",
+  "cve": "CVE-2026-90003",
+  "cvss": 9.1,
+  "status": "回避策あり"
+ },
+ {
+  "id": "feed-010",
+  "kind": "vuln",
+  "product": "サンプルDB",
+  "vendor": "見本データ",
+  "title": "架空:サンプルDB に、情報が漏れる脆弱性",
+  "publishedAt": "2025-12-30T10:00:00Z",
+  "url": "https://example.com/feed/10",
+  "severity": "medium",
+  "cve": "CVE-2026-90004",
+  "cvss": 6.5,
+  "status": "修正予定"
+ },
+ {
+  "id": "feed-011",
+  "kind": "outage",
+  "product": "サンプルクラウド",
+  "vendor": "見本クラウド",
+  "title": "架空:東京リージョンで、仮想マシンの起動に失敗する事象",
+  "publishedAt": "2026-01-03T05:20:00Z",
+  "url": "https://example.com/feed/11",
+  "status": "調査中"
+ },
+ {
+  "id": "feed-012",
+  "kind": "outage",
+  "product": "サンプルメール",
+  "vendor": "見本オフィス",
+  "title": "架空:メールの送受信に遅れが出る事象",
+  "publishedAt": "2026-01-02T01:10:00Z",
+  "url": "https://example.com/feed/12",
+  "status": "復旧済み"
+ },
+ {
+  "id": "feed-013",
+  "kind": "outage",
+  "product": "サンプルGit",
+  "vendor": "見本デベロッパー",
+  "title": "架空:ワークフローの実行が待ち状態のままになる事象",
+  "publishedAt": "2025-12-31T18:30:00Z",
+  "url": "http://example.com/not-https",
+  "status": "復旧済み"
+ },
+ {
+  "id": "feed-014",
+  "kind": "vuln",
+  "product": "サンプルペイント",
+  "vendor": "見本クリエイティブ",
+  "title": "架空:サンプルペイントで、細工したファイルを開くとアプリが止まる脆弱性",
+  "publishedAt": "2025-12-29T07:00:00Z",
+  "url": "https://example.com/feed/14",
+  "severity": "low",
+  "cve": "CVE-2026-90005",
+  "cvss": 3.7,
+  "status": "修正予定"
+ }
+]
