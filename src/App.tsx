@@ -1,6 +1,8 @@
 // アプリの骨組み(仕様 3 章):上のバー + 左メニュー(PC)/ジャンルのタブ(スマホ)+ 中央 + 右の列(PC)+ 下のメニュー(スマホ)
-import { useEffect, useMemo, useState } from 'react'
-import { screenKey, useRoute, type Route } from './app/router.ts'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { navigate, screenKey, useRoute, type Route } from './app/router.ts'
+import { SignOutContext } from './app/session.ts'
+import { EmptyState } from './components/EmptyState.tsx'
 import { ErrorState } from './components/ErrorState.tsx'
 import { GenreTabs } from './components/GenreTabs.tsx'
 import { LoadingState } from './components/LoadingState.tsx'
@@ -11,14 +13,16 @@ import { Sidebar } from './components/Sidebar.tsx'
 import { ToastProvider } from './components/Toast.tsx'
 import { TopBar } from './components/TopBar.tsx'
 import { DataProvider, useData, useReloadData } from './data/DataProvider.tsx'
-import { latestDate, menuGenres, vulnerabilities } from './data/queries.ts'
-import type { LoadedData } from './data/source.ts'
+import type { Backend } from './data/backend.ts'
+import { latestDate, vulnerabilities } from './data/queries.ts'
+import { supabaseData, type LoadedData } from './data/source.ts'
 import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore } from './data/userStore.ts'
 import { formatDateHeader } from './lib/format.ts'
 import { FeedScreen } from './screens/FeedScreen.tsx'
 import { GenreScreen } from './screens/GenreScreen.tsx'
 import { HomeScreen } from './screens/HomeScreen.tsx'
 import { ItemScreen } from './screens/ItemScreen.tsx'
+import { LoginScreen } from './screens/LoginScreen.tsx'
 import { SavedScreen } from './screens/SavedScreen.tsx'
 import { SearchScreen } from './screens/SearchScreen.tsx'
 import { VulnDetailScreen } from './screens/VulnDetailScreen.tsx'
@@ -56,7 +60,7 @@ function Shell() {
   const state = useData()
   const reload = useReloadData()
   const data = state.status === 'ready' ? state.data : null
-  const genres = useMemo(() => (data === null ? [] : menuGenres(data.genres)), [data])
+  const genres = useMemo(() => (data === null ? [] : data.genres), [data])
   const savedCount = useUserState().saved.length
   const vulnCount = data === null ? 0 : vulnerabilities(data.feed).length
   const date = data === null ? null : latestDate(data.items)
@@ -90,6 +94,10 @@ function Shell() {
             <LoadingState />
           ) : state.status === 'error' ? (
             <ErrorState detail={state.message} onRetry={reload} />
+          ) : state.data.source === 'supabase' && state.data.items.length === 0 && route.name !== 'saved' ? (
+            // Supabase から1本も読めないとき。RLS で許可ユーザー以外は 0 行になる(エラーにはならない)。
+            // 「保存」の画面だけは出す(ログアウトのボタンがあるため)
+            <EmptyState title="表示できるニュースがありません" text="(許可ユーザーに登録されていない可能性があります)" spaced />
           ) : (
             <div className={hasRail(route) ? styles.contentGrid : route.name === 'item' ? styles.contentDetail : styles.contentSingle}>
               <section className={styles.mainColumn}>{screenFor(route, state.data, !homeIntroPlayed)}</section>
@@ -104,22 +112,75 @@ function Shell() {
   )
 }
 
+type SessionState = 'checking' | 'signedOut' | 'signedIn'
+
+/** Supabase モード:セッションが無ければログインだけを出し、あればネタを Supabase から読んで画面を出す */
+function SupabaseRoot({ backend }: { backend: Backend }) {
+  const [session, setSession] = useState<SessionState>('checking')
+
+  useEffect(
+    () =>
+      backend.auth.watchSession((signedIn) => {
+        setSession(signedIn ? 'signedIn' : 'signedOut')
+      }),
+    [backend],
+  )
+
+  const load = useCallback(async () => supabaseData(await backend.loadItems()), [backend])
+
+  const onSignedIn = useCallback(() => {
+    // ログインしたらホームから始める(前にログアウトした画面に戻らない)
+    navigate({ name: 'home' })
+    setSession('signedIn')
+  }, [])
+
+  // ログアウト:すぐに DataProvider ごと外して、読み込んだネタを手放す(終わるまでは読み込み中の表示。ボタンも消える)
+  const signOut = useCallback(() => {
+    setSession('checking')
+    void backend.auth.signOut().finally(() => {
+      setSession('signedOut')
+    })
+  }, [backend])
+
+  if (session === 'checking') {
+    return (
+      <main id="main" className={styles.main}>
+        <LoadingState />
+      </main>
+    )
+  }
+  if (session === 'signedOut') return <LoginScreen auth={backend.auth} onSignedIn={onSignedIn} />
+  return (
+    <SignOutContext value={signOut}>
+      <DataProvider load={load}>
+        <Shell />
+      </DataProvider>
+    </SignOutContext>
+  )
+}
+
 interface AppProps {
   /** 試験で差し替えるため */
   load?: () => Promise<LoadedData>
   /** 保存・評価・メモの置き場。試験で差し替えるため。既定は端末の localStorage */
   userStore?: UserStore
+  /** Supabase モードのときだけ渡す(main.tsx が環境変数を見て決める)。無ければ今までどおり local-data → fixtures */
+  backend?: Backend
 }
 
-export function App({ load, userStore }: AppProps) {
+export function App({ load, userStore, backend }: AppProps) {
   const store = useMemo(() => userStore ?? createDefaultUserStore(), [userStore])
   return (
-    <DataProvider load={load}>
-      <UserStoreProvider value={store}>
-        <ToastProvider>
-          <Shell />
-        </ToastProvider>
-      </UserStoreProvider>
-    </DataProvider>
+    <UserStoreProvider value={store}>
+      <ToastProvider>
+        {backend === undefined ? (
+          <DataProvider load={load}>
+            <Shell />
+          </DataProvider>
+        ) : (
+          <SupabaseRoot backend={backend} />
+        )}
+      </ToastProvider>
+    </UserStoreProvider>
   )
 }

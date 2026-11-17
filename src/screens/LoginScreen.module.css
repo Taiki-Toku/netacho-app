@@ -1,0 +1,121 @@
+/* ログイン:画面の中央に細い列を1本置く。上のバーとメニューは出さない */
+.page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-8) var(--sp-4);
+  padding-bottom: calc(var(--sp-8) + env(safe-area-inset-bottom, 0px));
+}
+
+.panel {
+  width: 100%;
+  max-width: var(--detail-max);
+}
+
+/* 上のバーのロゴと同じ並び・書体 */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2h);
+  margin-bottom: var(--sp-8);
+}
+
+.brandName {
+  font-family: var(--font-brand);
+  font-size: var(--fs-19);
+  letter-spacing: var(--ls-brand);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-1);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-top: var(--sp-6);
+}
+
+.label {
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-soft);
+}
+
+/* iPhone は 16px 未満の欄に入るときに画面を拡大するため、16px にする */
+.input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: var(--fs-16);
+}
+
+.input:focus-visible {
+  outline: var(--line-strong) solid var(--accent-strong);
+  outline-offset: var(--line-strong);
+}
+
+.primary {
+  min-height: var(--tap);
+  padding: 0 var(--sp-5);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    background: var(--accent-strong);
+  }
+}
+
+.primary:disabled {
+  background: var(--surface-3);
+  color: var(--muted);
+  cursor: default;
+}
+
+.sentTo {
+  font-size: var(--fs-14);
+  color: var(--muted);
+}
+
+.email {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: var(--sp-4);
+}
+
+.actions button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.wait {
+  font-size: var(--fs-13);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 状態と失敗の知らせ(aria-live)。空のときも場所を取り、文が出ても下が動かないようにする */
+.status {
+  min-height: calc(var(--fs-14) * var(--lh-body) * 2);
+  margin-top: var(--sp-5);
+  font-size: var(--fs-14);
+  line-height: var(--lh-body);
+  color: var(--ink-soft);
+}

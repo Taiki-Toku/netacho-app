@@ -25,11 +25,6 @@
   "sortOrder": 50
  },
  {
-  "id": "vuln",
-  "label": "脆弱性",
-  "sortOrder": 60
- },
- {
   "id": "creative",
   "label": "VTuber・創作",
   "sortOrder": 70

@@ -2,7 +2,7 @@
 // 開く先は Route で持つ(画面の部品はこれを navigate に渡すだけ)。
 // 公式のお知らせには詳細の画面が無いため、外部リンクにはせず、その検索語の結果の画面へ移す(オーナーの回答 2026-11-17)
 import type { Route } from '../app/router.ts'
-import { announcements, genreLabelMap, genreLabelOf, menuGenres, searchFeed, searchGenres, searchItems, vulnerabilities } from './queries.ts'
+import { announcements, genreLabelMap, genreLabelOf, searchFeed, searchGenres, searchItems, vulnerabilities } from './queries.ts'
 import type { LoadedData } from './source.ts'
 
 export type SuggestKind = 'item' | 'feed' | 'vuln' | 'genre'
@@ -62,7 +62,7 @@ export function buildSuggestions(data: LoadedData, query: string, limit: number 
       note: entry.product,
       route: { name: 'vuln-detail', id: entry.id },
     }))
-  const genres: SuggestOption[] = searchGenres(menuGenres(data.genres), q)
+  const genres: SuggestOption[] = searchGenres(data.genres, q)
     .slice(0, limit)
     .map((genre) => ({
       key: `genre-${genre.id}`,

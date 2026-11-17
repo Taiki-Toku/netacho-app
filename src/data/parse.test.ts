@@ -139,7 +139,7 @@ describe('parseFeed(公式フィードの整形)', () => {
 })
 
 describe('parseGenres', () => {
-  it('fixtures のジャンルを sortOrder 順に読む', () => {
+  it('fixtures のジャンルを sortOrder 順に読む(「脆弱性」vuln は廃止済みで無い)', () => {
     const genres = parseGenres(genresJson)
     expect(genres.map((g) => g.id)).toEqual([
       'work',
@@ -147,7 +147,6 @@ describe('parseGenres', () => {
       'local-llm',
       'security-news',
       'product',
-      'vuln',
       'creative',
       'tools',
     ])

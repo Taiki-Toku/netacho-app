@@ -13,7 +13,7 @@ import genresJson from '../../fixtures/genres.json'
 import { parseFeed, parseGenres, parseItems } from './parse.ts'
 import type { FeedEntry, Genre, Item } from './types.ts'
 
-export type DataSource = 'local' | 'fixtures'
+export type DataSource = 'local' | 'fixtures' | 'supabase'
 
 export interface LoadedData {
   items: Item[]
@@ -46,6 +46,11 @@ export function fixtureData(): LoadedData {
     feed: parseFeed(sampleFeed),
     source: 'fixtures',
   }
+}
+
+/** Supabase モードのデータ一式:ネタは Supabase から、ジャンルは genres.json、公式フィードは空(表はまだ無い) */
+export function supabaseData(items: Item[]): LoadedData {
+  return { items, genres: parseGenres(genresJson), feed: [], source: 'supabase' }
 }
 
 export async function loadData(fetchFn: FetchLike = (input, init) => fetch(input, init)): Promise<LoadedData> {
