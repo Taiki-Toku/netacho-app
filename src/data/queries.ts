@@ -165,8 +165,3 @@ export function searchFeed(entries: readonly FeedEntry[], query: string): FeedEn
   return entries.filter((entry) => matches([entry.product, entry.vendor, entry.title, entry.cve], query))
 }
 
-/** 頭文字の札に出す文字(先頭の2文字)。画像が無いときに使う */
-export function initialOf(text: string): string {
-  const chars = [...text.trim()]
-  return chars.slice(0, 2).join('')
-}

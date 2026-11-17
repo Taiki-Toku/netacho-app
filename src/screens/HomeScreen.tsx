@@ -3,12 +3,13 @@ import { hrefFor } from '../app/router.ts'
 import { ArticleRow, itemInitial } from '../components/ArticleRow.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { SaveButton } from '../components/SaveButton.tsx'
-import { Thumb } from '../components/Thumb.tsx'
+import { SourceBadge } from '../components/SourceBadge.tsx'
+import { Thumb, useThumb } from '../components/Thumb.tsx'
 import { vulnName } from '../components/VulnCard.tsx'
 import { countBySeverity, genreLabelMap, genreLabelOf, itemsOnDate, latestDate, vulnerabilities } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
-import type { FeedEntry } from '../data/types.ts'
+import type { FeedEntry, Item } from '../data/types.ts'
 import { formatCvss, formatDateHeader } from '../lib/format.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './HomeScreen.module.css'
@@ -42,27 +43,8 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
       {top === undefined ? (
         <EmptyState title="今日のニュースはまだありません" text="配信が届くと、ここに並びます。" spaced />
       ) : (
-        <article className={[styles.feature, step(1)].filter(Boolean).join(' ')} aria-labelledby="feature-title">
-          <div className={styles.featureCopy}>
-            <span className={pageStyles.label}>トップ</span>
-            <h2 id="feature-title" className={styles.featureTitle}>
-              <a className={styles.featureLink} href={hrefFor({ name: 'item', id: top.id })}>
-                {top.title !== '' ? top.title : '(見出しなし)'}
-              </a>
-            </h2>
-            {top.lead !== '' ? <p className={styles.featureDesc}>{top.lead}</p> : null}
-            <div className={styles.metaRow}>
-              <span className={pageStyles.label}>{genreLabelOf(top, labels)}</span>
-              <span>{itemSourceName(top, genreLabelOf(top, labels))}</span>
-              <span className={styles.metaSave}>
-                <SaveButton id={top.id} />
-              </span>
-            </div>
-          </div>
-          <div className={styles.featureImage}>
-            <Thumb url={top.imageUrl} initial={itemInitial(top, genreLabelOf(top, labels))} eager />
-          </div>
-        </article>
+        // key:トップの記事が替わったら、画像の読み込み失敗の記録を持ち越さない
+        <Feature key={top.id} item={top} genreLabel={genreLabelOf(top, labels)} introClass={step(1)} />
       )}
 
       <div className={step(2)}>
@@ -84,6 +66,47 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
       ) : null}
       {data.source === 'fixtures' ? <p className={pageStyles.sampleNote}>表示しているのは、すべて見本用の架空データです。</p> : null}
     </section>
+  )
+}
+
+interface FeatureProps {
+  item: Item
+  genreLabel: string
+  /** 登場アニメのクラス(付けないときは undefined) */
+  introClass: string | undefined
+}
+
+/** トップの大きな枠。画像が無い・危ない・読み込みに失敗したときは、画像の場所を取らず、文章だけで全幅にする(仕様 5 章) */
+function Feature({ item, genreLabel, introClass }: FeatureProps) {
+  const thumb = useThumb(item.imageUrl)
+  return (
+    <article
+      className={[thumb.shown ? styles.feature : styles.featureTextOnly, introClass].filter(Boolean).join(' ')}
+      aria-labelledby="feature-title"
+    >
+      <div className={styles.featureCopy}>
+        <span className={pageStyles.label}>トップ</span>
+        <h2 id="feature-title" className={styles.featureTitle}>
+          <a className={styles.featureLink} href={hrefFor({ name: 'item', id: item.id })}>
+            {item.title !== '' ? item.title : '(見出しなし)'}
+          </a>
+        </h2>
+        {item.lead !== '' ? <p className={styles.featureDesc}>{item.lead}</p> : null}
+        <div className={styles.metaRow}>
+          <span className={pageStyles.label}>{genreLabel}</span>
+          {thumb.shown ? null : <SourceBadge initial={itemInitial(item, genreLabel)} />}
+          <span>{itemSourceName(item, genreLabel)}</span>
+          <span className={styles.metaSave}>
+            <SaveButton id={item.id} />
+          </span>
+        </div>
+      </div>
+      {thumb.shown ? (
+        <div className={styles.featureImage}>
+          <Thumb url={item.imageUrl} eager onFail={thumb.onFail} />
+        </div>
+      ) : null}
+    </article>
   )
 }
 

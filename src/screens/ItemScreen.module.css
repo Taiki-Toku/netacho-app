@@ -1,6 +1,50 @@
 .detail {
   max-width: var(--detail-max);
   margin: 0 auto;
+  /* 縦のスクロールと拡大はブラウザーに任せ、横の動きはスワイプ(useSwipe)で受ける */
+  touch-action: pan-y pinch-zoom;
+}
+
+/* 左右スワイプ(仕様 7 章)。位置(--swipe-x)と印(data-swipe)は useSwipe が付ける。
+   指で動かしている間(drag)はそのまま付いていき、離したあと(settle)だけなめらかに動かす。
+   印が無いときは transform を付けない */
+.swipe[data-swipe] {
+  transform: translate3d(var(--swipe-x, 0), 0, 0);
+}
+
+.swipe[data-swipe='settle'] {
+  transition: transform var(--duration) var(--ease);
+}
+
+/* スワイプで移ってきた記事は、反対側から入る */
+.swipe[data-swipe-enter='right'] {
+  animation: enter-from-right var(--duration) var(--ease);
+}
+
+.swipe[data-swipe-enter='left'] {
+  animation: enter-from-left var(--duration) var(--ease);
+}
+
+@keyframes enter-from-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes enter-from-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+/* 動きを減らす設定では動かさない(useSwipe も位置を付けない。仕様 4 章末「共通」) */
+@media (prefers-reduced-motion: reduce) {
+  .swipe[data-swipe],
+  .swipe[data-swipe-enter] {
+    transform: none;
+    transition: none;
+    animation: none;
+  }
 }
 
 .back {
@@ -29,18 +73,6 @@
   outline-offset: var(--sp-1);
 }
 
-/* 画像が無いときの小さな頭文字の札(出典の横) */
-.initial {
-  display: inline-grid;
-  place-items: center;
-  width: var(--badge-sm);
-  height: var(--badge-sm);
-  border-radius: var(--radius-xs);
-  background: var(--surface-3);
-  color: var(--muted);
-  font-weight: var(--weight-bold);
-}
-
 .metaRow {
   display: flex;
   align-items: center;
@@ -65,7 +97,6 @@
   overflow: hidden;
   margin: var(--sp-2) 0 var(--sp-6);
   background: var(--surface-3);
-  font-size: var(--fs-32);
 }
 
 .lead {

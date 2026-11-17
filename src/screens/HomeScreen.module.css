@@ -1,5 +1,6 @@
-/* 今朝のトップ:文章 + 画像の大きな枠 */
-.feature {
+/* トップ:文章 + 画像の大きな枠。画像が無いとき(featureTextOnly)は、文章だけで全幅 */
+.feature,
+.featureTextOnly {
   margin-top: var(--sp-6);
   display: grid;
   grid-template-columns: 1fr 1.05fr;
@@ -8,6 +9,11 @@
   border-radius: var(--radius-xl);
   overflow: hidden;
   background: var(--surface);
+}
+
+.featureTextOnly {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
 }
 
 .featureCopy {
@@ -55,7 +61,6 @@
 .featureImage {
   min-height: var(--feature-min-h);
   background: var(--surface-3);
-  font-size: var(--fs-28);
 }
 
 /* 脆弱性ウォッチの帯1本(どの幅でも出す) */
@@ -152,7 +157,8 @@
 }
 
 @media (max-width: 767px) {
-  .feature {
+  .feature,
+  .featureTextOnly {
     display: flex;
     flex-direction: column-reverse;
     min-height: 0;

@@ -33,6 +33,20 @@ describe('出典の媒体名(URL のホスト名から)', () => {
     expect(sourceNameOf('https://docs.com/')).toBe('docs.com')
   })
 
+  it('外したあとが国の区分だけ(co.jp など)になるときは外さない', () => {
+    expect(sourceNameOf('https://docs.co.jp/x')).toBe('docs.co.jp')
+    expect(sourceNameOf('https://www.ne.jp/')).toBe('www.ne.jp')
+    expect(sourceNameOf('https://blog.or.jp/')).toBe('blog.or.jp')
+    expect(sourceNameOf('https://news.ac.jp/')).toBe('news.ac.jp')
+    expect(sourceNameOf('https://www.go.jp/')).toBe('www.go.jp')
+    expect(sourceNameOf('https://news.co.uk/')).toBe('news.co.uk')
+    // 名前の部分が残るものは、今までどおり外す
+    expect(sourceNameOf('https://docs.example.co.jp/x')).toBe('example.co.jp')
+    expect(sourceNameOf('https://www.example.go.jp/')).toBe('example.go.jp')
+    // 区分に似ているだけの名前(2文字の国ではない)は外す
+    expect(sourceNameOf('https://docs.co.com/')).toBe('co.com')
+  })
+
   it('頭文字の札は、媒体名の最初の1文字を大文字にする', () => {
     expect(sourceInitial('ollama.com')).toBe('O')
     expect(sourceInitial(sourceNameOf('https://docs.ollama.com/x') ?? '')).toBe('O')

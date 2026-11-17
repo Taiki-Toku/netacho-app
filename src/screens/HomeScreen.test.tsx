@@ -98,7 +98,7 @@ describe('トップ(今朝のネタ)', () => {
     expect(list.querySelector('b')).toBeNull()
   })
 
-  it('画像:同じオリジンの相対パスは img になり、javascript: や http: の画像は札になる', async () => {
+  it('画像:同じオリジンの相対パスは img になり、javascript: や http: の画像は img にせず、出典の横の小さな札になる', async () => {
     const list = await renderHome()
     const rows = within(list).getAllByRole('listitem')
     // 02 は fixtures/images/term.svg
@@ -109,38 +109,62 @@ describe('トップ(今朝のネタ)', () => {
     expect(img).toHaveAttribute('width')
     expect(img).toHaveAttribute('height')
     expect(img).toHaveAttribute('loading', 'lazy')
-    // 06 は http:、07 は javascript: の画像 URL。どちらも img にならず、頭文字の札になる
+    // 06 は http:、07 は javascript: の画像 URL。どちらも img にならず、出典の横の小さな札になる
     // 出典の URL も http: / javascript: で媒体名を作れないため、札はジャンル名の頭文字
     expect(rows[5]!.querySelector('img')).toBeNull()
-    expect(within(rows[5]!).getByText('セ', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[5]!).getByText('セ', { selector: 'span' })).toBeInTheDocument()
     expect(rows[6]!.querySelector('img')).toBeNull()
-    expect(within(rows[6]!).getByText('プ', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[6]!).getByText('プ', { selector: 'span' })).toBeInTheDocument()
     expect(list.querySelector('img[src^="javascript:"]')).toBeNull()
     expect(list.querySelector('img[src^="http://example.com"]')).toBeNull()
   })
 
-  it('画像なし:媒体名の頭文字の札。行の媒体名と同じ名前から作る。URL が使えなければジャンル名', async () => {
+  it('画像なし:行は画像の場所を取らず、出典の横に小さな札(媒体名の1文字目)。URL が使えなければジャンル名', async () => {
     const list = await renderHome()
     const rows = within(list).getAllByRole('listitem')
-    // 03 は画像も出典名も無いが、URL は https://example.com/c → 媒体名 example.com の2文字
+    // 02 は画像あり:番号・文章・画像の3つ。札は出さない
+    expect(rows[1]!.children).toHaveLength(3)
+    expect(within(rows[1]!).queryByText('E')).not.toBeInTheDocument()
+    // 03 は画像が無い:番号・文章の2つだけ(画像の枠を置かない)。URL は https://example.com/c → 媒体名 example.com の1文字目
     expect(rows[2]!.querySelector('img')).toBeNull()
-    expect(within(rows[2]!).getByText('E', { selector: 'div' })).toBeInTheDocument()
-    expect(within(rows[2]!).getByText('example.com')).toBeInTheDocument()
+    expect(rows[2]!.children).toHaveLength(2)
+    const badge = within(rows[2]!).getByText('E', { selector: 'span' })
+    expect(badge).toHaveAttribute('aria-hidden', 'true')
+    // 札は出典(媒体名)のすぐ前
+    expect(badge.nextElementSibling).toHaveTextContent('example.com')
     // 07 は URL が javascript: → 媒体名の欄もジャンル名(プロダクト)。ジャンルの札と2か所に出る
     expect(within(rows[6]!).getAllByText('プロダクト')).toHaveLength(2)
   })
 
-  it('画像の読み込みに失敗したら、同じ出典の頭文字の札に替わる(トップの枠も行も)', async () => {
+  it('画像の読み込みに失敗したら、画像の場所をやめて出典の横の小さな札に替わる(トップの枠も行も)', async () => {
     const list = await renderHome()
     const row = within(list).getAllByRole('listitem')[1]!
     fireEvent.error(row.querySelector('img')!)
     expect(row.querySelector('img')).toBeNull()
-    expect(within(row).getByText('E', { selector: 'div' })).toBeInTheDocument()
+    expect(row.children).toHaveLength(2)
+    expect(within(row).getByText('E', { selector: 'span' })).toBeInTheDocument()
 
     const feature = screen.getByRole('article', { name: '架空:手順書の差分チェックを半自動にする' })
+    // 画像があるうちは、文章と画像の2つ。札は出さない
+    expect(feature.children).toHaveLength(2)
+    expect(within(feature).queryByText('E')).not.toBeInTheDocument()
     fireEvent.error(feature.querySelector('img')!)
     expect(feature.querySelector('img')).toBeNull()
-    expect(within(feature).getByText('E', { selector: 'div' })).toBeInTheDocument()
+    expect(feature.children).toHaveLength(1)
+    expect(within(feature).getByText('E', { selector: 'span' }).nextElementSibling).toHaveTextContent('example.com')
+  })
+
+  it('トップの記事に画像が無いとき、大きな枠は文章だけ(画像の場所を取らない)。出典の横に小さな札', async () => {
+    const [first] = fullSample.items.filter((item) => item.id === '2026-01-03-01')
+    if (first === undefined) throw new Error('見本のネタがありません')
+    const noImage = { ...first, imageUrl: undefined, sourceUrl: 'https://docs.ollama.com/x' }
+    await renderHome({ ...fullSample, items: fullSample.items.map((item) => (item.id === first.id ? noImage : item)) })
+    const feature = screen.getByRole('article', { name: first.title })
+    expect(feature.querySelector('img')).toBeNull()
+    expect(feature.children).toHaveLength(1)
+    const badge = within(feature).getByText('O', { selector: 'span' })
+    expect(badge).toHaveAttribute('aria-hidden', 'true')
+    expect(badge.nextElementSibling).toHaveTextContent('ollama.com')
   })
 
   it('脆弱性ウォッチの帯:緊急の件数、いちばん新しい CVE と CVSS。深刻度ではなく新しさで選ぶ', async () => {

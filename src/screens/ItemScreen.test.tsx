@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { parseItems } from '../data/parse.ts'
 import type { LoadedData } from '../data/source.ts'
 import { renderApp } from '../test/renderApp.tsx'
@@ -13,12 +13,43 @@ async function renderItem(id: string) {
   return screen.findByRole('article')
 }
 
-/** jsdom は Touch を持たないため、素の Event に changedTouches を付けて流す */
-function touch(target: Element, type: 'touchstart' | 'touchend', x: number, y: number) {
+type TouchType = 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel'
+
+/** jsdom は Touch を持たないため、素の Event に touches を付けて流す。time は event.timeStamp(ms。払う速さの計算に使う) */
+function touch(target: Element, type: TouchType, x: number, y: number, time: number, fingers = 1) {
   const event = new Event(type, { bubbles: true })
-  Object.defineProperty(event, 'changedTouches', { value: [{ clientX: x, clientY: y }] })
+  const point = { clientX: x, clientY: y }
+  const touches = type === 'touchstart' || type === 'touchmove' ? Array.from({ length: fingers }, () => point) : []
+  Object.defineProperty(event, 'touches', { value: touches })
+  Object.defineProperty(event, 'changedTouches', { value: [point] })
+  Object.defineProperty(event, 'timeStamp', { value: time })
   fireEvent(target, event)
 }
+
+/** 指を置いて (dx, dy) だけ動かす(まだ離さない)。duration は動かすのにかけた時間(ms) */
+function drag(target: Element, dx: number, dy: number, duration: number) {
+  touch(target, 'touchstart', 500, 300, 1000)
+  touch(target, 'touchmove', 500 + dx / 2, 300 + dy / 2, 1000 + duration / 2)
+  touch(target, 'touchmove', 500 + dx, 300 + dy, 1000 + duration)
+}
+
+/** 指を離す(drag の続き) */
+function lift(target: Element, dx: number, dy: number, duration: number) {
+  touch(target, 'touchend', 500 + dx, 300 + dy, 1000 + duration)
+}
+
+/** スワイプで動く枠(記事の中身)。読了バーの次にある */
+function moverOf(article: HTMLElement): HTMLElement {
+  const mover = article.lastElementChild
+  if (!(mover instanceof HTMLElement)) throw new Error('スワイプで動く枠がありません')
+  return mover
+}
+
+// jsdom の画面幅は 1024px。移るのに必要な距離は、その 25% の 256px
+const FAR = 300
+const NEAR = 100
+// ゆっくり(0.5px/ms 未満)動かすときの時間
+const SLOW = 2000
 
 describe('ネタの詳細', () => {
   it('ジャンル名・見出し・出典と日付・要点・抜粋・試してみる・気をつけること・このネタについて・評価・メモを出す', async () => {
@@ -280,23 +311,209 @@ describe('ネタの詳細', () => {
     expect(within(last).getByRole('link', { name: '一覧に戻る' })).toHaveAttribute('href', '#/home')
   })
 
-  it('左にスワイプすると次へ、右にスワイプすると前へ移る。縦の動きは無視する', async () => {
-    const article = await renderItem('2026-01-02-02')
-    touch(article, 'touchstart', 300, 200)
-    touch(article, 'touchend', 100, 210)
-    expect(window.location.hash).toBe('#/item/2026-01-02-03')
-    await screen.findAllByText('3 / 7')
+  describe('左右のスワイプ', () => {
+    beforeEach(() => {
+      // jsdom には matchMedia が無い。ふだんは「動きを減らす」設定なし
+      vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    })
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
 
-    const next = screen.getByRole('article')
-    touch(next, 'touchstart', 100, 200)
-    touch(next, 'touchend', 300, 190)
-    expect(window.location.hash).toBe('#/item/2026-01-02-02')
-    await screen.findAllByText('2 / 7')
+    it('左へ 25% 以上動かすと、指に付いてきて、離すと画面の外へ出てから次のニュースへ移る。URL が変わり、「戻る」で戻れる', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const mover = moverOf(article)
+      expect(mover).not.toHaveAttribute('data-swipe')
+      drag(article, -FAR, 10, SLOW)
+      // 指に合わせて動く(なめらかにする指定は付けない)
+      expect(mover).toHaveAttribute('data-swipe', 'drag')
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('-300px')
+      lift(article, -FAR, 10, SLOW)
+      // 離した直後は、まだ移らない(記事を作り直さない)。画面の外へ送り出す
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+      expect(mover).toHaveAttribute('data-swipe', 'settle')
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('-1024px')
+      fireEvent.transitionEnd(mover)
+      expect(window.location.hash).toBe('#/item/2026-01-02-03')
+      await screen.findAllByText('3 / 7')
+      // 移った先の記事は右から入り、動きが終わったら印を外す
+      const next = moverOf(screen.getByRole('article'))
+      expect(next).toHaveAttribute('data-swipe-enter', 'right')
+      expect(next).not.toHaveAttribute('data-swipe')
+      fireEvent.animationEnd(next)
+      expect(next).not.toHaveAttribute('data-swipe-enter')
 
-    const back = screen.getByRole('article')
-    touch(back, 'touchstart', 100, 100)
-    touch(back, 'touchend', 160, 400)
-    expect(window.location.hash).toBe('#/item/2026-01-02-02')
+      window.history.back()
+      await waitFor(() => {
+        expect(window.location.hash).toBe('#/item/2026-01-02-02')
+      })
+      await screen.findAllByText('2 / 7')
+      // 「戻る」で戻ったときは、動きを付けない
+      expect(moverOf(screen.getByRole('article'))).not.toHaveAttribute('data-swipe-enter')
+    })
+
+    it('右へ 25% 以上動かすと、前のニュースへ移る(左から入る)', async () => {
+      const article = await renderItem('2026-01-02-02')
+      drag(article, FAR, -10, SLOW)
+      lift(article, FAR, -10, SLOW)
+      expect(moverOf(article).style.getPropertyValue('--swipe-x')).toBe('1024px')
+      fireEvent.transitionEnd(moverOf(article))
+      expect(window.location.hash).toBe('#/item/2026-01-02-01')
+      await screen.findAllByText('1 / 7')
+      expect(moverOf(screen.getByRole('article'))).toHaveAttribute('data-swipe-enter', 'left')
+    })
+
+    it('届かなければ元の位置へ戻し、移らない', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const mover = moverOf(article)
+      drag(article, -NEAR, 0, SLOW)
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('-100px')
+      lift(article, -NEAR, 0, SLOW)
+      expect(mover).toHaveAttribute('data-swipe', 'settle')
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('0px')
+      fireEvent.transitionEnd(mover)
+      // 戻り終わったら、位置の指定を残さない
+      expect(mover).not.toHaveAttribute('data-swipe')
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('')
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+      expect(screen.getByRole('article')).toBe(article)
+    })
+
+    it('距離が短くても、速く払えば移る。止めてから離したときは移らない', async () => {
+      const article = await renderItem('2026-01-02-02')
+      // 100px を 100ms(1px/ms)。指を止めて 500ms たってから離す → 払っていない
+      drag(article, -NEAR, 0, 100)
+      lift(article, -NEAR, 0, 600)
+      fireEvent.transitionEnd(moverOf(article))
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+      // 同じ動きで、すぐ離す → 移る
+      drag(article, -NEAR, 0, 100)
+      lift(article, -NEAR, 0, 110)
+      fireEvent.transitionEnd(moverOf(article))
+      expect(window.location.hash).toBe('#/item/2026-01-02-03')
+      await screen.findAllByText('3 / 7')
+    })
+
+    it('小さな横ぶれ(30px 未満)は、速くても移らない', async () => {
+      const article = await renderItem('2026-01-02-02')
+      drag(article, -20, 0, 10)
+      lift(article, -20, 0, 11)
+      fireEvent.transitionEnd(moverOf(article))
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+    })
+
+    it('動かしている途中で2本目の指が触れたら、スワイプをやめて元の位置へ戻す', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const mover = moverOf(article)
+      drag(article, -FAR, 0, SLOW)
+      touch(article, 'touchstart', 600, 400, 1000 + SLOW, 2)
+      expect(mover).toHaveAttribute('data-swipe', 'settle')
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('0px')
+      // 指を離しても移らない
+      lift(article, -FAR, 0, SLOW + 10)
+      fireEvent.transitionEnd(mover)
+      expect(mover).not.toHaveAttribute('data-swipe')
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+    })
+
+    it('動かしてから始めの位置に戻して離すと、位置の指定を残さない', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const mover = moverOf(article)
+      drag(article, -NEAR, 0, SLOW)
+      touch(article, 'touchmove', 500, 300, 1000 + SLOW + 100)
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('0px')
+      touch(article, 'touchend', 500, 300, 1000 + SLOW + 110)
+      expect(mover).not.toHaveAttribute('data-swipe')
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('')
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+    })
+
+    it('送り出す動きの途中で touchcancel が来ても、動きを二重にせず、1回だけ移る', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const mover = moverOf(article)
+      drag(article, -FAR, 0, SLOW)
+      lift(article, -FAR, 0, SLOW)
+      touch(article, 'touchcancel', 500 - FAR, 300, 1000 + SLOW + 10)
+      expect(mover.style.getPropertyValue('--swipe-x')).toBe('-1024px')
+      const before = window.history.length
+      fireEvent.transitionEnd(mover)
+      expect(window.location.hash).toBe('#/item/2026-01-02-03')
+      await screen.findAllByText('3 / 7')
+      // 待ち時間(400ms)を過ぎても、もう一度は移らない
+      await new Promise((resolve) => setTimeout(resolve, 450))
+      expect(window.location.hash).toBe('#/item/2026-01-02-03')
+      expect(window.history.length).toBe(before + 1)
+    })
+
+    it('縦の動きは無視する(記事を動かさない。あとから横へ動かしても移らない)', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const mover = moverOf(article)
+      touch(article, 'touchstart', 500, 300, 1000)
+      // 最初の約 10px で縦と決まる
+      touch(article, 'touchmove', 504, 330, 1100)
+      touch(article, 'touchmove', 500 - FAR, 600, 1200)
+      expect(mover).not.toHaveAttribute('data-swipe')
+      touch(article, 'touchend', 500 - FAR, 600, 1210)
+      expect(mover).not.toHaveAttribute('data-swipe')
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+    })
+
+    it('端(最初・最後)では、少しだけ動いて戻り、移らない', async () => {
+      const first = await renderItem('2026-01-02-01')
+      drag(first, FAR, 0, 100)
+      // 移る先が無い向きは、指の動きの 3 割だけ動く
+      expect(moverOf(first).style.getPropertyValue('--swipe-x')).toBe('90px')
+      lift(first, FAR, 0, 110)
+      expect(moverOf(first).style.getPropertyValue('--swipe-x')).toBe('0px')
+      fireEvent.transitionEnd(moverOf(first))
+      expect(window.location.hash).toBe('#/item/2026-01-02-01')
+
+      window.location.hash = '#/item/2026-01-02-07'
+      await screen.findAllByText('7 / 7')
+      const last = screen.getByRole('article')
+      drag(last, -FAR, 0, 100)
+      lift(last, -FAR, 0, 110)
+      expect(moverOf(last).style.getPropertyValue('--swipe-x')).toBe('0px')
+      fireEvent.transitionEnd(moverOf(last))
+      expect(window.location.hash).toBe('#/item/2026-01-02-07')
+    })
+
+    it('動きの終わりの知らせが来なくても、少し待てば移る', async () => {
+      const article = await renderItem('2026-01-02-02')
+      drag(article, -FAR, 0, SLOW)
+      lift(article, -FAR, 0, SLOW)
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+      await waitFor(() => {
+        expect(window.location.hash).toBe('#/item/2026-01-02-03')
+      })
+      await screen.findAllByText('3 / 7')
+    })
+
+    it('動きを減らす設定では、記事を動かさず、離した時点で切り替える', async () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }))
+      const article = await renderItem('2026-01-02-02')
+      drag(article, -FAR, 0, SLOW)
+      expect(moverOf(article)).not.toHaveAttribute('data-swipe')
+      lift(article, -FAR, 0, SLOW)
+      expect(window.location.hash).toBe('#/item/2026-01-02-03')
+      await screen.findAllByText('3 / 7')
+      expect(moverOf(screen.getByRole('article'))).not.toHaveAttribute('data-swipe-enter')
+    })
+
+    it('メモの欄から始めた横の動きは、スワイプにしない', async () => {
+      const article = await renderItem('2026-01-02-02')
+      const memo = within(article).getByLabelText('メモ')
+      drag(memo, -FAR, 0, SLOW)
+      expect(moverOf(article)).not.toHaveAttribute('data-swipe')
+      lift(memo, -FAR, 0, SLOW)
+      expect(window.location.hash).toBe('#/item/2026-01-02-02')
+    })
+
+    it('読了バーは、スワイプで動く枠の外にある(記事と一緒に動かない)', async () => {
+      const article = await renderItem('2026-01-02-02')
+      expect(moverOf(article).querySelector('progress')).toBeNull()
+      expect(article.querySelector('progress')).not.toBeNull()
+    })
   })
 
   it('無い id なら、見つからない旨と今朝のネタへの案内を出す', async () => {

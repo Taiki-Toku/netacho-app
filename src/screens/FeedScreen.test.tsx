@@ -13,8 +13,8 @@ describe('公式のお知らせ', () => {
     expect(rows[0]).toHaveTextContent('サンプルクラウド')
     expect(rows[0]).toHaveTextContent('障害 調査中')
     expect(rows[0]).toHaveTextContent('1/3 14:20')
-    // 頭文字の札(製品名の2文字)。ロゴは使わない
-    expect(within(rows[0]!).getByText('サン', { selector: 'div' })).toBeInTheDocument()
+    // 頭文字の札(製品名の最初の1文字。出典の札と同じ作り方)。ロゴは使わない
+    expect(within(rows[0]!).getByText('サ', { selector: 'div' })).toHaveAttribute('aria-hidden', 'true')
     expect(rows[0]!.querySelector('img')).toBeNull()
     expect(screen.queryByText(/脆弱性の管理画面/)).not.toBeInTheDocument()
   })

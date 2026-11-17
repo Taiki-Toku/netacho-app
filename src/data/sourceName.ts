@@ -18,12 +18,21 @@ const SOURCE_NAMES: ReadonlyMap<string, string> = new Map([
 /** 外す先頭の部分(仕様 4 章末「共通」)。外したあとに「.」が残らない(docs.com → com)ときは外さない */
 const HOST_PREFIX = /^(?:www|docs|blog|news)\.(?=[^.]+\..)/
 
-/** URL から媒体名を作る。先頭の www./docs./blog./news. は外す。リンクにできない URL なら null */
+/** 国の区分だけのホスト名(co.jp、ne.jp、or.jp、ac.jp、go.jp、co.uk、com.au など)。媒体の名前の部分が無い */
+const COUNTRY_CATEGORY = /^(?:co|ne|or|ac|go|ad|ed|gr|lg|com|net|org|gov|edu)\.[a-z]{2}$/
+
+/** 先頭の www./docs./blog./news. を外す。外したあとが国の区分だけになるとき(docs.co.jp → co.jp)は外さない */
+function shortHost(host: string): string {
+  const short = host.replace(HOST_PREFIX, '')
+  return COUNTRY_CATEGORY.test(short) ? host : short
+}
+
+/** URL から媒体名を作る。先頭の www./docs./blog./news. は外す(shortHost)。リンクにできない URL なら null */
 export function sourceNameOf(url: string): string | null {
   const href = httpsHref(url)
   if (href === null) return null
   const host = new URL(href).hostname
-  const short = host.replace(HOST_PREFIX, '')
+  const short = shortHost(host)
   // 表は外す前のホストを先に見る(news.ycombinator.com は ycombinator.com ではなく Hacker News)
   return SOURCE_NAMES.get(host) ?? SOURCE_NAMES.get(short) ?? short
 }

@@ -7,7 +7,6 @@ import {
   feedProducts,
   findFeedEntry,
   findItem,
-  initialOf,
   itemsInGenre,
   itemsOnDate,
   latestDate,
@@ -122,13 +121,6 @@ describe('queries', () => {
     expect(searchItems(all.items, all.genres, '   ')).toEqual([])
     expect(searchFeed(all.feed, 'cve-2026-90002').map((e) => e.id)).toEqual(['feed-008'])
     expect(searchFeed(all.feed, '見本ソフト').map((e) => e.id)).toEqual(['feed-001', 'feed-002', 'feed-005', 'feed-008'])
-  })
-
-  it('頭文字の札は先頭の2文字(絵文字など複数の符号の文字も1文字として数える)', () => {
-    expect(initialOf('サンプルOS Server')).toBe('サン')
-    expect(initialOf(' NV ')).toBe('NV')
-    expect(initialOf('𠮷野')).toBe('𠮷野')
-    expect(initialOf('')).toBe('')
   })
 
   it('id でネタを探す。無ければ null', () => {

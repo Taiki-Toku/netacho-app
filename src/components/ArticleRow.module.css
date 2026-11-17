@@ -1,9 +1,8 @@
-.row,
-.rowNoOrder {
+.row {
   /* 見出しのリンクの ::after を、この行の大きさに広げるための基準 */
   position: relative;
-  display: grid;
-  grid-template-columns: var(--order-w) minmax(0, 1fr) var(--thumb-w);
+  /* 番号(あれば)・文章・画像(あれば)。番号や画像が無い行は、その場所を取らず文章が広がる */
+  display: flex;
   gap: var(--sp-4);
   padding: var(--sp-4h) 0;
   border-bottom: var(--line-thin) solid var(--line-row);
@@ -12,11 +11,9 @@
   contain-intrinsic-size: auto 128px;
 }
 
-.rowNoOrder {
-  grid-template-columns: minmax(0, 1fr) var(--thumb-w);
-}
-
 .order {
+  flex: none;
+  width: var(--order-w);
   font-size: var(--fs-14);
   color: var(--muted);
   line-height: var(--lh-loose);
@@ -24,6 +21,7 @@
 }
 
 .body {
+  flex: 1;
   min-width: 0;
 }
 
@@ -87,27 +85,22 @@
 }
 
 .thumb {
+  flex: none;
   width: var(--thumb-w);
   height: var(--thumb-h);
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface-3);
-  font-size: var(--fs-18);
 }
 
 @media (max-width: 767px) {
   .row {
-    grid-template-columns: var(--order-w-mobile) minmax(0, 1fr) var(--thumb-w-mobile);
-  }
-
-  .rowNoOrder {
-    grid-template-columns: minmax(0, 1fr) var(--thumb-w-mobile);
-  }
-
-  .row,
-  .rowNoOrder {
     gap: var(--sp-3);
     padding: var(--sp-4) 0;
+  }
+
+  .order {
+    width: var(--order-w-mobile);
   }
 
   .thumb {

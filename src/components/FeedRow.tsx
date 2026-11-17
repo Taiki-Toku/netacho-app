@@ -1,7 +1,7 @@
-// 公式のお知らせの行。ベンダーのロゴは使わず、製品名の頭文字の札(仕様 4 章 3)。
+// 公式のお知らせの行。ベンダーのロゴは使わず、製品名の頭文字の札(1文字。出典の札と同じ作り方。仕様 4 章 3、4 章末「共通」)。
 // 見出しは https: の URL のときだけリンク(新しいタブ)。それ以外は文字のまま
 import { FEED_KIND_LABELS } from '../data/labels.ts'
-import { initialOf } from '../data/queries.ts'
+import { sourceInitial } from '../data/sourceName.ts'
 import type { FeedEntry } from '../data/types.ts'
 import { formatJstDateTime } from '../lib/format.ts'
 import { httpsHref } from '../lib/safeUrl.ts'
@@ -15,7 +15,7 @@ export function FeedRow({ entry }: { entry: FeedEntry }) {
   return (
     <li className={styles.row}>
       <div className={styles.badge} aria-hidden="true">
-        {initialOf(entry.product)}
+        {sourceInitial(entry.product)}
       </div>
       <div className={styles.body}>
         <div className={styles.top}>

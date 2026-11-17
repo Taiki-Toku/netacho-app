@@ -6,7 +6,8 @@ import { isRated } from '../data/queries.ts'
 import { itemSourceName, sourceInitial } from '../data/sourceName.ts'
 import type { Item } from '../data/types.ts'
 import { SaveButton } from './SaveButton.tsx'
-import { Thumb } from './Thumb.tsx'
+import { SourceBadge } from './SourceBadge.tsx'
+import { Thumb, useThumb } from './Thumb.tsx'
 import pageStyles from './page.module.css'
 import styles from './ArticleRow.module.css'
 
@@ -28,9 +29,11 @@ export function itemInitial(item: Item, genreLabel: string): string {
 
 export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineLead = false }: ArticleRowProps) {
   const Heading = headingLevel === 2 ? 'h2' : 'h3'
+  // 画像が無い・危ない・読み込みに失敗したときは、画像の場所を取らず、出典の横に小さな札を出す(仕様 5 章)
+  const thumb = useThumb(item.imageUrl)
   return (
     // value:読み上げの番号を、見える放送順の番号(order)にそろえる(欠番があっても食い違わない)
-    <li className={order === undefined ? styles.rowNoOrder : styles.row} value={order}>
+    <li className={styles.row} value={order}>
       {order !== undefined ? (
         <span className={styles.order} aria-hidden="true">
           {order}
@@ -45,6 +48,7 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
         </Heading>
         {item.lead !== '' ? <p className={oneLineLead ? styles.summaryOneLine : styles.summary}>{item.lead}</p> : null}
         <div className={styles.meta}>
+          {thumb.shown ? null : <SourceBadge initial={itemInitial(item, genreLabel)} />}
           <span>{itemSourceName(item, genreLabel)}</span>
           {isRated(item) ? <span>評価済み</span> : null}
           <span className={styles.save}>
@@ -52,9 +56,11 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
           </span>
         </div>
       </div>
-      <div className={styles.thumb}>
-        <Thumb url={item.imageUrl} initial={itemInitial(item, genreLabel)} />
-      </div>
+      {thumb.shown ? (
+        <div className={styles.thumb}>
+          <Thumb url={item.imageUrl} onFail={thumb.onFail} />
+        </div>
+      ) : null}
     </li>
   )
 }

@@ -30,6 +30,8 @@
   min-width: 0;
   padding: var(--sp-9) var(--main-pad-x) var(--sp-20);
   outline: none;
+  /* 詳細のスワイプで記事が横に出ても、画面を横にスクロールさせない(clip はスクロールの枠を作らない) */
+  overflow-x: clip;
 }
 
 .contentGrid,
