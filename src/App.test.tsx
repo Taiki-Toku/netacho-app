@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { App } from './App.tsx'
 import { follow, goHistory, renderApp, waitForHeading } from './test/renderApp.tsx'
 import { fullSample as sample } from './test/sampleData.ts'
+import scrollTopCss from './components/ScrollTopButton.module.css?raw'
 
 describe('App(骨組み)', () => {
   it('読み込みが終わると、上のバーに NODAL と放送日(見本の最新日 2026-01-03)、左メニューと下のメニューが出る', async () => {
@@ -185,6 +186,54 @@ describe('App(骨組み)', () => {
       expect(screen.queryByRole('button', { name: '先頭へ戻る' })).toBeNull()
     })
     scrollTo.mockRestore()
+  })
+
+  it('「先頭へ戻る」は条件を満たさない間も DOM にあるが、見えず・押せず・Tab で当たらない。満たすと見えて押せる', async () => {
+    renderApp('#/home', sample)
+    await waitForHeading('今日のニュース')
+    // 見えない要素は読み上げの名前も空になるため、役割ではなく属性で探す
+    const button = document.querySelector('button[aria-label="先頭へ戻る"]')
+    if (!(button instanceof HTMLButtonElement)) throw new Error('「先頭へ戻る」が DOM に無い')
+    expect(getComputedStyle(button).visibility).toBe('hidden')
+    expect(getComputedStyle(button).pointerEvents).toBe('none')
+    expect(getComputedStyle(button).opacity).toBe('0')
+    // 読み上げ(アクセシビリティツリー)にも出ない
+    expect(screen.queryByRole('button', { name: '先頭へ戻る' })).toBeNull()
+
+    // Tab で一周しても当たらない(一周したら body か最初の要素に戻る)
+    const user = userEvent.setup()
+    const reached = new Set<Element | null>()
+    for (let i = 0; i < 200; i += 1) {
+      await user.tab()
+      if (reached.has(document.activeElement)) break
+      reached.add(document.activeElement)
+    }
+    expect(reached.has(button)).toBe(false)
+
+    setScrollY(window.innerHeight + 1)
+    expect(screen.getByRole('button', { name: '先頭へ戻る' })).toBe(button)
+    expect(getComputedStyle(button).visibility).toBe('visible')
+    expect(getComputedStyle(button).pointerEvents).not.toBe('none')
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    try {
+      // pointer-events: none のままなら user-event のクリックは失敗する
+      await user.click(button)
+      expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+    } finally {
+      vi.unstubAllGlobals()
+      scrollTo.mockRestore()
+      setScrollY(0)
+    }
+  })
+
+  it('「先頭へ戻る」は不透明度だけをフェードし、動きを減らす設定では transition が無い', () => {
+    // jsdom は @media を当てないため、CSS の中身で確かめる
+    expect(scrollTopCss).not.toMatch(/transition:\s*all/)
+    // 出るときは visibility をすぐ切り替え、消えるときはフェードの後に切り替える
+    expect(scrollTopCss).toMatch(/\.button\s*\{[^}]*visibility 0s linear 0s;/)
+    expect(scrollTopCss).toMatch(/\.hidden\s*\{[^}]*visibility 0s linear var\(--duration\);/)
+    expect(scrollTopCss).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.button,\s*\.hidden\s*\{\s*transition: none;/)
   })
 
   it('「先頭へ戻る」は 767px 以下でも同じ条件で出る(縦 1280px では、一番下の 1276px まで送っても出ない)', async () => {

@@ -116,6 +116,8 @@
   --tap-sm: 40px;
   --tap-lg: 46px;
   --mobile-nav-item-h: 52px;
+  /* 767px 以下の「先頭へ戻る」の下からの位置(下のメニューの高さ + その上下の余白 + 間) */
+  --to-top-bottom-mobile: calc(var(--mobile-nav-item-h) + var(--sp-1h) + var(--sp-2) + var(--sp-3) + env(safe-area-inset-bottom, 0px));
   --tab-h: 46px;
   --icon: 18px;
   --icon-stroke: 1.7;

@@ -24,8 +24,6 @@ export function ScrollTopButton() {
     }
   }, [])
 
-  if (!visible) return null
-
   function scrollToTop() {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
@@ -33,8 +31,9 @@ export function ScrollTopButton() {
     document.getElementById('main')?.focus({ preventScroll: true })
   }
 
+  // フェードさせるため常に描画し、出ていない間は .hidden で見えず・押せず・フォーカスも当たらないようにする
   return (
-    <button type="button" className={styles.button} aria-label="先頭へ戻る" onClick={scrollToTop}>
+    <button type="button" className={visible ? styles.button : `${styles.button} ${styles.hidden}`} aria-label="先頭へ戻る" onClick={scrollToTop}>
       <Icon name="up" />
     </button>
   )

@@ -64,8 +64,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* 中央が右端の近くまで広がり、「先頭へ戻る」(右下に固定)がメモ欄のつまみなどに重なるため、
-     画面の下にボタンの分(下からの位置 + 高さ)の余白を足す。767px 以下は下で上書きする(仕様 4 章の共通) */
+  /* 中央が右端の近くまで広がり、「先頭へ戻る」(右下に固定)がメモ欄のつまみや「前/次のニュース」に重なるため、
+     画面の下にボタンの分(下からの位置 + 高さ)の余白を足す。767px 以下は位置が違うので下で上書きする(仕様 4 章の共通) */
   .main {
     padding-bottom: calc(var(--sp-20) + var(--sp-8) + var(--tap));
   }
@@ -77,6 +77,7 @@
   }
 
   .main {
-    padding: var(--sp-5h) max(var(--sp-4), env(safe-area-inset-right, 0px)) var(--sp-26) max(var(--sp-4), env(safe-area-inset-left, 0px));
+    /* 下:「先頭へ戻る」(下のメニューの上)の下からの位置 + 高さ + 間。下のメニューもこの中に収まる */
+    padding: var(--sp-5h) max(var(--sp-4), env(safe-area-inset-right, 0px)) calc(var(--to-top-bottom-mobile) + var(--tap) + var(--sp-4)) max(var(--sp-4), env(safe-area-inset-left, 0px));
   }
 }

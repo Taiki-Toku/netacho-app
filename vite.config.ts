@@ -12,9 +12,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    // 試験では CSS を読み込まない(空になる)のが既定。重なる順(z-index)とスクロールの余白の試験で ?raw の中身を読むファイルだけ通す
+    // 試験では CSS を読み込まない(空になる)のが既定。重なる順(z-index)・スクロールの余白・「先頭へ戻る」の出し入れの試験で使うファイルだけ通す
     css: {
-      include: [/src\/styles\/(tokens|global)\.css/, /src\/components\/(TopBar|ReadingProgress)\.module\.css/],
+      include: [/src\/styles\/(tokens|global)\.css/, /src\/components\/(TopBar|ReadingProgress|ScrollTopButton)\.module\.css/],
     },
   },
 })
