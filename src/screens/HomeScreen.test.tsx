@@ -100,6 +100,18 @@ describe('トップ(今朝のネタ)', () => {
     expect(link.contains(save)).toBe(false)
   })
 
+  it('トップの枠と一覧の行の画像は、包む枠ごと押す操作を下のリンクの ::after へ通す', async () => {
+    const list = await renderHome(fullSample)
+    const feature = screen.getByRole('article', { name: /サンプル商事/ })
+    // jsdom では押した先を判定できないため、画像を包む要素に当たった指定で確かめる(画像は alt が空なので役割では探せない)
+    const images = [...feature.querySelectorAll('img'), ...list.querySelectorAll('img')]
+    expect(feature.querySelector('img')).not.toBeNull()
+    expect(list.querySelector('img')).not.toBeNull()
+    for (const image of images) {
+      expect(getComputedStyle(image.parentElement!).pointerEvents).toBe('none')
+    }
+  })
+
   it('評価済みのネタにはその旨が付き、未評価には付かない', async () => {
     const list = await renderHome()
     const rows = within(list).getAllByRole('listitem')

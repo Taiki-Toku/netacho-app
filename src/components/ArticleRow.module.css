@@ -91,6 +91,9 @@
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface-3);
+  /* 中の画像には filter が付き、DOM の順で見出しのリンクの ::after より上に描かれる。
+     押した先が画像にならないよう、押す操作だけ下の ::after へ通す(重なる順は変えない) */
+  pointer-events: none;
 }
 
 @media (max-width: 767px) {
