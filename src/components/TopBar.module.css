@@ -12,6 +12,14 @@
   border-bottom: var(--line-thin) solid var(--line);
 }
 
+/*
+ * 候補の一覧が開いている間は、上のバーごと読了バー・下のメニュー・「先頭へ戻る」より手前に上げる。
+ * 上のバーは sticky + z-index で重なりの文脈を作るので、中の一覧だけ z-index を上げても外には効かない
+ */
+.topbar:has([role='combobox'][aria-expanded='true']) {
+  z-index: var(--z-suggest);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -39,64 +47,6 @@
   color: var(--muted);
 }
 
-/* 虫めがねのボタンはスマホだけ */
-.searchToggle {
-  display: none;
-  width: var(--tap);
-  height: var(--tap);
-  place-items: center;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.search,
-.searchOpen {
-  height: var(--tap-sm);
-  width: var(--search-w);
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  background: var(--bg);
-  border: var(--line-thin) solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--sp-3);
-  color: var(--muted);
-}
-
-.input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font-size: var(--fs-14);
-  color: var(--ink);
-}
-
-.input::placeholder {
-  color: var(--muted);
-}
-
-/* 送信は Enter でできる。ボタンは読み上げと、スマホで欄を開いたときの押し場所のために置く */
-.submit {
-  flex: none;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font-size: var(--fs-13);
-  font-weight: var(--weight-semibold);
-  padding: 0 var(--sp-1);
-  min-height: var(--tap-sm);
-  cursor: pointer;
-}
-
-.close {
-  display: none;
-}
-
 @media (max-width: 767px) {
   .topbar {
     height: var(--topbar-h-mobile);
@@ -105,34 +55,5 @@
 
   .date {
     display: none;
-  }
-
-  .searchToggle {
-    display: grid;
-  }
-
-  .search {
-    display: none;
-  }
-
-  /* 開いた欄は、上のバーいっぱいに重ねる */
-  .searchOpen {
-    position: absolute;
-    inset: var(--sp-2h) var(--sp-4);
-    width: auto;
-    height: auto;
-    z-index: var(--z-topbar);
-  }
-
-  .close {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: var(--tap-sm);
-    height: var(--tap-sm);
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
   }
 }

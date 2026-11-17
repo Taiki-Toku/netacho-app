@@ -29,3 +29,17 @@ export function follow(link: HTMLElement) {
 export async function waitForHeading(name: string | RegExp) {
   return screen.findByRole('heading', { level: 1, name })
 }
+
+/** 戻る(-1)/進む(1)。jsdom の履歴の移動は非同期なので、hashchange が届くまで待つ */
+export function goHistory(delta: -1 | 1): Promise<void> {
+  return new Promise((resolve) => {
+    window.addEventListener(
+      'hashchange',
+      () => {
+        resolve()
+      },
+      { once: true },
+    )
+    window.history.go(delta)
+  })
+}

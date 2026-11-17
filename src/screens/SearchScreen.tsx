@@ -1,9 +1,19 @@
-// さがす:ネタ、公式のお知らせ、脆弱性を分けて表示(仕様 4 章 7)。検索語は URL(#/search?q=)から読む
+// さがす:ニュース、公式のお知らせ、脆弱性、ジャンルを分けて表示(仕様 4 章 7。分類は検索欄の候補と同じ4つ)。検索語は URL(#/search?q=)から読む
+import { hrefFor } from '../app/router.ts'
 import { ArticleRow } from '../components/ArticleRow.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { FeedRow } from '../components/FeedRow.tsx'
 import { VulnCard } from '../components/VulnCard.tsx'
-import { announcements, genreLabelMap, genreLabelOf, searchFeed, searchItems, vulnerabilities } from '../data/queries.ts'
+import {
+  announcements,
+  genreLabelMap,
+  genreLabelOf,
+  menuGenres,
+  searchFeed,
+  searchGenres,
+  searchItems,
+  vulnerabilities,
+} from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './SearchScreen.module.css'
@@ -29,6 +39,7 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
   const items = searchItems(data.items, data.genres, q)
   const feed = searchFeed(announcements(data.feed), q)
   const vulns = searchFeed(vulnerabilities(data.feed), q)
+  const genres = searchGenres(menuGenres(data.genres), q)
 
   return (
     <section aria-labelledby="search-title">
@@ -71,6 +82,23 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
         <ul className={styles.cards} aria-label="一致する脆弱性">
           {vulns.map((entry) => (
             <VulnCard key={entry.id} entry={entry} />
+          ))}
+        </ul>
+      )}
+      <div className={pageStyles.sectionHead}>
+        <h2 className={pageStyles.sectionTitle}>ジャンル</h2>
+        <span className={pageStyles.caption}>{genres.length}件</span>
+      </div>
+      {genres.length === 0 ? (
+        <EmptyState title="一致するジャンルがありません" text="左のメニュー(スマホは上のタブ)からも選べます。" />
+      ) : (
+        <ul className={styles.genres} aria-label="一致するジャンル">
+          {genres.map((genre) => (
+            <li key={genre.id}>
+              <a className={styles.genreLink} href={hrefFor({ name: 'genre', id: genre.id, kind: 'all' })}>
+                {genre.label}
+              </a>
+            </li>
           ))}
         </ul>
       )}

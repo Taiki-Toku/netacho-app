@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from './App.tsx'
-import { follow, renderApp, waitForHeading } from './test/renderApp.tsx'
+import { follow, goHistory, renderApp, waitForHeading } from './test/renderApp.tsx'
 import { fullSample as sample } from './test/sampleData.ts'
 
 describe('App(骨組み)', () => {
@@ -96,7 +96,7 @@ describe('App(骨組み)', () => {
     const itemHash = window.location.hash
     await screen.findByRole('link', { name: /に戻る$/ })
     const user = userEvent.setup()
-    await user.type(screen.getByRole('searchbox', { name: '検索語' }), 'CVE{Enter}')
+    await user.type(screen.getByRole('combobox', { name: '検索語' }), 'CVE{Enter}')
     expect(await waitForHeading(/CVE/)).toBeInTheDocument()
 
     const steps: [string, () => Promise<unknown>][] = [
@@ -119,7 +119,7 @@ describe('App(骨組み)', () => {
     await goHistory(1)
     expect(window.location.hash).toBe('#/search?q=CVE')
     expect(await waitForHeading(/CVE/)).toBeInTheDocument()
-    expect(screen.getByRole('searchbox', { name: '検索語' })).toHaveValue('CVE')
+    expect(screen.getByRole('combobox', { name: '検索語' })).toHaveValue('CVE')
     window.location.hash = ''
   })
 
@@ -187,20 +187,6 @@ describe('App(骨組み)', () => {
     scrollTo.mockRestore()
   })
 })
-
-/** 戻る(-1)/進む(1)。jsdom の履歴の移動は非同期なので、hashchange が届くまで待つ */
-function goHistory(delta: -1 | 1): Promise<void> {
-  return new Promise((resolve) => {
-    window.addEventListener(
-      'hashchange',
-      () => {
-        resolve()
-      },
-      { once: true },
-    )
-    window.history.go(delta)
-  })
-}
 
 function setScrollY(value: number) {
   act(() => {

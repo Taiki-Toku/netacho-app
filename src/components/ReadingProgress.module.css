@@ -3,7 +3,7 @@
   position: fixed;
   top: calc(var(--topbar-h) - var(--line-strong));
   left: 0;
-  z-index: var(--z-topbar);
+  z-index: var(--z-progress);
   width: 100%;
   height: var(--line-strong);
   border: 0;

@@ -81,7 +81,7 @@ function Shell() {
       <a className={styles.skip} href="#main">
         本文へ移動
       </a>
-      <TopBar route={route} dateLabel={date === null ? '' : formatDateHeader(date)} />
+      <TopBar route={route} dateLabel={date === null ? '' : formatDateHeader(date)} data={data} />
       <GenreTabs route={route} genres={genres} />
       <div className={styles.workspace}>
         <Sidebar route={route} genres={genres} vulnCount={vulnCount} savedCount={savedCount} />

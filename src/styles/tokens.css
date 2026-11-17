@@ -121,7 +121,11 @@
   --icon-stroke: 1.7;
   --brand-mark-w: 34px;
   --brand-mark-h: 27px;
-  --search-w: min(300px, 30vw);
+  --search-w: clamp(260px, 30vw, 300px);
+  /* 検索の候補の一覧(PC)。欄より広く取り、画面からはみ出さない */
+  --suggest-w: min(420px, calc(100vw - 2 * var(--sp-4)));
+  --suggest-max-h: min(480px, calc(100dvh - var(--topbar-h) - var(--sp-8)));
+  --suggest-max-h-mobile: calc(100dvh - var(--topbar-h-mobile) - var(--sp-8));
   --thumb-w: 132px;
   --thumb-h: 92px;
   --thumb-w-mobile: 96px;
@@ -149,14 +153,20 @@
   --duration-intro: 420ms;
   --intro-rise: 8px;
   --intro-stagger: 70ms;
+  /* 検索の候補が開くときに、上から下りてくる距離 */
+  --suggest-rise: 4px;
 
   /* 重なり */
   /* 行の中で、行全体に広げたリンクより上に出す部品(保存ボタン) */
   --z-row-control: 1;
   --z-tabs: 15;
   --z-topbar: 20;
+  /* 読了バー:上のバーの下端に重ねるので、上のバーより上 */
+  --z-progress: 21;
   --z-mobile-nav: 30;
   --z-to-top: 40;
+  /* 検索の候補が開いている間の上のバー:読了バー・下のメニュー・「先頭へ戻る」より手前(通知より下) */
+  --z-suggest: 45;
   --z-toast: 50;
   --z-skip: 60;
 }

@@ -12,5 +12,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // 試験では CSS を読み込まない(空になる)のが既定。重なる順(z-index)の試験で ?raw の中身を読むファイルだけ通す
+    css: { include: [/src\/styles\/tokens\.css/, /src\/components\/(TopBar|ReadingProgress)\.module\.css/] },
   },
 })
