@@ -1,0 +1,29 @@
+.button {
+  position: fixed;
+  right: var(--sp-8);
+  bottom: var(--sp-8);
+  z-index: var(--z-to-top);
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .button:hover {
+    color: var(--accent-strong);
+  }
+}
+
+@media (max-width: 767px) {
+  .button {
+    right: max(var(--sp-4), env(safe-area-inset-right, 0px));
+    /* 下のメニューの上に出す */
+    bottom: calc(var(--mobile-nav-item-h) + var(--sp-1h) + var(--sp-2) + var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  }
+}

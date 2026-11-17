@@ -35,7 +35,7 @@ export function ItemScreen({ data, id }: ItemScreenProps) {
           このネタは見つかりません
         </h1>
         <p className={pageStyles.subtitle}>削除されたか、アドレスが違うようです。</p>
-        <a className={styles.back} href={hrefFor({ name: 'today' })}>
+        <a className={styles.back} href={hrefFor({ name: 'home' })}>
           <Icon name="back" />
           今朝のネタへ
         </a>
@@ -44,9 +44,9 @@ export function ItemScreen({ data, id }: ItemScreenProps) {
   }
 
   const genreLabel = genreLabelOf(item, genreLabelMap(genres))
-  // 戻り先:今朝のネタなら「今日」、前の日のネタならそのジャンル(ジャンルが無ければ「今日」)
+  // 戻り先:今朝のネタならトップ、前の日のネタならそのジャンル(ジャンルが無ければトップ)
   const back: Route =
-    item.date === latestDate(items) || item.genre === null ? { name: 'today' } : { name: 'genre', id: item.genre, kind: 'all' }
+    item.date === latestDate(items) || item.genre === null ? { name: 'home' } : { name: 'genre', id: item.genre, kind: 'all' }
 
   return <ItemView key={item.id} item={item} genreLabel={genreLabel} back={back} nav={neighbors(items, item)} />
 }
@@ -81,7 +81,7 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
     titleRef.current?.focus({ preventScroll: true })
   }, [item.id])
 
-  const backLabel = back.name === 'today' ? '今朝のネタに戻る' : '一覧に戻る'
+  const backLabel = back.name === 'home' ? '今朝のネタに戻る' : '一覧に戻る'
 
   return (
     <article className={styles.detail} aria-labelledby="item-title" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>

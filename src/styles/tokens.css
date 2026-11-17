@@ -6,14 +6,18 @@
   color-scheme: dark;
 
   /* 色(仕様 1 章の表と同じ) */
-  --bg: #171917;
-  --surface: #222522;
-  --surface-2: #292d29;
-  --surface-3: #323831;
-  --ink: #e8e9e4;
-  --ink-soft: #c1c8c2;
-  --muted: #a1a69d;
-  --line: #3a403b;
+  --bg: #0e0f0f;
+  --bar: #1b1e1b;
+  --nav: #141516;
+  --surface: #18191a;
+  --surface-2: #202224;
+  --surface-3: #2a2d2e;
+  --ink: #ececea;
+  --ink-soft: #c4c7c5;
+  --muted: #9da19f;
+  --line: #2c2f30;
+  /* 記事・お知らせの行の区切り */
+  --line-row: #222526;
   --accent: #91a995;
   --accent-strong: #a5b9a8;
   --accent-wash: #293a31;
@@ -137,11 +141,14 @@
   /* 動き */
   --duration: 200ms;
   --ease: ease;
+  /* スケルトンの明滅の片道 */
+  --duration-pulse: 900ms;
 
   /* 重なり */
   --z-tabs: 15;
   --z-topbar: 20;
   --z-mobile-nav: 30;
+  --z-to-top: 40;
   --z-toast: 50;
   --z-skip: 60;
 }

@@ -1,4 +1,4 @@
-// スマホ(767px 以下)の、横に流れるジャンルのタブ。今日 + ジャンル
+// スマホ(767px 以下)の、横に流れるジャンルのタブ。トップ + ジャンル
 import { hrefFor, type Route } from '../app/router.ts'
 import type { Genre } from '../data/types.ts'
 import { isCurrent } from './Sidebar.tsx'
@@ -10,7 +10,7 @@ interface GenreTabsProps {
 }
 
 export function GenreTabs({ route, genres }: GenreTabsProps) {
-  const targets: { route: Route; label: string }[] = [{ route: { name: 'today' }, label: '今日' }]
+  const targets: { route: Route; label: string }[] = [{ route: { name: 'home' }, label: 'トップ' }]
   for (const genre of genres) targets.push({ route: { name: 'genre', id: genre.id, kind: 'all' }, label: genre.label })
   return (
     <nav className={styles.tabs} aria-label="ジャンルのタブ">

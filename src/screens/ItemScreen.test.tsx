@@ -163,7 +163,7 @@ describe('ネタの詳細', () => {
     const last = screen.getByRole('navigation', { name: '前後のネタ' })
     expect(within(last).getByRole('link', { name: '前のネタ' })).toHaveAttribute('href', '#/item/2026-01-02-06')
     expect(within(last).queryByRole('link', { name: '次のネタ' })).not.toBeInTheDocument()
-    expect(within(last).getByRole('link', { name: '今朝のネタに戻る' })).toHaveAttribute('href', '#/today')
+    expect(within(last).getByRole('link', { name: '今朝のネタに戻る' })).toHaveAttribute('href', '#/home')
   })
 
   it('左にスワイプすると次へ、右にスワイプすると前へ移る。縦の動きは無視する', async () => {
@@ -188,6 +188,6 @@ describe('ネタの詳細', () => {
   it('無い id なら、見つからない旨と今朝のネタへの案内を出す', async () => {
     renderApp('#/item/nowhere', sample)
     expect(await screen.findByRole('heading', { level: 1, name: 'このネタは見つかりません' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '今朝のネタへ' })).toHaveAttribute('href', '#/today')
+    expect(screen.getByRole('link', { name: '今朝のネタへ' })).toHaveAttribute('href', '#/home')
   })
 })

@@ -1,4 +1,4 @@
-// 左メニュー(1101px 以上):ジャンル(今日 + ジャンル)、公式情報(公式のお知らせ、脆弱性)、自分用(保存)
+// 左メニュー(1101px 以上):ジャンル(トップ + ジャンル)、公式情報(公式のお知らせ、脆弱性)、自分用(保存)
 import { hrefFor, type Route } from '../app/router.ts'
 import type { Genre } from '../data/types.ts'
 import { Icon, type IconName } from './Icon.tsx'
@@ -14,8 +14,8 @@ interface SidebarProps {
 /** いまの画面がこのメニューに当たるか */
 export function isCurrent(route: Route, target: Route): boolean {
   switch (target.name) {
-    case 'today':
-      return route.name === 'today'
+    case 'home':
+      return route.name === 'home'
     case 'genre':
       return route.name === 'genre' && route.id === target.id
     case 'feed':
@@ -55,7 +55,7 @@ export function Sidebar({ route, genres, vulnCount, savedCount }: SidebarProps) 
         ジャンル
       </p>
       <nav className={styles.group} aria-labelledby="side-genres">
-        <NavLink route={route} target={{ name: 'today' }} label="今日" />
+        <NavLink route={route} target={{ name: 'home' }} label="トップ" />
         {genres.map((genre) => (
           <NavLink key={genre.id} route={route} target={{ name: 'genre', id: genre.id, kind: 'all' }} label={genre.label} />
         ))}

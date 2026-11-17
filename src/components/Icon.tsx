@@ -2,7 +2,7 @@
 import type { SVGProps } from 'react'
 import styles from './Icon.module.css'
 
-export type IconName = 'search' | 'back' | 'bookmark' | 'home' | 'feed' | 'shield' | 'close'
+export type IconName = 'search' | 'back' | 'bookmark' | 'home' | 'feed' | 'shield' | 'close' | 'up'
 
 const PATHS: Record<IconName, string> = {
   // さがす:虫めがね
@@ -19,6 +19,8 @@ const PATHS: Record<IconName, string> = {
   shield: 'M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z',
   // 閉じる
   close: 'M6 6l12 12M18 6 6 18',
+  // 先頭へ戻る:上向きの山形(「戻る」を回したもの)
+  up: 'm6 15 6-6 6 6',
 }
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

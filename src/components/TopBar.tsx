@@ -39,7 +39,7 @@ export function TopBar({ route, dateLabel }: TopBarProps) {
 
   return (
     <header className={styles.topbar}>
-      <a className={styles.brand} href={hrefFor({ name: 'today' })} aria-label="NODAL ホーム">
+      <a className={styles.brand} href={hrefFor({ name: 'home' })} aria-label="NODAL ホーム">
         <BrandMark />
         <span className={styles.brandName}>NODAL</span>
       </a>

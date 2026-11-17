@@ -1,14 +1,16 @@
 // アプリの骨組み(仕様 3 章):上のバー + 左メニュー(PC)/ジャンルのタブ(スマホ)+ 中央 + 右の列(PC)+ 下のメニュー(スマホ)
 import { useEffect, useMemo } from 'react'
 import { screenKey, useRoute, type Route } from './app/router.ts'
+import { ErrorState } from './components/ErrorState.tsx'
 import { GenreTabs } from './components/GenreTabs.tsx'
+import { LoadingState } from './components/LoadingState.tsx'
 import { MobileNav } from './components/MobileNav.tsx'
 import { RightRail } from './components/RightRail.tsx'
+import { ScrollTopButton } from './components/ScrollTopButton.tsx'
 import { Sidebar } from './components/Sidebar.tsx'
 import { ToastProvider } from './components/Toast.tsx'
 import { TopBar } from './components/TopBar.tsx'
-import pageStyles from './components/page.module.css'
-import { DataProvider, useData } from './data/DataProvider.tsx'
+import { DataProvider, useData, useReloadData } from './data/DataProvider.tsx'
 import { latestDate, menuGenres, vulnerabilities } from './data/queries.ts'
 import type { LoadedData } from './data/source.ts'
 import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore } from './data/userStore.ts'
@@ -25,7 +27,7 @@ import styles from './App.module.css'
 
 function screenFor(route: Route, data: LoadedData) {
   switch (route.name) {
-    case 'today':
+    case 'home':
       return <TodayScreen data={data} />
     case 'genre':
       return <GenreScreen data={data} id={route.id} kind={route.kind} />
@@ -46,12 +48,13 @@ function screenFor(route: Route, data: LoadedData) {
 
 /** 右の列を出す画面(詳細と脆弱性の一覧では出さない) */
 function hasRail(route: Route): boolean {
-  return route.name === 'today' || route.name === 'genre' || route.name === 'feed' || route.name === 'saved' || route.name === 'search'
+  return route.name === 'home' || route.name === 'genre' || route.name === 'feed' || route.name === 'saved' || route.name === 'search'
 }
 
 function Shell() {
   const route = useRoute()
   const state = useData()
+  const reload = useReloadData()
   const data = state.status === 'ready' ? state.data : null
   const genres = useMemo(() => (data === null ? [] : menuGenres(data.genres)), [data])
   const savedCount = useUserState().saved.length
@@ -75,13 +78,9 @@ function Shell() {
         <Sidebar route={route} genres={genres} vulnCount={vulnCount} savedCount={savedCount} />
         <main id="main" className={styles.main} tabIndex={-1}>
           {state.status === 'loading' ? (
-            <p className={pageStyles.status} role="status">
-              読み込み中…
-            </p>
+            <LoadingState />
           ) : state.status === 'error' ? (
-            <p className={pageStyles.status} role="alert">
-              データを読み込めませんでした。{state.message}
-            </p>
+            <ErrorState detail={state.message} onRetry={reload} />
           ) : (
             <div className={hasRail(route) ? styles.contentGrid : styles.contentSingle}>
               <section className={styles.mainColumn}>{screenFor(route, state.data)}</section>
@@ -90,6 +89,7 @@ function Shell() {
           )}
         </main>
       </div>
+      <ScrollTopButton />
       <MobileNav route={route} />
     </div>
   )

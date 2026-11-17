@@ -1,0 +1,97 @@
+/*
+  読み込み中のスケルトン。光沢は、地の色を --surface と --surface-2 の間でゆっくり明滅させて出す
+  (仕様にないグラデーションは使わない)。動きを減らす設定では止める
+*/
+
+.loading {
+  padding-top: var(--sp-1);
+}
+
+.heading,
+.subtitle,
+.label,
+.title,
+.titleShort,
+.thumb {
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  animation: pulse var(--duration-pulse) var(--ease) infinite alternate;
+}
+
+.heading {
+  width: 46%;
+  height: var(--sp-8);
+}
+
+.subtitle {
+  width: 30%;
+  height: var(--sp-3h);
+  margin-top: var(--sp-3);
+}
+
+.rows {
+  margin-top: var(--sp-7);
+  border-top: var(--line-thin) solid var(--line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--thumb-w);
+  gap: var(--sp-4);
+  padding: var(--sp-4h) 0;
+  border-bottom: var(--line-thin) solid var(--line-row);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2h);
+}
+
+.label {
+  width: var(--sp-20);
+  height: var(--sp-3);
+}
+
+.title {
+  width: 92%;
+  height: var(--sp-4);
+}
+
+.titleShort {
+  width: 64%;
+  height: var(--sp-4);
+}
+
+.thumb {
+  height: var(--thumb-h);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 767px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) var(--thumb-w-mobile);
+  }
+
+  .thumb {
+    height: var(--thumb-h-mobile);
+  }
+}
+
+@keyframes pulse {
+  to {
+    background: var(--surface-2);
+  }
+}
+
+/* 全体の設定は動きを極端に短くするだけなので、繰り返す明滅はここで止める */
+@media (prefers-reduced-motion: reduce) {
+  .heading,
+  .subtitle,
+  .label,
+  .title,
+  .titleShort,
+  .thumb {
+    animation: none;
+  }
+}

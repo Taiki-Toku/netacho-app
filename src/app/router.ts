@@ -10,7 +10,7 @@ export type FeedFilter = 'all' | FeedKind
 export type SeverityFilter = 'all' | Exclude<Severity, ''>
 
 export type Route =
-  | { name: 'today' }
+  | { name: 'home' }
   | { name: 'genre'; id: string; kind: FeedFilter }
   | { name: 'feed'; kind: FeedFilter }
   | { name: 'vuln'; severity: SeverityFilter }
@@ -19,7 +19,7 @@ export type Route =
   | { name: 'saved' }
   | { name: 'search'; q: string }
 
-const TODAY: Route = { name: 'today' }
+const HOME: Route = { name: 'home' }
 
 function asFeedFilter(value: string | null): FeedFilter {
   // 脆弱性は別の画面なので、お知らせの絞り込みには出てこない。知らない値は「すべて」
@@ -30,7 +30,7 @@ function asSeverityFilter(value: string | null): SeverityFilter {
   return value !== null && value !== '' && (SEVERITIES as readonly string[]).includes(value) ? (value as SeverityFilter) : 'all'
 }
 
-/** "#/genre/product?kind=release" のようなハッシュを Route にする。読めないものは「今日」に落とす */
+/** "#/genre/product?kind=release" のようなハッシュを Route にする。読めないものはトップ(ホーム)に落とす */
 export function parseHash(hash: string): Route {
   const withoutMark = hash.replace(/^#/, '')
   const queryStart = withoutMark.indexOf('?')
@@ -43,27 +43,28 @@ export function parseHash(hash: string): Route {
       .filter((part) => part !== '')
       .map((part) => decodeURIComponent(part))
   } catch {
-    return TODAY
+    return HOME
   }
   const [head, second] = parts
   switch (head) {
     case undefined:
-    case 'today':
-      return TODAY
+    case 'home':
+    case 'today': // 旧アドレス。URL は redirectLegacyHash で #/home に置き換える
+      return HOME
     case 'genre':
-      return second !== undefined ? { name: 'genre', id: second, kind: asFeedFilter(query.get('kind')) } : TODAY
+      return second !== undefined ? { name: 'genre', id: second, kind: asFeedFilter(query.get('kind')) } : HOME
     case 'feed':
       return { name: 'feed', kind: asFeedFilter(query.get('kind')) }
     case 'vuln':
       return second !== undefined ? { name: 'vuln-detail', id: second } : { name: 'vuln', severity: asSeverityFilter(query.get('sev')) }
     case 'item':
-      return second !== undefined ? { name: 'item', id: second } : TODAY
+      return second !== undefined ? { name: 'item', id: second } : HOME
     case 'saved':
       return { name: 'saved' }
     case 'search':
       return { name: 'search', q: (query.get('q') ?? '').trim() }
     default:
-      return TODAY
+      return HOME
   }
 }
 
@@ -76,8 +77,8 @@ function withQuery(path: string, params: Record<string, string>): string {
 
 export function hrefFor(route: Route): string {
   switch (route.name) {
-    case 'today':
-      return '#/today'
+    case 'home':
+      return '#/home'
     case 'genre':
       return withQuery(`#/genre/${encodeURIComponent(route.id)}`, { kind: route.kind })
     case 'feed':
@@ -114,10 +115,27 @@ export function screenKey(route: Route): string {
   }
 }
 
+/**
+ * 旧アドレス #/today を #/home に転送する。転送したら true。
+ * 履歴に積まずに置き換える(積むと「戻る」で #/today に戻り、また転送されて先へ戻れなくなる)。
+ * replaceState は hashchange を起こさないので、呼んだ側が画面に知らせる
+ */
+export function redirectLegacyHash(): boolean {
+  if (!/^#\/today(?:[/?]|$)/.test(window.location.hash)) return false
+  window.history.replaceState(window.history.state, '', hrefFor({ name: 'home' }))
+  return true
+}
+
 function subscribe(onChange: () => void): () => void {
-  window.addEventListener('hashchange', onChange)
+  function handle() {
+    redirectLegacyHash()
+    onChange()
+  }
+  window.addEventListener('hashchange', handle)
+  // 最初の表示が #/today のとき(ブックマークなど)
+  if (redirectLegacyHash()) onChange()
   return () => {
-    window.removeEventListener('hashchange', onChange)
+    window.removeEventListener('hashchange', handle)
   }
 }
 

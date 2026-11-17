@@ -12,7 +12,7 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     padding: var(--sp-1h) var(--sp-1h) calc(var(--sp-2) + env(safe-area-inset-bottom, 0px));
-    background: var(--surface);
+    background: var(--nav);
     border-top: var(--line-thin) solid var(--line);
   }
 

@@ -3,7 +3,7 @@
   grid-template-columns: var(--badge) minmax(0, 1fr);
   gap: var(--sp-3h);
   padding: var(--sp-3h) 0;
-  border-bottom: var(--line-thin) solid var(--line);
+  border-bottom: var(--line-thin) solid var(--line-row);
 }
 
 .badge {

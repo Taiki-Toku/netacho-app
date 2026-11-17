@@ -5,7 +5,7 @@ import { isCurrent } from './Sidebar.tsx'
 import styles from './MobileNav.module.css'
 
 const ITEMS: { label: string; icon: IconName; target: Route }[] = [
-  { label: 'ホーム', icon: 'home', target: { name: 'today' } },
+  { label: 'ホーム', icon: 'home', target: { name: 'home' } },
   { label: '公式情報', icon: 'feed', target: { name: 'feed', kind: 'all' } },
   { label: '脆弱性', icon: 'shield', target: { name: 'vuln', severity: 'all' } },
   { label: '保存', icon: 'bookmark', target: { name: 'saved' } },

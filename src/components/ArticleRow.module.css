@@ -4,7 +4,7 @@
   grid-template-columns: var(--order-w) minmax(0, 1fr) var(--thumb-w);
   gap: var(--sp-4);
   padding: var(--sp-4h) 0;
-  border-bottom: var(--line-thin) solid var(--line);
+  border-bottom: var(--line-thin) solid var(--line-row);
   /* 500 本でも一覧がもたつかないよう、画面の外の行は描画を後回しにする */
   content-visibility: auto;
   contain-intrinsic-size: auto 128px;

@@ -3,9 +3,9 @@ import { hrefFor, parseHash, screenKey } from './router.ts'
 
 describe('router(ハッシュの読み書き)', () => {
   it('ハッシュを画面に対応づける', () => {
-    expect(parseHash('')).toEqual({ name: 'today' })
-    expect(parseHash('#/')).toEqual({ name: 'today' })
-    expect(parseHash('#/today')).toEqual({ name: 'today' })
+    expect(parseHash('')).toEqual({ name: 'home' })
+    expect(parseHash('#/')).toEqual({ name: 'home' })
+    expect(parseHash('#/today')).toEqual({ name: 'home' })
     expect(parseHash('#/item/2026-01-02-01')).toEqual({ name: 'item', id: '2026-01-02-01' })
     expect(parseHash('#/genre/product')).toEqual({ name: 'genre', id: 'product', kind: 'all' })
     expect(parseHash('#/feed')).toEqual({ name: 'feed', kind: 'all' })
@@ -29,14 +29,14 @@ describe('router(ハッシュの読み書き)', () => {
     expect(parseHash('#/vuln?sev=')).toEqual({ name: 'vuln', severity: 'all' })
   })
 
-  it('読めないハッシュ(昔の画面を含む)は「今日」に落とす', () => {
-    expect(parseHash('#/nowhere')).toEqual({ name: 'today' })
-    expect(parseHash('#/item')).toEqual({ name: 'today' })
-    expect(parseHash('#/genre')).toEqual({ name: 'today' })
-    expect(parseHash('#/item/%E0%A4%A')).toEqual({ name: 'today' })
-    expect(parseHash('#/settings')).toEqual({ name: 'today' })
-    expect(parseHash('#/archive/2026-01-01')).toEqual({ name: 'today' })
-    expect(parseHash('#/design-lab')).toEqual({ name: 'today' })
+  it('読めないハッシュ(昔の画面を含む)はトップ(ホーム)に落とす', () => {
+    expect(parseHash('#/nowhere')).toEqual({ name: 'home' })
+    expect(parseHash('#/item')).toEqual({ name: 'home' })
+    expect(parseHash('#/genre')).toEqual({ name: 'home' })
+    expect(parseHash('#/item/%E0%A4%A')).toEqual({ name: 'home' })
+    expect(parseHash('#/settings')).toEqual({ name: 'home' })
+    expect(parseHash('#/archive/2026-01-01')).toEqual({ name: 'home' })
+    expect(parseHash('#/design-lab')).toEqual({ name: 'home' })
   })
 
   it('hrefFor と parseHash は往復する。「すべて」は ?… を付けない', () => {
