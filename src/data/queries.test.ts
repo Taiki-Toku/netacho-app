@@ -10,7 +10,6 @@ import {
   itemsInGenre,
   itemsOnDate,
   latestDate,
-  menuGenres,
   neighbors,
   searchFeed,
   searchItems,
@@ -52,8 +51,8 @@ describe('queries', () => {
     expect(broadcastDates(all.items)).toEqual(['2026-01-03', '2026-01-02', '2026-01-01'])
   })
 
-  it('メニューに出すジャンルから「脆弱性」を除く', () => {
-    expect(menuGenres(all.genres).map((g) => g.id)).toEqual(['work', 'agent', 'local-llm', 'security-news', 'product', 'creative', 'tools'])
+  it('ジャンルの一覧(fixtures/genres.json)に「脆弱性」(vuln)は無い。脆弱性は公式情報の画面に一本化した', () => {
+    expect(all.genres.map((g) => g.id)).toEqual(['work', 'agent', 'local-llm', 'security-news', 'product', 'creative', 'tools'])
   })
 
   it('ジャンルのネタを新しい順(同じ日は order 順)に返す。無いジャンルは空', () => {
@@ -65,7 +64,7 @@ describe('queries', () => {
       '2026-01-02-06',
     ])
     expect(itemsInGenre(all.items, 'work').map((i) => i.id)).toEqual(['2026-01-03-06', '2026-01-02-01', '2026-01-01-01'])
-    expect(itemsInGenre(all.items, 'vuln')).toEqual([])
+    expect(itemsInGenre(all.items, 'nowhere')).toEqual([])
   })
 
   it('フィードを種類で絞り、新しい順に返す', () => {

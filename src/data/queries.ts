@@ -61,11 +61,6 @@ export function genreLabelOf(item: Item, labels: ReadonlyMap<string, string>): s
   return item.genre === null ? '未分類' : (labels.get(item.genre) ?? item.genre)
 }
 
-/** メニューとタブに出すジャンル。「脆弱性」は公式情報の画面に一本化するため出さない */
-export function menuGenres(genres: readonly Genre[]): Genre[] {
-  return genres.filter((genre) => genre.id !== 'vuln')
-}
-
 /** ジャンルの画面用:その genre のネタを新しい順(日付の新しい順、同じ日なら order 順)に並べる */
 export function itemsInGenre(items: readonly Item[], genre: string): Item[] {
   return items

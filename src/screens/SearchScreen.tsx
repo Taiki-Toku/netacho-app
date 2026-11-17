@@ -8,7 +8,6 @@ import {
   announcements,
   genreLabelMap,
   genreLabelOf,
-  menuGenres,
   searchFeed,
   searchGenres,
   searchItems,
@@ -39,7 +38,7 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
   const items = searchItems(data.items, data.genres, q)
   const feed = searchFeed(announcements(data.feed), q)
   const vulns = searchFeed(vulnerabilities(data.feed), q)
-  const genres = searchGenres(menuGenres(data.genres), q)
+  const genres = searchGenres(data.genres, q)
 
   return (
     <section aria-labelledby="search-title">

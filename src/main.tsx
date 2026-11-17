@@ -12,14 +12,18 @@ import '@fontsource/space-grotesk/600.css'
 import './styles/tokens.css'
 import './styles/global.css'
 import { App } from './App.tsx'
+import { backendFromEnv } from './data/supabaseBackend.ts'
 
 const rootElement = document.getElementById('root')
 if (rootElement === null) {
   throw new Error('index.html に id="root" の要素がありません')
 }
 
+// 環境変数が2つともあれば Supabase モード(ログイン → Supabase のネタ)。無ければ今までどおり
+const backend = backendFromEnv(import.meta.env)
+
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <App backend={backend} />
   </StrictMode>,
 )

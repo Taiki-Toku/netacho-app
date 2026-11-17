@@ -1,13 +1,17 @@
-// 保存:保存したネタの一覧(新しく保存した順)。名前は全ジャンル共通で「保存」(仕様 4 章 6)
+// 保存:保存したネタの一覧(新しく保存した順)。名前は全ジャンル共通で「保存」(仕様 4 章 6)。
+// Supabase モードのときだけ、一番下に「ログアウト」を置く
+import { useSignOut } from '../app/session.ts'
 import { ArticleRow } from '../components/ArticleRow.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { findItem, genreLabelMap, genreLabelOf } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { useUserState } from '../data/userStore.ts'
 import pageStyles from '../components/page.module.css'
+import styles from './SavedScreen.module.css'
 
 export function SavedScreen({ data }: { data: LoadedData }) {
   const labels = genreLabelMap(data.genres)
+  const signOut = useSignOut()
   const list = [...useUserState().saved]
     .reverse()
     .map((id) => findItem(data.items, id))
@@ -27,6 +31,13 @@ export function SavedScreen({ data }: { data: LoadedData }) {
             <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} headingLevel={2} />
           ))}
         </ol>
+      )}
+      {signOut === null ? null : (
+        <div className={styles.account}>
+          <button type="button" className={pageStyles.textLink} onClick={signOut}>
+            ログアウト
+          </button>
+        </div>
       )}
     </section>
   )

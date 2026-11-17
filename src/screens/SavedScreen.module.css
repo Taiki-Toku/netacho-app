@@ -1,0 +1,6 @@
+/* 一番下の「ログアウト」:一覧から離し、区切りの線の下に置く */
+.account {
+  margin-top: var(--sp-12);
+  padding-top: var(--sp-4);
+  border-top: var(--line-thin) solid var(--line);
+}
