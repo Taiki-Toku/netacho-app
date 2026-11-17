@@ -1,4 +1,5 @@
-// トップ(ホーム):見出し「今朝のネタ」と件数の一言 → 今朝のトップ(画像 + 文章の大きな枠)→ 脆弱性ウォッチの帯 → 今朝のラインナップ(全件、放送順)(仕様 4 章 1)
+// トップ(ホーム):トップ(画像 + 文章の大きな枠)→ 脆弱性ウォッチの帯 → ニュース一覧(全件、配信の順)(仕様 4 章 1)。
+// 見出し「今日のニュース」は画面に出さず、読み上げ用の h1 としてだけ置く(日付は上のバー、件数は一覧の見出しの横にあるため)
 import { hrefFor } from '../app/router.ts'
 import { ArticleRow, itemInitial } from '../components/ArticleRow.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
@@ -10,7 +11,7 @@ import { countBySeverity, genreLabelMap, genreLabelOf, itemsOnDate, latestDate, 
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
 import type { FeedEntry, Item } from '../data/types.ts'
-import { formatCvss, formatDateHeader } from '../lib/format.ts'
+import { formatCvss } from '../lib/format.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './HomeScreen.module.css'
 
@@ -31,14 +32,9 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
 
   return (
     <section aria-labelledby="home-title">
-      <h1 id="home-title" className={pageStyles.heading}>
+      <h1 id="home-title" className="visually-hidden">
         今日のニュース
       </h1>
-      {date !== null ? (
-        <p className={pageStyles.subtitle}>
-          {formatDateHeader(date)}。全{list.length}本、配信の順に並んでいます。
-        </p>
-      ) : null}
 
       {top === undefined ? (
         <EmptyState title="今日のニュースはまだありません" text="配信が届くと、ここに並びます。" spaced />
@@ -76,7 +72,10 @@ interface FeatureProps {
   introClass: string | undefined
 }
 
-/** トップの大きな枠。画像が無い・危ない・読み込みに失敗したときは、画像の場所を取らず、文章だけで全幅にする(仕様 5 章) */
+/**
+ * トップの大きな枠。画像が無い・危ない・読み込みに失敗したときは、画像の場所を取らず、文章だけで全幅にする(仕様 5 章)。
+ * 押せる範囲は、見出しのリンクの ::after で枠全体に広げる。保存ボタンはリンクの外に置き、その上に出す(仕様 7 章。記事の行と同じ作り)
+ */
 function Feature({ item, genreLabel, introClass }: FeatureProps) {
   const thumb = useThumb(item.imageUrl)
   return (

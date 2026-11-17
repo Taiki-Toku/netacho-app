@@ -63,6 +63,12 @@
   .contentGrid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* 中央が右端の近くまで広がり、「先頭へ戻る」(右下に固定)がメモ欄のつまみなどに重なるため、
+     画面の下にボタンの分(下からの位置 + 高さ)の余白を足す。767px 以下は下で上書きする(仕様 4 章の共通) */
+  .main {
+    padding-bottom: calc(var(--sp-20) + var(--sp-8) + var(--tap));
+  }
 }
 
 @media (max-width: 767px) {

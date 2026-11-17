@@ -1,7 +1,9 @@
-/* トップ:文章 + 画像の大きな枠。画像が無いとき(featureTextOnly)は、文章だけで全幅 */
+/* トップ:文章 + 画像の大きな枠。画像が無いとき(featureTextOnly)は、文章だけで全幅。
+   画面の一番上に来るので、上の余白は付けない(見出しは読み上げ用だけ) */
 .feature,
 .featureTextOnly {
-  margin-top: var(--sp-6);
+  /* 見出しのリンクの ::after を、この枠の大きさに広げるための基準 */
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1.05fr;
   min-height: var(--feature-min-h);
@@ -31,6 +33,13 @@
   margin: var(--sp-3) 0;
 }
 
+/* 押せる範囲を枠全体(画像も含む)に広げる。フォーカスの枠は見出しのリンクに出る(:focus-visible は消さない) */
+.featureLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
 @media (hover: hover) {
   .featureLink:hover {
     color: var(--accent-strong);
@@ -56,11 +65,17 @@
 
 .metaSave {
   margin-left: auto;
+  /* 枠全体に広げたリンク(::after)より上に出し、保存ボタンが押せるようにする */
+  position: relative;
+  z-index: var(--z-row-control);
 }
 
 .featureImage {
   min-height: var(--feature-min-h);
   background: var(--surface-3);
+  /* 画像には filter が付き、DOM の順で見出しのリンクの ::after より上に描かれる。
+     押した先が画像にならないよう、押す操作だけ下の ::after へ通す(重なる順は変えない) */
+  pointer-events: none;
 }
 
 /* 脆弱性ウォッチの帯1本(どの幅でも出す) */
@@ -162,7 +177,6 @@
     display: flex;
     flex-direction: column-reverse;
     min-height: 0;
-    margin-top: var(--sp-4h);
   }
 
   .featureImage {

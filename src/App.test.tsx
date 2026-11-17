@@ -186,7 +186,33 @@ describe('App(骨組み)', () => {
     })
     scrollTo.mockRestore()
   })
+
+  it('「先頭へ戻る」は 767px 以下でも同じ条件で出る(縦 1280px では、一番下の 1276px まで送っても出ない)', async () => {
+    const { innerWidth, innerHeight } = window
+    setViewport(390, 1280)
+    try {
+      renderApp('#/home', sample)
+      await waitForHeading('今日のニュース')
+      // 原因の再現:ページの高さ 2556px − 画面の高さ 1280px = 1276px が一番下。1280px を超えないので出ない(仕様どおり)
+      setScrollY(1276)
+      expect(screen.queryByRole('button', { name: '先頭へ戻る' })).toBeNull()
+      // 1画面分を超えれば、幅に関係なく出る
+      setScrollY(1281)
+      expect(await screen.findByRole('button', { name: '先頭へ戻る' })).toBeInTheDocument()
+    } finally {
+      setScrollY(0)
+      setViewport(innerWidth, innerHeight)
+    }
+  })
 })
+
+function setViewport(width: number, height: number) {
+  act(() => {
+    Object.defineProperty(window, 'innerWidth', { value: width, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: height, configurable: true })
+    window.dispatchEvent(new Event('resize'))
+  })
+}
 
 function setScrollY(value: number) {
   act(() => {

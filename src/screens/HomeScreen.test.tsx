@@ -20,16 +20,44 @@ function rowHrefs(list: HTMLElement): (string | null)[] {
 }
 
 describe('トップ(今朝のネタ)', () => {
-  it('並び順:見出し → 今朝のトップ → 脆弱性ウォッチの帯 → 今朝のラインナップ', async () => {
+  it('並び順:トップの枠 → 脆弱性ウォッチの帯 → ニュース一覧', async () => {
     await renderHome(fullSample)
-    const heading = screen.getByRole('heading', { level: 1, name: '今日のニュース' })
     const feature = screen.getByRole('article', { name: /サンプル商事/ })
     const band = screen.getByRole('link', { name: /脆弱性ウォッチ/ })
     const lineup = screen.getByRole('heading', { level: 2, name: 'ニュース一覧' })
-    const order = [heading, feature, band, lineup]
+    const order = [feature, band, lineup]
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     }
+    // 画面の中身はトップの枠から始まる(見出しは読み上げ用だけ)
+    const section = screen.getByRole('region', { name: '今日のニュース' })
+    expect(section.firstElementChild?.tagName).toBe('H1')
+    expect(section.children[1]).toBe(feature)
+  })
+
+  it('h1「今日のニュース」は読み上げ用に残し、見た目だけ隠す。日付・件数・並び順の説明文は出さない', async () => {
+    await renderHome(fullSample)
+    const heading = screen.getByRole('heading', { level: 1, name: '今日のニュース' })
+    expect(heading).toHaveClass('visually-hidden')
+    expect(screen.queryByText(/配信の順に並んでいます/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/1月3日 土曜日。/)).not.toBeInTheDocument()
+  })
+
+  it('トップの枠:見出しが本物のリンクで、保存ボタンはリンクの外にあり別に押せる', async () => {
+    await renderHome(fullSample)
+    const feature = screen.getByRole('article', { name: /サンプル商事/ })
+    // 枠そのものはリンクやボタンにしない(押せる範囲は見出しのリンクの ::after で広げる)
+    expect(feature.tagName).toBe('ARTICLE')
+    expect(feature.getAttribute('role')).toBeNull()
+    const links = within(feature).getAllByRole('link')
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveAttribute('href', '#/item/2026-01-03-01')
+    const save = within(feature).getByRole('button', { name: '保存する' })
+    expect(links[0]!.contains(save)).toBe(false)
+    // 保存ボタンを押しても詳細へは移らず、保存だけされる
+    fireEvent.click(save)
+    expect(window.location.hash).toBe('')
+    expect(within(feature).getByRole('button', { name: '保存から外す' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('見本の一式では、最新日 2026-01-03 の 6 本を、トップを含めて全件、放送順に出す', async () => {
@@ -45,7 +73,6 @@ describe('トップ(今朝のネタ)', () => {
       '#/item/2026-01-03-05',
       '#/item/2026-01-03-06',
     ])
-    expect(screen.getByText('1月3日 土曜日。全6本、配信の順に並んでいます。')).toBeInTheDocument()
     expect(screen.getByText('全6本')).toBeInTheDocument()
   })
 
