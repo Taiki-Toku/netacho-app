@@ -26,7 +26,7 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
   if (q === '') {
     return (
       <section aria-labelledby="search-title">
-        <h1 id="search-title" className={pageStyles.heading}>
+        <h1 id="search-title" className={pageStyles.heading} tabIndex={-1}>
           さがす
         </h1>
         <EmptyState title="上の欄に言葉を入れてください" text="ニュースの見出し、製品名、CVE番号で探せます。" spaced />
@@ -42,7 +42,7 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
 
   return (
     <section aria-labelledby="search-title">
-      <h1 id="search-title" className={pageStyles.heading}>
+      <h1 id="search-title" className={pageStyles.heading} tabIndex={-1}>
         「{q}」の結果
       </h1>
       <div className={pageStyles.sectionHead}>

@@ -7,20 +7,27 @@ interface MockOptions {
   signedIn?: boolean
   loadItems?: () => Promise<Item[]>
   verifyResult?: AuthResult
+  /** ログイン中の人のメールアドレス(架空) */
+  email?: string
 }
 
-export function mockBackend({ signedIn = false, loadItems = () => Promise.resolve([]), verifyResult = { ok: true } }: MockOptions = {}) {
+export function mockBackend({
+  signedIn = false,
+  loadItems = () => Promise.resolve([]),
+  verifyResult = { ok: true },
+  email = 'owner@example.com',
+}: MockOptions = {}) {
   let current = signedIn
-  let listener: ((signedIn: boolean) => void) | undefined
+  let listener: ((signedIn: boolean, email: string | null) => void) | undefined
   function set(value: boolean) {
     current = value
-    listener?.(value)
+    listener?.(value, value ? email : null)
   }
   const backend = {
     auth: {
-      watchSession: vi.fn((onChange: (signedIn: boolean) => void) => {
+      watchSession: vi.fn((onChange: (signedIn: boolean, email: string | null) => void) => {
         listener = onChange
-        onChange(current)
+        onChange(current, current ? email : null)
         return () => {
           listener = undefined
         }

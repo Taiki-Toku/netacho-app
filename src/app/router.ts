@@ -18,6 +18,7 @@ export type Route =
   | { name: 'item'; id: string }
   | { name: 'saved' }
   | { name: 'search'; q: string }
+  | { name: 'settings' }
 
 const HOME: Route = { name: 'home' }
 
@@ -63,6 +64,8 @@ export function parseHash(hash: string): Route {
       return { name: 'saved' }
     case 'search':
       return { name: 'search', q: (query.get('q') ?? '').trim() }
+    case 'settings':
+      return { name: 'settings' }
     default:
       return HOME
   }
@@ -93,6 +96,8 @@ export function hrefFor(route: Route): string {
       return '#/saved'
     case 'search':
       return withQuery('#/search', { q: route.q })
+    case 'settings':
+      return '#/settings'
   }
 }
 

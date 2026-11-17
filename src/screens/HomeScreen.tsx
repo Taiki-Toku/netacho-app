@@ -32,7 +32,7 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
 
   return (
     <section aria-labelledby="home-title">
-      <h1 id="home-title" className="visually-hidden">
+      <h1 id="home-title" className="visually-hidden" tabIndex={-1}>
         今日のニュース
       </h1>
 

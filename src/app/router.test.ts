@@ -12,6 +12,8 @@ describe('router(ハッシュの読み書き)', () => {
     expect(parseHash('#/vuln')).toEqual({ name: 'vuln', severity: 'all' })
     expect(parseHash('#/vuln/feed-007')).toEqual({ name: 'vuln-detail', id: 'feed-007' })
     expect(parseHash('#/saved')).toEqual({ name: 'saved' })
+    expect(parseHash('#/settings')).toEqual({ name: 'settings' })
+    expect(hrefFor({ name: 'settings' })).toBe('#/settings')
     expect(parseHash('#/search')).toEqual({ name: 'search', q: '' })
   })
 
@@ -34,7 +36,7 @@ describe('router(ハッシュの読み書き)', () => {
     expect(parseHash('#/item')).toEqual({ name: 'home' })
     expect(parseHash('#/genre')).toEqual({ name: 'home' })
     expect(parseHash('#/item/%E0%A4%A')).toEqual({ name: 'home' })
-    expect(parseHash('#/settings')).toEqual({ name: 'home' })
+    expect(parseHash('#/preferences')).toEqual({ name: 'home' })
     expect(parseHash('#/archive/2026-01-01')).toEqual({ name: 'home' })
     expect(parseHash('#/design-lab')).toEqual({ name: 'home' })
   })

@@ -4,7 +4,8 @@ import { loadData, type LoadedData } from './source.ts'
 
 export type DataState =
   | { status: 'loading' }
-  | { status: 'ready'; data: LoadedData }
+  /** loadedAt:読み込みに成功した時刻(設定の画面に出す。端末には保存しない) */
+  | { status: 'ready'; data: LoadedData; loadedAt: Date }
   | { status: 'error'; message: string }
 
 const DataContext = createContext<DataState>({ status: 'loading' })
@@ -25,7 +26,7 @@ export function DataProvider({ children, load = loadData }: DataProviderProps) {
     let cancelled = false
     load().then(
       (data) => {
-        if (!cancelled) setState({ status: 'ready', data })
+        if (!cancelled) setState({ status: 'ready', data, loadedAt: new Date() })
       },
       (error: unknown) => {
         if (!cancelled) {

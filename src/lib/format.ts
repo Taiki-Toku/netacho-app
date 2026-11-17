@@ -89,6 +89,19 @@ export function formatJstDate(iso: string): string {
   return Number.isNaN(time) ? '' : jstDateFormatter.format(new Date(time))
 }
 
+const loadedAtFormatter = new Intl.DateTimeFormat('ja-JP', {
+  month: 'numeric',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
+/** ニュースを最後に読み込んだ時刻(設定の画面)。「11/17 08:05」の形、端末の時刻で */
+export function formatLoadedAt(date: Date): string {
+  return loadedAtFormatter.format(date)
+}
+
 /** CVSS の点数。「9.8」のように小数第1位まで。無ければ「－」 */
 export function formatCvss(value: number | null): string {
   return value === null ? '－' : value.toFixed(1)

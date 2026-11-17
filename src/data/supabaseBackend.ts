@@ -36,7 +36,7 @@ export function createSupabaseBackend(config: SupabaseConfig): Backend {
       watchSession(onChange) {
         // 登録すると INITIAL_SESSION で今の状態が届く。中で await しない(supabase-js の注意書きのとおり)
         const { data } = client.auth.onAuthStateChange((_event, session) => {
-          onChange(session !== null)
+          onChange(session !== null, session?.user.email ?? null)
         })
         return () => {
           data.subscription.unsubscribe()

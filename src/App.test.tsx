@@ -5,6 +5,7 @@ import { App } from './App.tsx'
 import { follow, goHistory, renderApp, waitForHeading } from './test/renderApp.tsx'
 import { fullSample as sample } from './test/sampleData.ts'
 import scrollTopCss from './components/ScrollTopButton.module.css?raw'
+import tokensCss from './styles/tokens.css?raw'
 
 describe('App(骨組み)', () => {
   it('読み込みが終わると、上のバーに NODAL と放送日(見本の最新日 2026-01-03)、左メニューと下のメニューが出る', async () => {
@@ -51,8 +52,8 @@ describe('App(骨組み)', () => {
     window.location.hash = ''
   })
 
-  it('知らないハッシュ(昔の #/settings など)はトップに落ちる', async () => {
-    renderApp('#/settings', sample)
+  it('知らないハッシュ(#/preferences など)はトップに落ちる', async () => {
+    renderApp('#/preferences', sample)
     expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
     window.location.hash = ''
   })
@@ -176,7 +177,9 @@ describe('App(骨組み)', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }))
     await userEvent.setup().click(button)
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'auto' })
-    expect(document.activeElement).toBe(document.getElementById('main'))
+    // ボタンは消えるので、その画面の最初の h1(トップは読み上げ用の見出し)に焦点を移す
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: '今日のニュース' }))
+    expect(document.activeElement).toHaveAttribute('tabindex', '-1')
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
     await userEvent.setup().click(button)
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
@@ -232,7 +235,12 @@ describe('App(骨組み)', () => {
     expect(scrollTopCss).not.toMatch(/transition:\s*all/)
     // 出るときは visibility をすぐ切り替え、消えるときはフェードの後に切り替える
     expect(scrollTopCss).toMatch(/\.button\s*\{[^}]*visibility 0s linear 0s;/)
-    expect(scrollTopCss).toMatch(/\.hidden\s*\{[^}]*visibility 0s linear var\(--duration\);/)
+    expect(scrollTopCss).toMatch(/\.hidden\s*\{[^}]*visibility 0s linear var\(--duration-fade\);/)
+    // フェードは約 300ms(このボタンだけ。ほかの動きの --duration は 200ms のまま)
+    expect(scrollTopCss).toMatch(/\.button\s*\{[^}]*opacity var\(--duration-fade\) var\(--ease\),/)
+    expect(scrollTopCss).not.toMatch(/var\(--duration\)/)
+    expect(tokensCss).toMatch(/--duration-fade: 300ms;/)
+    expect(tokensCss).toMatch(/--duration: 200ms;/)
     expect(scrollTopCss).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.button,\s*\.hidden\s*\{\s*transition: none;/)
   })
 

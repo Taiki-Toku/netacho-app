@@ -27,8 +27,10 @@ export function ScrollTopButton() {
   function scrollToTop() {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
-    // キーボードの人が先頭から読み直せるよう、本文に焦点を移す(移すときにスクロールさせない)
-    document.getElementById('main')?.focus({ preventScroll: true })
+    // ボタンは消えるので、その画面の最初の見出し(h1。各画面で tabIndex={-1})に焦点を移す(移すときにスクロールさせない)。
+    // 見出しの無い表示(読み込み中・エラー)では本文に移す
+    const target = document.querySelector<HTMLElement>('#main h1') ?? document.getElementById('main')
+    target?.focus({ preventScroll: true })
   }
 
   // フェードさせるため常に描画し、出ていない間は .hidden で見えず・押せず・フォーカスも当たらないようにする

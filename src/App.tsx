@@ -1,7 +1,7 @@
 // アプリの骨組み(仕様 3 章):上のバー + 左メニュー(PC)/ジャンルのタブ(スマホ)+ 中央 + 右の列(PC)+ 下のメニュー(スマホ)
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { navigate, screenKey, useRoute, type Route } from './app/router.ts'
-import { SignOutContext } from './app/session.ts'
+import { AccountContext, type Account } from './app/session.ts'
 import { EmptyState } from './components/EmptyState.tsx'
 import { ErrorState } from './components/ErrorState.tsx'
 import { GenreTabs } from './components/GenreTabs.tsx'
@@ -25,11 +25,12 @@ import { ItemScreen } from './screens/ItemScreen.tsx'
 import { LoginScreen } from './screens/LoginScreen.tsx'
 import { SavedScreen } from './screens/SavedScreen.tsx'
 import { SearchScreen } from './screens/SearchScreen.tsx'
+import { SettingsScreen } from './screens/SettingsScreen.tsx'
 import { VulnDetailScreen } from './screens/VulnDetailScreen.tsx'
 import { VulnScreen } from './screens/VulnScreen.tsx'
 import styles from './App.module.css'
 
-function screenFor(route: Route, data: LoadedData, homeIntro: boolean) {
+function screenFor(route: Route, data: LoadedData, loadedAt: Date, homeIntro: boolean) {
   switch (route.name) {
     case 'home':
       return <HomeScreen data={data} intro={homeIntro} />
@@ -47,6 +48,8 @@ function screenFor(route: Route, data: LoadedData, homeIntro: boolean) {
       return <SavedScreen data={data} />
     case 'search':
       return <SearchScreen data={data} q={route.q} />
+    case 'settings':
+      return <SettingsScreen data={data} loadedAt={loadedAt} />
   }
 }
 
@@ -94,13 +97,13 @@ function Shell() {
             <LoadingState />
           ) : state.status === 'error' ? (
             <ErrorState detail={state.message} onRetry={reload} />
-          ) : state.data.source === 'supabase' && state.data.items.length === 0 && route.name !== 'saved' ? (
+          ) : state.data.source === 'supabase' && state.data.items.length === 0 && route.name !== 'settings' ? (
             // Supabase から1本も読めないとき。RLS で許可ユーザー以外は 0 行になる(エラーにはならない)。
-            // 「保存」の画面だけは出す(ログアウトのボタンがあるため)
+            // 設定の画面だけは出す(ログアウトのボタンがあるため)
             <EmptyState title="表示できるニュースがありません" text="(許可ユーザーに登録されていない可能性があります)" spaced />
           ) : (
             <div className={hasRail(route) ? styles.contentGrid : route.name === 'item' ? styles.contentDetail : styles.contentSingle}>
-              <section className={styles.mainColumn}>{screenFor(route, state.data, !homeIntroPlayed)}</section>
+              <section className={styles.mainColumn}>{screenFor(route, state.data, state.loadedAt, !homeIntroPlayed)}</section>
               {hasRail(route) ? <RightRail data={state.data} /> : null}
             </div>
           )}
@@ -117,11 +120,14 @@ type SessionState = 'checking' | 'signedOut' | 'signedIn'
 /** Supabase モード:セッションが無ければログインだけを出し、あればネタを Supabase から読んで画面を出す */
 function SupabaseRoot({ backend }: { backend: Backend }) {
   const [session, setSession] = useState<SessionState>('checking')
+  // ログイン中の人のメールアドレス(設定の画面に出す)
+  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(
     () =>
-      backend.auth.watchSession((signedIn) => {
+      backend.auth.watchSession((signedIn, sessionEmail) => {
         setSession(signedIn ? 'signedIn' : 'signedOut')
+        setEmail(signedIn ? sessionEmail : null)
       }),
     [backend],
   )
@@ -139,8 +145,12 @@ function SupabaseRoot({ backend }: { backend: Backend }) {
     setSession('checking')
     void backend.auth.signOut().finally(() => {
       setSession('signedOut')
+      // 通信の失敗でログアウトの知らせが来ないときも、メールアドレスを手放す
+      setEmail(null)
     })
   }, [backend])
+
+  const account = useMemo<Account>(() => ({ email, signOut }), [email, signOut])
 
   if (session === 'checking') {
     return (
@@ -151,11 +161,11 @@ function SupabaseRoot({ backend }: { backend: Backend }) {
   }
   if (session === 'signedOut') return <LoginScreen auth={backend.auth} onSignedIn={onSignedIn} />
   return (
-    <SignOutContext value={signOut}>
+    <AccountContext value={account}>
       <DataProvider load={load}>
         <Shell />
       </DataProvider>
-    </SignOutContext>
+    </AccountContext>
   )
 }
 

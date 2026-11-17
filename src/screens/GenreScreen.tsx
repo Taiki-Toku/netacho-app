@@ -25,7 +25,7 @@ export function GenreScreen({ data, id, kind }: GenreScreenProps) {
   if (label === undefined) {
     return (
       <section aria-labelledby="genre-title">
-        <h1 id="genre-title" className={pageStyles.heading}>
+        <h1 id="genre-title" className={pageStyles.heading} tabIndex={-1}>
           ジャンル
         </h1>
         <EmptyState title="このジャンルはありません" text="メニューからジャンルを選んでください。" spaced />
@@ -39,7 +39,7 @@ export function GenreScreen({ data, id, kind }: GenreScreenProps) {
 
   return (
     <section aria-labelledby="genre-title">
-      <h1 id="genre-title" className={pageStyles.heading}>
+      <h1 id="genre-title" className={pageStyles.heading} tabIndex={-1}>
         {label}
       </h1>
       <p className={pageStyles.subtitle}>

@@ -16,7 +16,7 @@ export function FeedScreen({ data, kind }: FeedScreenProps) {
   const entries = announcements(data.feed, kind)
   return (
     <section aria-labelledby="feed-title">
-      <h1 id="feed-title" className={pageStyles.heading}>
+      <h1 id="feed-title" className={pageStyles.heading} tabIndex={-1}>
         公式のお知らせ
       </h1>
       <p className={pageStyles.subtitle}>各社の公式の配信(RSS)を、そのまま並べています。AIによる要約はしていません。</p>
