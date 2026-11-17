@@ -9,6 +9,13 @@
   overflow-y: auto;
 }
 
+/* 左メニューは中で縦にスクロールする箱。上の余白(global.css の scroll-margin-top)を付けると、
+   Shift+Tab で戻ったときに項目がメニューの上端から離れてしまうので 0 にする(依頼 5-4b) */
+.sidebar,
+.sidebar * {
+  scroll-margin-top: 0;
+}
+
 .groupLabel {
   font-size: var(--fs-12);
   letter-spacing: var(--ls-nav-label);

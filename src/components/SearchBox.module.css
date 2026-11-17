@@ -65,10 +65,15 @@
   display: none;
 }
 
-/* 候補の一覧。欄の右端にそろえ、欄より広く取る。影は付けず、線で地から分ける */
+/*
+ * 候補の一覧。欄の右端にそろえ、欄より広く取る。影は付けず、線で地から分ける。
+ * 上端は上のバーの下端にそろえる。100% は欄の線の内側なので、欄の線 + バーの中で欄の下に空いた距離 + バーの下の線を足す
+ *(欄はバーの線の内側の高さ --topbar-h - 線 の中で上下中央にある)。
+ * バーの中から始めると、バーの下の線と読了バーを隠し、バーが伸びたように見える(依頼 5-4b)
+ */
 .popup {
   position: absolute;
-  top: calc(100% + var(--sp-1h));
+  top: calc(100% + 2 * var(--line-thin) + (var(--topbar-h) - var(--line-thin) - var(--tap-sm)) / 2);
   right: calc(-1 * var(--line-thin));
   width: var(--suggest-w);
   max-height: var(--suggest-max-h);
@@ -92,7 +97,9 @@
   }
 }
 
+/* 候補の位置(offsetTop)を、この一覧から測るための基準 */
 .list {
+  position: relative;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--sp-1h) 0;
@@ -178,7 +185,9 @@
     height: auto;
   }
 
+  /* スマホの欄は、上のバーの線の内側に上下 --sp-2h ずつ空けて重ねている(欄の線 + 空き + バーの下の線) */
   .popup {
+    top: calc(100% + 2 * var(--line-thin) + var(--sp-2h));
     left: calc(-1 * var(--line-thin));
     width: auto;
     max-height: var(--suggest-max-h-mobile);

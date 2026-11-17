@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { goHistory, renderApp, waitForHeading } from '../test/renderApp.tsx'
@@ -6,6 +6,7 @@ import { fullSample as sample } from '../test/sampleData.ts'
 import tokensCss from '../styles/tokens.css?raw'
 import progressCss from '../components/ReadingProgress.module.css?raw'
 import topBarCss from '../components/TopBar.module.css?raw'
+import globalCss from '../styles/global.css?raw'
 
 describe('さがす', () => {
   it('上の欄に入れて送ると、検索語が URL に入り、ニュース・公式のお知らせ・脆弱性・ジャンルを分けて出す', async () => {
@@ -217,12 +218,12 @@ describe('重なる順(z-index)', () => {
     return Number(found[1])
   }
 
-  it('読了バーは上のバーより上。候補が開いている間の上のバーは、読了バー・下のメニュー・先頭へ戻るより上', () => {
-    expect(zOf('progress')).toBeGreaterThan(zOf('topbar'))
-    expect(zOf('suggest')).toBeGreaterThan(zOf('progress'))
+  it('候補が開いている間の上のバーは、下のメニュー・先頭へ戻るより上。読了バーはそれよりさらに上(上のバーが上がっても隠れない)', () => {
+    expect(zOf('suggest')).toBeGreaterThan(zOf('topbar'))
     expect(zOf('suggest')).toBeGreaterThan(zOf('mobile-nav'))
     expect(zOf('suggest')).toBeGreaterThan(zOf('to-top'))
-    expect(zOf('suggest')).toBeLessThan(zOf('toast'))
+    expect(zOf('progress')).toBeGreaterThan(zOf('suggest'))
+    expect(zOf('progress')).toBeLessThan(zOf('toast'))
     expect(progressCss).toContain('z-index: var(--z-progress);')
     expect(topBarCss).toMatch(/\.topbar:has\(\[role='combobox'\]\[aria-expanded='true'\]\)\s*\{\s*z-index: var\(--z-suggest\);/)
   })
@@ -237,5 +238,60 @@ describe('重なる順(z-index)', () => {
     expect(input.closest('header')).not.toBeNull()
     expect(input).toHaveAttribute('aria-expanded', 'true')
     window.location.hash = ''
+  })
+})
+
+describe('入力してもページがスクロールしない(依頼 5-4b)', () => {
+  it('上の余白は html の scroll-padding ではなく要素の scroll-margin で持ち、上のバーの中は 0', () => {
+    // html に scroll-padding-top があると、上のバーの中の欄が「余白に隠れている」扱いになり、入力のたびにページが上へ送られる
+    expect(globalCss).not.toMatch(/scroll-padding-top\s*:/)
+    expect(globalCss).toMatch(/\*\s*\{\s*scroll-margin-top: var\(--scroll-top\);/)
+    expect(topBarCss).toMatch(/\.topbar,\s*\.topbar \*\s*\{\s*scroll-margin-top: 0;/)
+  })
+
+  it('詳細の画面で入力・↑↓しても、ページをスクロールさせない。選んだ候補は一覧の中だけで見える所へ送る', async () => {
+    renderApp('#/item/2026-01-02-05', sample)
+    await screen.findByRole('link', { name: /に戻る$/ })
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true })
+    const input = screen.getByRole('combobox', { name: '検索語' })
+    const user = userEvent.setup()
+    await user.click(input)
+    // 画面を開いたときの先頭への移動(App)は数えず、入力と ↑↓ のあいだだけを見る
+    // (window.scrollTo は試験の準備で既に vi.fn。spyOn は同じものを返し、前の呼び出しが残っているので消す)
+    const scrollTo = vi.spyOn(window, 'scrollTo')
+    scrollTo.mockClear()
+    await user.type(input, 'サンプル')
+    // 候補ごとに高さ 40px、一覧の見える高さ 80px として測る(jsdom は配置を計算しないため)
+    const list = screen.getByRole('listbox', { name: '候補' })
+    Object.defineProperty(list, 'clientHeight', { value: 80, configurable: true })
+    Object.defineProperty(list, 'scrollTop', { value: 0, writable: true, configurable: true })
+    screen.getAllByRole('option').forEach((option, at) => {
+      Object.defineProperty(option, 'offsetTop', { value: at * 40, configurable: true })
+      Object.defineProperty(option, 'offsetHeight', { value: 40, configurable: true })
+    })
+    try {
+      await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}')
+      expect(list.scrollTop).toBe(40)
+      // 2つ目の分類の最初の候補へ:分類の見出しごと見せる
+      const groups = within(list).getAllByRole('group')
+      const second = groups[1]
+      if (second === undefined) throw new Error('分類が足りません')
+      Object.defineProperty(second, 'offsetTop', { value: 100, configurable: true })
+      await user.keyboard('{ArrowDown}')
+      // 下にはみ出す → 4つ目の候補(120〜160)の下端を一覧の下端(見える高さ 80)にそろえる
+      expect(list.scrollTop).toBe(160 - 80)
+      // 上へ戻って見出しが隠れているとき:分類の見出し(group の上端 100)から見せる
+      list.scrollTop = 200
+      await user.keyboard('{ArrowDown}{ArrowUp}')
+      expect(list.scrollTop).toBe(100)
+      await user.keyboard('{ArrowUp}{ArrowUp}{ArrowUp}')
+      expect(list.scrollTop).toBe(0)
+      expect(scrollIntoView).not.toHaveBeenCalled()
+      expect(scrollTo).not.toHaveBeenCalled()
+    } finally {
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+      window.location.hash = ''
+    }
   })
 })

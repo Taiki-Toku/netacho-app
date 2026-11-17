@@ -10,14 +10,26 @@ html {
   height: 100%;
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
-  /* 上に固定したバーが、焦点の当たった要素を隠さないようにする */
-  scroll-padding-top: var(--scroll-top);
+}
+
+/*
+ * 上に固定したバーが、焦点の当たった要素を隠さないようにする。
+ * html の scroll-padding-top で空けると、上のバーの中の検索欄も「余白に隠れている」扱いになり、
+ * 入力のたびにブラウザーが文字の位置を見せようとしてページを上へ送ってしまう(依頼 5-4b)。
+ * そのため、空ける量は要素の側(scroll-margin-top)に持たせ、上のバーの中だけ 0 にする(TopBar.module.css)
+ */
+* {
+  scroll-margin-top: var(--scroll-top);
 }
 
 @media (max-width: 767px) {
+  * {
+    /* スマホでは上のバー + ジャンルのタブのぶんを空ける */
+    scroll-margin-top: calc(var(--topbar-h-mobile) + var(--tab-h) + var(--sp-2));
+  }
+
   html {
-    /* スマホでは上のバー + ジャンルのタブ、下のメニューのぶんを空ける */
-    scroll-padding-top: calc(var(--topbar-h-mobile) + var(--tab-h) + var(--sp-2));
+    /* 下のメニューのぶん。上のバーの欄は画面の上端にあるので、下の余白では飛ばない */
     scroll-padding-bottom: calc(var(--mobile-nav-item-h) + var(--sp-4) + env(safe-area-inset-bottom, 0px));
   }
 }

@@ -27,6 +27,7 @@ export function SearchBox({ route, data }: SearchBoxProps) {
   /** 選んでいる候補の番号(全分類を通した番号)。-1 は選んでいない */
   const [active, setActive] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const toggleRef = useRef<HTMLButtonElement>(null)
   const baseId = useId()
   const listId = `${baseId}-list`
@@ -49,13 +50,21 @@ export function SearchBox({ route, data }: SearchBoxProps) {
     if (open) inputRef.current?.focus()
   }, [open])
 
-  // 選んでいる候補が一覧の外に隠れていたら、見える所まで送る(候補が多いスマホの縦長でないときは何も起きない)
+  // 選んでいる候補が一覧の外に隠れていたら、一覧の中だけをスクロールして見せる。
+  // scrollIntoView は一覧の外(ページ)までスクロールさせるため使わない(上のバーは sticky なので、ページが動くだけで候補は見えない)
   useEffect(() => {
-    if (activeIndex < 0) return
+    const list = listRef.current
+    if (activeIndex < 0 || list === null) return
     const element = document.getElementById(optionId(activeIndex))
-    // jsdom には scrollIntoView が無い
-    if (element !== null && typeof element.scrollIntoView === 'function') element.scrollIntoView({ block: 'nearest' })
-    // optionId は baseId だけで決まる
+    if (element === null) return
+    // 分類の最初の候補なら、分類の見出しごと見せる(一覧の最初の候補なら一覧の上の余白も)
+    const group = element.parentElement
+    const firstInGroup = element.previousElementSibling?.getAttribute('role') === 'presentation'
+    const top = activeIndex === 0 ? 0 : firstInGroup && group !== null ? group.offsetTop : element.offsetTop
+    const bottom = element.offsetTop + element.offsetHeight
+    if (top < list.scrollTop) list.scrollTop = top
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight
+    // optionId は baseId だけで決まる(group の offsetTop も一覧から測る。.list は position: relative)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex])
 
@@ -188,7 +197,7 @@ export function SearchBox({ route, data }: SearchBoxProps) {
             event.preventDefault()
           }}
         >
-          <div id={listId} role="listbox" aria-label="候補" className={styles.list}>
+          <div ref={listRef} id={listId} role="listbox" aria-label="候補" className={styles.list}>
             {groups.map((group, groupAt) => {
               const headId = `${baseId}-${group.kind}`
               return (

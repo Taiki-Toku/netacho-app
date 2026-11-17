@@ -12,8 +12,14 @@
   border-bottom: var(--line-thin) solid var(--line);
 }
 
+/* 上のバーの中は、スクロールで見せるときの上の余白を付けない(global.css の scroll-margin-top を打ち消す) */
+.topbar,
+.topbar * {
+  scroll-margin-top: 0;
+}
+
 /*
- * 候補の一覧が開いている間は、上のバーごと読了バー・下のメニュー・「先頭へ戻る」より手前に上げる。
+ * 候補の一覧が開いている間は、上のバーごと下のメニュー・「先頭へ戻る」より手前に上げる(読了バーはさらに上。tokens.css)。
  * 上のバーは sticky + z-index で重なりの文脈を作るので、中の一覧だけ z-index を上げても外には効かない
  */
 .topbar:has([role='combobox'][aria-expanded='true']) {

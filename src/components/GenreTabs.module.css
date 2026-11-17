@@ -17,6 +17,12 @@
     scrollbar-width: none;
   }
 
+  /* 上のバーと同じく上に貼り付く帯なので、スクロールで見せるときの上の余白を付けない(global.css。依頼 5-4b) */
+  .tabs,
+  .tabs * {
+    scroll-margin-top: 0;
+  }
+
   .tabs::-webkit-scrollbar {
     display: none;
   }
