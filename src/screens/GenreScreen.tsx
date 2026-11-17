@@ -43,12 +43,12 @@ export function GenreScreen({ data, id, kind }: GenreScreenProps) {
         {label}
       </h1>
       <p className={pageStyles.subtitle}>
-        {list.length}本のネタ{withFeed ? 'と、公式のお知らせ' : ''}
+        {list.length}本のニュース{withFeed ? 'と、公式のお知らせ' : ''}
       </p>
       {list.length === 0 ? (
-        <EmptyState title="今朝はこのジャンルのネタがありません" text="過去のネタは「さがす」から探せます。" spaced />
+        <EmptyState title="今日はこのジャンルのニュースがありません" text="過去のニュースは「さがす」から探せます。" spaced />
       ) : (
-        <ol className={pageStyles.listSpaced} aria-label={`${label}のネタ`}>
+        <ol className={pageStyles.listSpaced} aria-label={`${label}のニュース`}>
           {list.map((item) => (
             <ArticleRow key={item.id} item={item} genreLabel={label} headingLevel={2} />
           ))}

@@ -18,10 +18,10 @@ export const FEED_FILTER_KINDS: readonly FeedKind[] = ['release', 'eol', 'exam',
 export const ANNOUNCEMENT_KINDS: readonly FeedKind[] = ['release', 'eol', 'change', 'exam', 'outage']
 
 export const SEVERITY_LABELS: Record<Severity, string> = {
-  critical: '緊急',
-  high: '重要',
-  medium: '警告',
-  low: '注意',
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
   '': '不明',
 }
 

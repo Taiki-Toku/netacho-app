@@ -63,7 +63,7 @@ export function TopBar({ route, dateLabel }: TopBarProps) {
             ref={inputRef}
             className={styles.input}
             type="search"
-            placeholder="ネタ・製品・CVEをさがす"
+            placeholder="ニュース・製品・CVEをさがす"
             aria-label="検索語"
             autoComplete="off"
             value={query}

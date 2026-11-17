@@ -3,6 +3,7 @@
 // 押せる範囲は、リンクの疑似要素(::after)で行全体に広げ、保存ボタンだけをその上に出す(CSS 側)
 import { hrefFor } from '../app/router.ts'
 import { initialOf, isRated } from '../data/queries.ts'
+import { itemSourceName } from '../data/sourceName.ts'
 import type { Item } from '../data/types.ts'
 import { SaveButton } from './SaveButton.tsx'
 import { Thumb } from './Thumb.tsx'
@@ -20,10 +21,9 @@ interface ArticleRowProps {
   oneLineLead?: boolean
 }
 
-/** 画像の無いネタの札に出す頭文字。出典から取り、出典が無ければジャンル名(ジャンルの無いネタは「未分類」)(仕様 4〜5 章) */
+/** 画像の無いネタの札に出す頭文字。画面に出す媒体名(URL が無ければジャンル名)と同じ名前から取る(仕様 4〜5 章) */
 export function itemInitial(item: Item, genreLabel: string): string {
-  const base = [item.sourceTitle, genreLabel, item.title].find((text) => text.trim() !== '') ?? ''
-  return initialOf(base)
+  return initialOf(itemSourceName(item, genreLabel))
 }
 
 export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineLead = false }: ArticleRowProps) {
@@ -45,7 +45,7 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
         </Heading>
         {item.lead !== '' ? <p className={oneLineLead ? styles.summaryOneLine : styles.summary}>{item.lead}</p> : null}
         <div className={styles.meta}>
-          {item.sourceTitle !== '' ? <span>{item.sourceTitle}</span> : null}
+          <span>{itemSourceName(item, genreLabel)}</span>
           {isRated(item) ? <span>評価済み</span> : null}
           <span className={styles.save}>
             <SaveButton id={item.id} />

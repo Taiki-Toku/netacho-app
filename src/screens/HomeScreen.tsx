@@ -7,6 +7,7 @@ import { Thumb } from '../components/Thumb.tsx'
 import { vulnName } from '../components/VulnCard.tsx'
 import { countBySeverity, genreLabelMap, genreLabelOf, itemsOnDate, latestDate, vulnerabilities } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
+import { itemSourceName } from '../data/sourceName.ts'
 import type { FeedEntry } from '../data/types.ts'
 import { formatCvss, formatDateHeader } from '../lib/format.ts'
 import pageStyles from '../components/page.module.css'
@@ -30,20 +31,20 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
   return (
     <section aria-labelledby="home-title">
       <h1 id="home-title" className={pageStyles.heading}>
-        今朝のネタ
+        今日のニュース
       </h1>
       {date !== null ? (
         <p className={pageStyles.subtitle}>
-          {formatDateHeader(date)}。全{list.length}本、放送の順に並んでいます。
+          {formatDateHeader(date)}。全{list.length}本、配信の順に並んでいます。
         </p>
       ) : null}
 
       {top === undefined ? (
-        <EmptyState title="今朝のネタはまだありません" text="配信が届くと、ここに並びます。" spaced />
+        <EmptyState title="今日のニュースはまだありません" text="配信が届くと、ここに並びます。" spaced />
       ) : (
         <article className={[styles.feature, step(1)].filter(Boolean).join(' ')} aria-labelledby="feature-title">
           <div className={styles.featureCopy}>
-            <span className={pageStyles.label}>今朝のトップ</span>
+            <span className={pageStyles.label}>トップ</span>
             <h2 id="feature-title" className={styles.featureTitle}>
               <a className={styles.featureLink} href={hrefFor({ name: 'item', id: top.id })}>
                 {top.title !== '' ? top.title : '(見出しなし)'}
@@ -52,7 +53,7 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
             {top.lead !== '' ? <p className={styles.featureDesc}>{top.lead}</p> : null}
             <div className={styles.metaRow}>
               <span className={pageStyles.label}>{genreLabelOf(top, labels)}</span>
-              {top.sourceTitle !== '' ? <span>{top.sourceTitle}</span> : null}
+              <span>{itemSourceName(top, genreLabelOf(top, labels))}</span>
               <span className={styles.metaSave}>
                 <SaveButton id={top.id} />
               </span>
@@ -71,10 +72,10 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
       {top !== undefined ? (
         <div className={step(3)}>
           <div className={pageStyles.sectionHead}>
-            <h2 className={pageStyles.sectionTitle}>今朝のラインナップ</h2>
+            <h2 className={pageStyles.sectionTitle}>ニュース一覧</h2>
             <span className={pageStyles.caption}>全{list.length}本</span>
           </div>
-          <ol className={pageStyles.list} aria-label="今朝のラインナップ">
+          <ol className={pageStyles.list} aria-label="ニュース一覧">
             {list.map((item) => (
               <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} order={item.order} oneLineLead />
             ))}
@@ -91,7 +92,7 @@ function VulnBand({ feed }: { feed: readonly FeedEntry[] }) {
   const vulns = vulnerabilities(feed)
   const latest = vulns[0]
   if (latest === undefined) {
-    return <EmptyState title="公式情報はまだありません" text="脆弱性ウォッチ:配信が届くと、緊急の件数と最新の CVE をここに出します。" band />
+    return <EmptyState title="公式情報はまだありません" text="脆弱性ウォッチ:配信が届くと、Critical の件数と最新の CVE をここに出します。" band />
   }
   const critical = countBySeverity(vulns).critical
   return (
@@ -99,11 +100,11 @@ function VulnBand({ feed }: { feed: readonly FeedEntry[] }) {
       className={styles.band}
       href={hrefFor({ name: 'vuln', severity: 'all' })}
       // 見た目の文字はつながって読まれるため、区切りを入れた名前を付ける(見える文字で始める)
-      aria-label={`脆弱性ウォッチ。緊急 ${critical}件。最新:${vulnName(latest)} ${latest.product}、CVSS ${formatCvss(latest.cvss)}`}
+      aria-label={`脆弱性ウォッチ。Critical ${critical}件。最新:${vulnName(latest)} ${latest.product}、CVSS ${formatCvss(latest.cvss)}`}
     >
       <span className={styles.bandBody}>
         <strong className={styles.bandTitle}>
-          脆弱性ウォッチ<span className={styles.bandCount}>緊急 {critical}件</span>
+          脆弱性ウォッチ<span className={styles.bandCount}>Critical {critical}件</span>
         </strong>
         <small className={styles.bandText}>
           最新:{vulnName(latest)} {latest.product}

@@ -7,22 +7,22 @@ describe('ジャンルの画面', () => {
   it('そのジャンルのネタを新しい順に出す。ジャンルの名前は fixtures から', async () => {
     renderApp('#/genre/work', sample)
     expect(await waitForHeading('仕事・自動化')).toBeInTheDocument()
-    expect(screen.getByText('3本のネタ')).toBeInTheDocument()
-    const list = screen.getByRole('list', { name: '仕事・自動化のネタ' })
+    expect(screen.getByText('3本のニュース')).toBeInTheDocument()
+    const list = screen.getByRole('list', { name: '仕事・自動化のニュース' })
     expect([...list.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual([
       '#/item/2026-01-03-06',
       '#/item/2026-01-02-01',
       '#/item/2026-01-01-01',
     ])
     expect(screen.queryByRole('heading', { level: 2, name: '公式のお知らせ' })).not.toBeInTheDocument()
-    const genres = screen.getByRole('navigation', { name: 'ジャンル' })
+    const genres = screen.getByRole('navigation', { name: 'GENRES' })
     expect(within(genres).getByRole('link', { name: '仕事・自動化', current: 'page' })).toBeInTheDocument()
   })
 
   it('プロダクトだけ、下に公式のお知らせと種類の絞り込みを出す。絞り込みは URL に残る', async () => {
     renderApp('#/genre/product', sample)
     expect(await waitForHeading('プロダクト')).toBeInTheDocument()
-    expect(screen.getByText('2本のネタと、公式のお知らせ')).toBeInTheDocument()
+    expect(screen.getByText('2本のニュースと、公式のお知らせ')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: '公式のお知らせ' })).toBeInTheDocument()
     const chips = screen.getByRole('navigation', { name: 'お知らせの種類' })
     expect(within(chips).getAllByRole('link').map((a) => a.textContent)).toEqual(['すべて', 'リリース', 'サポート終了', '試験', '障害'])
@@ -53,7 +53,7 @@ describe('ジャンルの画面', () => {
   it('ネタが無いジャンルと、知らないジャンルは、その旨を出す', async () => {
     renderApp('#/genre/creative', { ...sample, items: sample.items.filter((item) => item.genre !== 'creative') })
     expect(await waitForHeading('VTuber・創作')).toBeInTheDocument()
-    expect(screen.getByText('今朝はこのジャンルのネタがありません')).toBeInTheDocument()
+    expect(screen.getByText('今日はこのジャンルのニュースがありません')).toBeInTheDocument()
     window.location.hash = '#/genre/nowhere'
     expect(await screen.findByText('このジャンルはありません')).toBeInTheDocument()
     window.location.hash = ''

@@ -1,7 +1,8 @@
 // 右の列(1101px 以上):脆弱性ウォッチ、公式のお知らせ(最新3件)、保存したネタ(最新3件)
 import { hrefFor } from '../app/router.ts'
-import { announcements, findItem, topVulnerability } from '../data/queries.ts'
+import { announcements, findItem, genreLabelMap, genreLabelOf, topVulnerability } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
+import { itemSourceName } from '../data/sourceName.ts'
 import { useUserState } from '../data/userStore.ts'
 import { formatCvss, formatJstDateTime } from '../lib/format.ts'
 import { SeverityPill } from './SeverityPill.tsx'
@@ -20,6 +21,7 @@ export function RightRail({ data }: { data: LoadedData }) {
     .map((id) => findItem(data.items, id))
     .filter((item) => item !== null)
     .slice(0, RAIL_COUNT)
+  const labels = genreLabelMap(data.genres)
 
   return (
     <aside className={styles.rail} aria-label="補助の情報">
@@ -84,7 +86,7 @@ export function RightRail({ data }: { data: LoadedData }) {
 
       <section className={styles.card} aria-labelledby="rail-saved">
         <h3 id="rail-saved" className={styles.title}>
-          保存したネタ
+          保存したニュース
         </h3>
         {saved.length === 0 ? (
           <p className={styles.desc}>しおりの印を押すと、ここに並びます。</p>
@@ -94,7 +96,7 @@ export function RightRail({ data }: { data: LoadedData }) {
               <li key={item.id} className={styles.miniItem}>
                 <a className={styles.miniLink} href={hrefFor({ name: 'item', id: item.id })}>
                   <strong>{item.title !== '' ? item.title : '(見出しなし)'}</strong>
-                  {item.sourceTitle !== '' ? <span>{item.sourceTitle}</span> : null}
+                  <span>{itemSourceName(item, genreLabelOf(item, labels))}</span>
                 </a>
               </li>
             ))}

@@ -9,8 +9,8 @@ const sample: LoadedData = baseSample
 
 async function renderHome(data: LoadedData = sample) {
   renderApp('', data)
-  await waitForHeading('今朝のネタ')
-  return screen.getByRole('list', { name: '今朝のラインナップ' })
+  await waitForHeading('今日のニュース')
+  return screen.getByRole('list', { name: 'ニュース一覧' })
 }
 
 function rowHrefs(list: HTMLElement): (string | null)[] {
@@ -22,10 +22,10 @@ function rowHrefs(list: HTMLElement): (string | null)[] {
 describe('トップ(今朝のネタ)', () => {
   it('並び順:見出し → 今朝のトップ → 脆弱性ウォッチの帯 → 今朝のラインナップ', async () => {
     await renderHome(fullSample)
-    const heading = screen.getByRole('heading', { level: 1, name: '今朝のネタ' })
+    const heading = screen.getByRole('heading', { level: 1, name: '今日のニュース' })
     const feature = screen.getByRole('article', { name: /サンプル商事/ })
     const band = screen.getByRole('link', { name: /脆弱性ウォッチ/ })
-    const lineup = screen.getByRole('heading', { level: 2, name: '今朝のラインナップ' })
+    const lineup = screen.getByRole('heading', { level: 2, name: 'ニュース一覧' })
     const order = [heading, feature, band, lineup]
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -35,7 +35,7 @@ describe('トップ(今朝のネタ)', () => {
   it('見本の一式では、最新日 2026-01-03 の 6 本を、トップを含めて全件、放送順に出す', async () => {
     const list = await renderHome(fullSample)
     const feature = screen.getByRole('article', { name: '架空:サンプル商事で不正アクセス、会員情報およそ12万件が流出か' })
-    expect(within(feature).getByText('今朝のトップ')).toBeInTheDocument()
+    expect(within(feature).getByText('トップ')).toBeInTheDocument()
     expect(within(feature).getByRole('link', { name: /サンプル商事/ })).toHaveAttribute('href', '#/item/2026-01-03-01')
     expect(rowHrefs(list)).toEqual([
       '#/item/2026-01-03-01',
@@ -45,7 +45,7 @@ describe('トップ(今朝のネタ)', () => {
       '#/item/2026-01-03-05',
       '#/item/2026-01-03-06',
     ])
-    expect(screen.getByText('1月3日 土曜日。全6本、放送の順に並んでいます。')).toBeInTheDocument()
+    expect(screen.getByText('1月3日 土曜日。全6本、配信の順に並んでいます。')).toBeInTheDocument()
     expect(screen.getByText('全6本')).toBeInTheDocument()
   })
 
@@ -85,7 +85,9 @@ describe('トップ(今朝のネタ)', () => {
     const list = await renderHome()
     const rows = within(list).getAllByRole('listitem')
     expect(within(rows[1]!).getByText('ツール・業界')).toBeInTheDocument()
-    expect(within(rows[1]!).getByText('見本の出典B')).toBeInTheDocument()
+    // 出典は sourceTitle ではなく、URL のホスト名から作った媒体名
+    expect(within(rows[1]!).getByText('example.com')).toBeInTheDocument()
+    expect(within(rows[1]!).queryByText('見本の出典B')).not.toBeInTheDocument()
     expect(within(rows[2]!).getByText('エージェント')).toBeInTheDocument()
   })
 
@@ -107,21 +109,25 @@ describe('トップ(今朝のネタ)', () => {
     expect(img).toHaveAttribute('width')
     expect(img).toHaveAttribute('height')
     expect(img).toHaveAttribute('loading', 'lazy')
-    // 06 は http:、07 は javascript: の画像 URL。どちらも img にならず、出典の頭文字の札になる
+    // 06 は http:、07 は javascript: の画像 URL。どちらも img にならず、頭文字の札になる
+    // 出典の URL も http: / javascript: で媒体名を作れないため、札はジャンル名の頭文字
     expect(rows[5]!.querySelector('img')).toBeNull()
-    expect(within(rows[5]!).getByText('ht', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[5]!).getByText('セキ', { selector: 'div' })).toBeInTheDocument()
     expect(rows[6]!.querySelector('img')).toBeNull()
-    expect(within(rows[6]!).getByText('危な', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[6]!).getByText('プロ', { selector: 'div' })).toBeInTheDocument()
     expect(list.querySelector('img[src^="javascript:"]')).toBeNull()
     expect(list.querySelector('img[src^="http://example.com"]')).toBeNull()
   })
 
-  it('画像なし:出典の頭文字の札。出典も無ければジャンル名の頭文字', async () => {
+  it('画像なし:媒体名の頭文字の札。行の媒体名と同じ名前から作る。URL が使えなければジャンル名', async () => {
     const list = await renderHome()
     const rows = within(list).getAllByRole('listitem')
-    // 03 は画像も出典も無い → ジャンル名(エージェント)の2文字
+    // 03 は画像も出典名も無いが、URL は https://example.com/c → 媒体名 example.com の2文字
     expect(rows[2]!.querySelector('img')).toBeNull()
-    expect(within(rows[2]!).getByText('エー', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[2]!).getByText('ex', { selector: 'div' })).toBeInTheDocument()
+    expect(within(rows[2]!).getByText('example.com')).toBeInTheDocument()
+    // 07 は URL が javascript: → 媒体名の欄もジャンル名(プロダクト)。ジャンルの札と2か所に出る
+    expect(within(rows[6]!).getAllByText('プロダクト')).toHaveLength(2)
   })
 
   it('画像の読み込みに失敗したら、同じ出典の頭文字の札に替わる(トップの枠も行も)', async () => {
@@ -129,12 +135,12 @@ describe('トップ(今朝のネタ)', () => {
     const row = within(list).getAllByRole('listitem')[1]!
     fireEvent.error(row.querySelector('img')!)
     expect(row.querySelector('img')).toBeNull()
-    expect(within(row).getByText('見本', { selector: 'div' })).toBeInTheDocument()
+    expect(within(row).getByText('ex', { selector: 'div' })).toBeInTheDocument()
 
     const feature = screen.getByRole('article', { name: '架空:手順書の差分チェックを半自動にする' })
     fireEvent.error(feature.querySelector('img')!)
     expect(feature.querySelector('img')).toBeNull()
-    expect(within(feature).getByText('見本', { selector: 'div' })).toBeInTheDocument()
+    expect(within(feature).getByText('ex', { selector: 'div' })).toBeInTheDocument()
   })
 
   it('脆弱性ウォッチの帯:緊急の件数、いちばん新しい CVE と CVSS。深刻度ではなく新しさで選ぶ', async () => {
@@ -142,8 +148,8 @@ describe('トップ(今朝のネタ)', () => {
     await renderHome({ ...fullSample, feed: fullSample.feed.filter((entry) => entry.id !== 'feed-007') })
     const band = screen.getByRole('link', { name: /脆弱性ウォッチ/ })
     expect(band).toHaveAttribute('href', '#/vuln')
-    expect(band).toHaveAccessibleName('脆弱性ウォッチ。緊急 1件。最新:CVE-2026-90002 サンプルOS Server、CVSS 8.1')
-    expect(band).toHaveTextContent('緊急 1件')
+    expect(band).toHaveAccessibleName('脆弱性ウォッチ。Critical 1件。最新:CVE-2026-90002 サンプルOS Server、CVSS 8.1')
+    expect(band).toHaveTextContent('Critical 1件')
     expect(band).toHaveTextContent('最新:CVE-2026-90002 サンプルOS Server')
     expect(band).toHaveTextContent('8.1')
   })
@@ -153,7 +159,7 @@ describe('トップ(今朝のネタ)', () => {
     const empty = screen.getByText('公式情報はまだありません')
     // トップの枠とラインナップの間にある
     const feature = screen.getByRole('article')
-    const lineup = screen.getByRole('heading', { level: 2, name: '今朝のラインナップ' })
+    const lineup = screen.getByRole('heading', { level: 2, name: 'ニュース一覧' })
     expect(feature.compareDocumentPosition(empty) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(empty.compareDocumentPosition(lineup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByRole('link', { name: /脆弱性ウォッチ/ })).not.toBeInTheDocument()
@@ -174,16 +180,16 @@ describe('トップ(今朝のネタ)', () => {
     const intro = () => screen.getByRole('article').className
     expect(intro()).toMatch(/intro1/)
     window.location.hash = '#/saved'
-    await waitForHeading('保存したネタ')
+    await waitForHeading('保存したニュース')
     window.location.hash = '#/home'
-    await waitForHeading('今朝のネタ')
+    await waitForHeading('今日のニュース')
     expect(intro()).not.toMatch(/intro1/)
     window.location.hash = ''
   })
 
   it('ネタが1本も無いときは、その旨を出す(脆弱性の帯は残る)', async () => {
     renderApp('', { items: [], genres: [], feed: [], source: 'fixtures' })
-    expect(await screen.findByText('今朝のネタはまだありません')).toBeInTheDocument()
+    expect(await screen.findByText('今日のニュースはまだありません')).toBeInTheDocument()
     expect(screen.getByText('公式情報はまだありません')).toBeInTheDocument()
   })
 

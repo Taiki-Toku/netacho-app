@@ -52,7 +52,7 @@ export function Sidebar({ route, genres, vulnCount, savedCount }: SidebarProps) 
   return (
     <aside className={styles.sidebar}>
       <p className={styles.groupLabel} id="side-genres">
-        ジャンル
+        GENRES
       </p>
       <nav className={styles.group} aria-labelledby="side-genres">
         <NavLink route={route} target={{ name: 'home' }} label="トップ" />
@@ -61,14 +61,14 @@ export function Sidebar({ route, genres, vulnCount, savedCount }: SidebarProps) 
         ))}
       </nav>
       <p className={styles.groupLabel} id="side-official">
-        公式情報
+        OFFICIAL
       </p>
       <nav className={styles.group} aria-labelledby="side-official">
         <NavLink route={route} target={{ name: 'feed', kind: 'all' }} label="公式のお知らせ" icon="feed" />
         <NavLink route={route} target={{ name: 'vuln', severity: 'all' }} label="脆弱性" icon="shield" count={vulnCount} />
       </nav>
       <p className={styles.groupLabel} id="side-mine">
-        自分用
+        LIBRARY
       </p>
       <nav className={styles.group} aria-labelledby="side-mine">
         <NavLink route={route} target={{ name: 'saved' }} label="保存" icon="bookmark" count={savedCount} />

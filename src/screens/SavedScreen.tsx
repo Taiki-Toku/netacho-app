@@ -16,13 +16,13 @@ export function SavedScreen({ data }: { data: LoadedData }) {
   return (
     <section aria-labelledby="saved-title">
       <h1 id="saved-title" className={pageStyles.heading}>
-        保存したネタ
+        保存したニュース
       </h1>
-      <p className={pageStyles.subtitle}>気になったネタを、ここにためておきます。</p>
+      <p className={pageStyles.subtitle}>気になったニュースを、ここにためておきます。</p>
       {list.length === 0 ? (
-        <EmptyState title="まだ何も入っていません" text="ネタの右下にある、しおりの印を押すと入ります。" spaced />
+        <EmptyState title="まだ何も入っていません" text="ニュースの右下にある、しおりの印を押すと入ります。" spaced />
       ) : (
-        <ol className={pageStyles.listSpaced} aria-label="保存したネタ">
+        <ol className={pageStyles.listSpaced} aria-label="保存したニュース">
           {list.map((item) => (
             <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} headingLevel={2} />
           ))}

@@ -8,12 +8,12 @@ import { fullSample as sample } from './test/sampleData.ts'
 describe('App(骨組み)', () => {
   it('読み込みが終わると、上のバーに NODAL と放送日(見本の最新日 2026-01-03)、左メニューと下のメニューが出る', async () => {
     renderApp('', sample)
-    expect(await waitForHeading('今朝のネタ')).toBeInTheDocument()
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'NODAL ホーム' })).toHaveAttribute('href', '#/home')
     expect(screen.getByText('1月3日 土曜日')).toBeInTheDocument()
 
     // 左メニュー:ジャンルは fixtures から。「脆弱性」ジャンルは出さず、公式情報の「脆弱性」に一本化する
-    const genres = screen.getByRole('navigation', { name: 'ジャンル' })
+    const genres = screen.getByRole('navigation', { name: 'GENRES' })
     expect(within(genres).getAllByRole('link').map((a) => a.textContent)).toEqual([
       'トップ',
       '仕事・自動化',
@@ -25,11 +25,11 @@ describe('App(骨組み)', () => {
       'ツール・業界',
     ])
     expect(within(genres).getByRole('link', { name: 'トップ', current: 'page' })).toBeInTheDocument()
-    const official = screen.getByRole('navigation', { name: '公式情報' })
+    const official = screen.getByRole('navigation', { name: 'OFFICIAL' })
     expect(within(official).getByRole('link', { name: '公式のお知らせ' })).toHaveAttribute('href', '#/feed')
     // 脆弱性の件数(見本は 5 件)
     expect(within(official).getByRole('link', { name: /^脆弱性\s*5$/ })).toHaveAttribute('href', '#/vuln')
-    const mine = screen.getByRole('navigation', { name: '自分用' })
+    const mine = screen.getByRole('navigation', { name: 'LIBRARY' })
     expect(within(mine).getByRole('link', { name: /^保存\s*0$/ })).toHaveAttribute('href', '#/saved')
 
     // 下のメニュー(スマホ):ホーム / 公式情報 / 脆弱性 / 保存
@@ -45,14 +45,14 @@ describe('App(骨組み)', () => {
     expect(within(nav).getByRole('link', { name: '公式情報', current: 'page' })).toBeInTheDocument()
 
     window.location.hash = '#/saved'
-    expect(await waitForHeading('保存したネタ')).toBeInTheDocument()
+    expect(await waitForHeading('保存したニュース')).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: '保存', current: 'page' })).toBeInTheDocument()
     window.location.hash = ''
   })
 
   it('知らないハッシュ(昔の #/settings など)はトップに落ちる', async () => {
     renderApp('#/settings', sample)
-    expect(await waitForHeading('今朝のネタ')).toBeInTheDocument()
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
     window.location.hash = ''
   })
 
@@ -60,7 +60,7 @@ describe('App(骨組み)', () => {
     window.location.hash = '#/saved'
     const before = window.history.length
     renderApp('#/today', sample)
-    expect(await waitForHeading('今朝のネタ')).toBeInTheDocument()
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
     await waitFor(() => {
       expect(window.location.hash).toBe('#/home')
     })
@@ -71,7 +71,7 @@ describe('App(骨組み)', () => {
     window.location.hash = '#/feed'
     await waitForHeading('公式のお知らせ')
     window.location.hash = '#/today'
-    expect(await waitForHeading('今朝のネタ')).toBeInTheDocument()
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
     expect(window.location.hash).toBe('#/home')
     // 戻ると #/today を飛ばして #/feed に戻る
     await goHistory(-1)
@@ -82,9 +82,9 @@ describe('App(骨組み)', () => {
 
   it('ジャンル・絞り込み・詳細・検索語の移動は履歴に積まれ、戻る/進むで 1 つずつ前後の表示に戻る', async () => {
     renderApp('#/home', sample)
-    await waitForHeading('今朝のネタ')
+    await waitForHeading('今日のニュース')
 
-    follow(within(screen.getByRole('navigation', { name: 'ジャンル' })).getByRole('link', { name: 'プロダクト' }))
+    follow(within(screen.getByRole('navigation', { name: 'GENRES' })).getByRole('link', { name: 'プロダクト' }))
     expect(await waitForHeading('プロダクト')).toBeInTheDocument()
     follow(within(screen.getByRole('navigation', { name: 'お知らせの種類' })).getByRole('link', { name: 'リリース' }))
     await waitFor(() => {
@@ -103,7 +103,7 @@ describe('App(骨組み)', () => {
       [itemHash, () => screen.findByRole('link', { name: /に戻る$/ })],
       ['#/genre/product?kind=release', () => screen.findByRole('link', { name: 'リリース', current: true })],
       ['#/genre/product', () => screen.findByRole('link', { name: 'すべて', current: true })],
-      ['#/home', () => waitForHeading('今朝のネタ')],
+      ['#/home', () => waitForHeading('今日のニュース')],
     ]
     for (const [hash, check] of steps) {
       await goHistory(-1)
@@ -125,8 +125,8 @@ describe('App(骨組み)', () => {
 
   it('0件のときは、何が無いかと次にすることを出す(トップ・保存・公式のお知らせ)', async () => {
     renderApp('#/home', { ...sample, items: [], feed: [] })
-    expect(await waitForHeading('今朝のネタ')).toBeInTheDocument()
-    expect(screen.getByText('今朝のネタはまだありません')).toBeInTheDocument()
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
+    expect(screen.getByText('今日のニュースはまだありません')).toBeInTheDocument()
     window.location.hash = '#/saved'
     expect(await screen.findByText('まだ何も入っていません')).toBeInTheDocument()
     window.location.hash = '#/feed'
@@ -156,13 +156,13 @@ describe('App(骨組み)', () => {
     // ボタンは知らせ(alert)の外に置き、読み上げは文だけにする
     expect(within(alert).queryByRole('button')).toBeNull()
     await userEvent.setup().click(screen.getByRole('button', { name: 'もう一度読み込む' }))
-    expect(await waitForHeading('今朝のネタ')).toBeInTheDocument()
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
     expect(calls).toBe(2)
   })
 
   it('「先頭へ戻る」は 1 画面分スクロールしてから出る', async () => {
     renderApp('#/home', sample)
-    await waitForHeading('今朝のネタ')
+    await waitForHeading('今日のニュース')
     expect(screen.queryByRole('button', { name: '先頭へ戻る' })).toBeNull()
 
     setScrollY(window.innerHeight)

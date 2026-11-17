@@ -1,6 +1,6 @@
 // ネタの詳細(仕様 4 章 5):ジャンル名、見出し、出典と日付、保存ボタン、画像、要点(AIがまとめたと明記)、
 // 試してみる(確かめること)、気をつけること、出典と元記事へのリンク、評価4つ、メモ(自動保存)。
-// 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このネタについて」の欄に残す。前後の移動はボタンと左右スワイプ
+// 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このニュースについて」の欄に残す。前後の移動はボタンと左右スワイプ
 import { useEffect, useRef } from 'react'
 import { hrefFor, navigate, type Route } from '../app/router.ts'
 import { itemInitial } from '../components/ArticleRow.tsx'
@@ -12,6 +12,7 @@ import { Thumb } from '../components/Thumb.tsx'
 import { RATING_CHOICES, RATING_LABELS, STAR_AXES, STATUS_LABELS, tryitHeading } from '../data/labels.ts'
 import { findItem, genreLabelMap, genreLabelOf, latestDate, neighbors } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
+import { itemSourceName } from '../data/sourceName.ts'
 import type { Item, Rating } from '../data/types.ts'
 import { useUserState, useUserStore } from '../data/userStore.ts'
 import { formatDateLong } from '../lib/format.ts'
@@ -31,12 +32,12 @@ export function ItemScreen({ data, id }: ItemScreenProps) {
     return (
       <section className={styles.detail} aria-labelledby="item-title">
         <h1 id="item-title" className={pageStyles.heading}>
-          このネタは見つかりません
+          このニュースは見つかりません
         </h1>
         <p className={pageStyles.subtitle}>削除されたか、アドレスが違うようです。</p>
         <a className={styles.back} href={hrefFor({ name: 'home' })}>
           <Icon name="back" />
-          今朝のネタへ
+          今日のニュースへ
         </a>
       </section>
     )
@@ -80,7 +81,7 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
     titleRef.current?.focus({ preventScroll: true })
   }, [item.id])
 
-  const backLabel = back.name === 'home' ? '今朝のネタに戻る' : '一覧に戻る'
+  const backLabel = '一覧に戻る'
 
   return (
     <article className={styles.detail} aria-labelledby="item-title" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
@@ -93,10 +94,10 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
         {item.title !== '' ? item.title : '(見出しなし)'}
       </h1>
       <div className={styles.metaRow}>
-        {item.sourceTitle !== '' ? <span>{item.sourceTitle}</span> : null}
+        <span>{itemSourceName(item, genreLabel)}</span>
         <span>{formatDateLong(item.date)}</span>
         <span>
-          {nav.position}/{nav.total}本目
+          {nav.position} / {nav.total}
         </span>
       </div>
       <div className={styles.actions}>
@@ -140,7 +141,7 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
 
       <section aria-labelledby="item-about">
         <h2 id="item-about" className={styles.bodyHeading}>
-          このネタについて
+          このニュースについて
         </h2>
         <dl className={styles.fields}>
           {item.slot !== '' ? <Field label="コーナー" value={item.slot} /> : null}
@@ -159,7 +160,7 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
 
       <div className={pageStyles.sectionHead}>
         <h2 id="item-rating" className={pageStyles.sectionTitle}>
-          このネタ、どうでしたか
+          このニュース、どうでしたか
         </h2>
         <span className={pageStyles.caption}>{rating === '' ? '未評価' : `評価:${RATING_LABELS[rating]}`}</span>
       </div>
@@ -202,20 +203,20 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
         {memoSaved ? 'メモを保存しました' : ''}
       </p>
 
-      <nav className={styles.pager} aria-label="前後のネタ">
+      <nav className={styles.pager} aria-label="前後のニュース">
         {nav.prev !== null ? (
           <a className={styles.pagerLink} href={hrefFor({ name: 'item', id: nav.prev.id })} rel="prev">
-            前のネタ
+            前のニュース
           </a>
         ) : (
-          <span className={styles.pagerDisabled}>前のネタ</span>
+          <span className={styles.pagerDisabled}>前のニュース</span>
         )}
         <span className={styles.pagerPosition} aria-hidden="true">
-          {nav.position}/{nav.total}
+          {nav.position} / {nav.total}
         </span>
         {nav.next !== null ? (
           <a className={styles.pagerLink} href={hrefFor({ name: 'item', id: nav.next.id })} rel="next">
-            次のネタ
+            次のニュース
           </a>
         ) : (
           <a className={styles.pagerLink} href={hrefFor(back)}>

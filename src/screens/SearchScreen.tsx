@@ -20,7 +20,7 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
         <h1 id="search-title" className={pageStyles.heading}>
           さがす
         </h1>
-        <EmptyState title="上の欄に言葉を入れてください" text="ネタの見出し、製品名、CVE番号で探せます。" spaced />
+        <EmptyState title="上の欄に言葉を入れてください" text="ニュースの見出し、製品名、CVE番号で探せます。" spaced />
       </section>
     )
   }
@@ -36,13 +36,13 @@ export function SearchScreen({ data, q }: SearchScreenProps) {
         「{q}」の結果
       </h1>
       <div className={pageStyles.sectionHead}>
-        <h2 className={pageStyles.sectionTitle}>ネタ</h2>
+        <h2 className={pageStyles.sectionTitle}>ニュース</h2>
         <span className={pageStyles.caption}>{items.length}件</span>
       </div>
       {items.length === 0 ? (
-        <EmptyState title="一致するネタがありません" text="別の言葉で試してください。" />
+        <EmptyState title="一致するニュースがありません" text="別の言葉で試してください。" />
       ) : (
-        <ol className={pageStyles.list} aria-label="一致するネタ">
+        <ol className={pageStyles.list} aria-label="一致するニュース">
           {items.map((item) => (
             <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} />
           ))}
