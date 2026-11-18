@@ -28,7 +28,7 @@ export function VulnScreen({ data, severity }: VulnScreenProps) {
 
   return (
     <section aria-labelledby="vuln-title">
-      <h1 id="vuln-title" className={pageStyles.heading}>
+      <h1 id="vuln-title" className={pageStyles.heading} tabIndex={-1}>
         脆弱性
       </h1>
       <p className={pageStyles.subtitle}>深刻度と、修正の状況から確かめます。</p>

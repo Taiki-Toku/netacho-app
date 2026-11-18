@@ -38,9 +38,9 @@
     border-bottom: var(--line-strong) solid transparent;
   }
 
+  /* 選択中は文字の色と下線で示す。太さは変えない(太くすると字の幅が広がり、隣のタブが動く。依頼 7-2) */
   .tabOn {
     color: var(--ink);
-    font-weight: var(--weight-bold);
     border-bottom-color: var(--accent-strong);
   }
 }

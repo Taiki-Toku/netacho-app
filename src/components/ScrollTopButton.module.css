@@ -14,7 +14,7 @@
   cursor: pointer;
   /* 出るとき:visibility はすぐ visible にし、不透明度だけをフェードする(仕様 4 章の共通) */
   transition:
-    opacity var(--duration) var(--ease),
+    opacity var(--duration-fade) var(--ease),
     visibility 0s linear 0s;
 }
 
@@ -25,8 +25,8 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity var(--duration) var(--ease),
-    visibility 0s linear var(--duration);
+    opacity var(--duration-fade) var(--ease),
+    visibility 0s linear var(--duration-fade);
 }
 
 @media (hover: hover) {

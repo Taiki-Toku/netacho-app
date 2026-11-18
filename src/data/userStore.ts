@@ -26,6 +26,8 @@ export interface UserStore {
   toggleSaved: (id: string) => boolean
   setRating: (id: string, rating: Rating) => void
   setMemo: (id: string, memo: string) => void
+  /** 保存・評価・メモをすべて消す(この端末の置き場ごと消す。設定の画面の「すべて削除」) */
+  clear: () => void
 }
 
 const STORAGE_KEY = 'nodal-user'
@@ -58,6 +60,17 @@ function parseState(raw: string | null): UserState {
     }
   }
   return { saved: [...new Set(saved)], feedback }
+}
+
+/** 設定の画面に出す件数。評価・メモは自分で付けたものだけを数える(ネタに元から付いているものは数えない) */
+export function countUserData(state: UserState): { saved: number; ratings: number; memos: number } {
+  const entries = Object.values(state.feedback)
+  return {
+    saved: state.saved.length,
+    // 評価を外したもの('')は数えない
+    ratings: entries.filter((entry) => entry.rating !== undefined && entry.rating !== '').length,
+    memos: entries.filter((entry) => entry.memo !== undefined && entry.memo.trim() !== '').length,
+  }
 }
 
 /** localStorage が使えない環境(無効化、容量切れ)でも落ちないよう、読み書きは try で包む */
@@ -102,6 +115,16 @@ export function createLocalUserStore(storage: Storage | null): UserStore {
     },
     setMemo(id, memo) {
       updateFeedback(id, { memo })
+    },
+    clear() {
+      // 空の値を書くのではなく、キーごと消す。消すのはこのアプリのキー(nodal-user)だけ
+      state = EMPTY
+      try {
+        storage?.removeItem(STORAGE_KEY)
+      } catch {
+        // 消せなくても、画面の中では空にしておく
+      }
+      for (const listener of listeners) listener()
     },
   }
 }

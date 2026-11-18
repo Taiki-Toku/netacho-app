@@ -151,12 +151,12 @@ describe('Supabase モード:ネタの読み込み', () => {
     expect(backend.loadItems).toHaveBeenCalledTimes(2)
   })
 
-  it('0件のときは、許可ユーザーでない可能性を出す。「保存」の画面は出る(ログアウトできる)', async () => {
+  it('0件のときは、許可ユーザーでない可能性を出す。設定の画面は出る(ログアウトできる)', async () => {
     renderSupabase(mockBackend({ signedIn: true }))
     expect(await screen.findByText('表示できるニュースがありません')).toBeInTheDocument()
     expect(screen.getByText('(許可ユーザーに登録されていない可能性があります)')).toBeInTheDocument()
-    window.location.hash = '#/saved'
-    expect(await waitForHeading('保存したニュース')).toBeInTheDocument()
+    window.location.hash = '#/settings'
+    expect(await waitForHeading('設定')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
   })
 
@@ -169,10 +169,19 @@ describe('Supabase モード:ネタの読み込み', () => {
 })
 
 describe('Supabase モード:ログアウト', () => {
-  it('「保存」の一番下のログアウトで、ネタを手放してログイン画面に戻る', async () => {
-    const backend = mockBackend({ signedIn: true, loadItems: () => Promise.resolve(fullSample.items) })
-    renderSupabase(backend, '#/saved')
+  it('「保存」の画面にはログアウトが無い', async () => {
+    renderSupabase(mockBackend({ signedIn: true, loadItems: () => Promise.resolve(fullSample.items) }), '#/saved')
     await waitForHeading('保存したニュース')
+    expect(screen.queryByRole('button', { name: 'ログアウト' })).not.toBeInTheDocument()
+  })
+
+  it('設定の画面にメールアドレスと読み込み元を出し、ログアウトで、ネタを手放してログイン画面に戻る', async () => {
+    const backend = mockBackend({ signedIn: true, loadItems: () => Promise.resolve(fullSample.items) })
+    renderSupabase(backend, '#/settings')
+    await waitForHeading('設定')
+    expect(screen.getByText('owner@example.com')).toBeInTheDocument()
+    expect(screen.getByText('Supabase')).toBeInTheDocument()
+    expect(screen.queryByText('ログインなし(見本のデータ)')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'ログアウト' }))
     expect(await waitForHeading('ログイン')).toBeInTheDocument()
     expect(backend.auth.signOut).toHaveBeenCalledTimes(1)
@@ -187,10 +196,11 @@ describe('Supabase モード:ログアウト', () => {
     expect(backend.loadItems).toHaveBeenCalledTimes(2)
   })
 
-  it('Supabase モードでないときは、ログアウトのボタンを出さない', async () => {
-    window.location.hash = '#/saved'
+  it('Supabase モードでないときは、設定の画面にログアウトのボタンを出さない', async () => {
+    window.location.hash = '#/settings'
     render(<App load={() => Promise.resolve(fullSample)} userStore={freshUserStore()} />)
-    await waitForHeading('保存したニュース')
+    await waitForHeading('設定')
+    expect(screen.getByText('ログインなし(見本のデータ)')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'ログアウト' })).not.toBeInTheDocument()
   })
 })

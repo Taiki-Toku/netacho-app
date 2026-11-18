@@ -33,7 +33,7 @@ export function ItemScreen({ data, id }: ItemScreenProps) {
   if (item === null) {
     return (
       <section className={styles.detail} aria-labelledby="item-title">
-        <h1 id="item-title" className={pageStyles.heading}>
+        <h1 id="item-title" className={pageStyles.heading} tabIndex={-1}>
           このニュースは見つかりません
         </h1>
         <p className={pageStyles.subtitle}>削除されたか、アドレスが違うようです。</p>

@@ -8,8 +8,11 @@ export type AuthFailure = 'invalid-code' | 'rate-limit' | 'not-allowed' | 'netwo
 export type AuthResult = { ok: true } | { ok: false; reason: AuthFailure; code?: string }
 
 export interface AuthApi {
-  /** ログインの状態を見張る。登録した直後に今の状態を1回知らせ、以後は変わるたびに知らせる。戻り値で見張りをやめる */
-  watchSession(onChange: (signedIn: boolean) => void): () => void
+  /**
+   * ログインの状態を見張る。登録した直後に今の状態を1回知らせ、以後は変わるたびに知らせる。戻り値で見張りをやめる。
+   * email はログイン中の人のメールアドレス(設定の画面に出す)。無ければ null
+   */
+  watchSession(onChange: (signedIn: boolean, email: string | null) => void): () => void
   /** メールに6桁のコードを送る(新しい利用者は作らない) */
   sendCode(email: string): Promise<AuthResult>
   /** 届いたコードでログインする */

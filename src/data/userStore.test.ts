@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createLocalUserStore } from './userStore.ts'
+import { countUserData, createLocalUserStore } from './userStore.ts'
 
 describe('userStore(保存・評価・メモの置き場。いまは localStorage)', () => {
   beforeEach(() => {
@@ -55,5 +55,23 @@ describe('userStore(保存・評価・メモの置き場。いまは localStorag
     const store = createLocalUserStore(null)
     expect(store.toggleSaved('a')).toBe(true)
     expect(store.getState().saved).toEqual(['a'])
+  })
+  it('clear で保存・評価・メモを空にし、このアプリのキー(nodal-user)だけを消して購読者に知らせる', () => {
+    window.localStorage.setItem('sb-example-auth-token', 'session')
+    const store = createLocalUserStore(window.localStorage)
+    store.toggleSaved('a')
+    store.setRating('a', 'good')
+    store.setMemo('b', 'めも')
+    expect(countUserData(store.getState())).toEqual({ saved: 1, ratings: 1, memos: 1 })
+    let count = 0
+    store.subscribe(() => {
+      count += 1
+    })
+    store.clear()
+    expect(count).toBe(1)
+    expect(store.getState()).toEqual({ saved: [], feedback: {} })
+    expect(countUserData(store.getState())).toEqual({ saved: 0, ratings: 0, memos: 0 })
+    expect(window.localStorage.getItem('nodal-user')).toBeNull()
+    expect(window.localStorage.getItem('sb-example-auth-token')).toBe('session')
   })
 })

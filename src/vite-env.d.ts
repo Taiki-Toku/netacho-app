@@ -9,3 +9,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// vite.config.ts の define がビルドのときに埋め込む値(設定の画面の「版」)
+/** package.json の version */
+declare const __APP_VERSION__: string
+/** 配信のときのコミットの先頭7文字。手元では local */
+declare const __APP_COMMIT__: string

@@ -47,6 +47,29 @@
   gap: var(--sp-4h);
 }
 
+/* 設定(歯車):押せる範囲は 44px。ホバーは色と枠だけ変え、回したり動かしたりしない(仕様 4 章の 8) */
+.settings {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: var(--line-thin) solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+}
+
+@media (hover: hover) {
+  .settings:hover {
+    color: var(--ink);
+    border-color: var(--line);
+  }
+}
+
+.settings[aria-current='page'] {
+  color: var(--accent-strong);
+}
+
 .date {
   font-size: var(--fs-12);
   letter-spacing: var(--ls-wide);

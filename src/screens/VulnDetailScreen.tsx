@@ -23,7 +23,7 @@ export function VulnDetailScreen({ data, id }: VulnDetailScreenProps) {
   if (entry?.kind !== 'vuln') {
     return (
       <section className={styles.detail} aria-labelledby="vuln-detail-title">
-        <h1 id="vuln-detail-title" className={pageStyles.heading}>
+        <h1 id="vuln-detail-title" className={pageStyles.heading} tabIndex={-1}>
           この脆弱性は見つかりません
         </h1>
         <EmptyState title="削除されたか、アドレスが違うようです" text="一覧から選び直してください。" spaced />
@@ -49,7 +49,7 @@ export function VulnDetailScreen({ data, id }: VulnDetailScreenProps) {
         <Icon name="back" />
         脆弱性の一覧に戻る
       </a>
-      <h1 id="vuln-detail-title" className={styles.title}>
+      <h1 id="vuln-detail-title" className={styles.title} tabIndex={-1}>
         {vulnName(entry)}
       </h1>
       <div className={styles.head}>

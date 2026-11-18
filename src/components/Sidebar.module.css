@@ -57,10 +57,10 @@
   }
 }
 
+/* 選択中は地と文字の色だけで示す。太さは変えない(太字にすると英字の幅が広がり、字が大きく見える。依頼 7-2) */
 .linkOn {
   background: var(--accent-wash);
   color: var(--accent-strong);
-  font-weight: var(--weight-bold);
 }
 
 .count {

@@ -1,8 +1,9 @@
-// 上のバー:印と名前(ホームへのリンク)、日付、さがす(欄と候補は SearchBox)
+// 上のバー:印と名前(ホームへのリンク)、日付、さがす(欄と候補は SearchBox)、設定(歯車。仕様 4 章の 8)
 import type { Route } from '../app/router.ts'
 import { hrefFor } from '../app/router.ts'
 import type { LoadedData } from '../data/source.ts'
 import { BrandMark } from './BrandMark.tsx'
+import { Icon } from './Icon.tsx'
 import { SearchBox } from './SearchBox.tsx'
 import styles from './TopBar.module.css'
 
@@ -24,6 +25,14 @@ export function TopBar({ route, dateLabel, data }: TopBarProps) {
       <div className={styles.right}>
         {dateLabel !== '' ? <span className={styles.date}>{dateLabel}</span> : null}
         <SearchBox route={route} data={data} />
+        <a
+          className={styles.settings}
+          href={hrefFor({ name: 'settings' })}
+          aria-label="設定"
+          aria-current={route.name === 'settings' ? 'page' : undefined}
+        >
+          <Icon name="gear" />
+        </a>
       </div>
     </header>
   )
