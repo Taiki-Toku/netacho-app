@@ -20,6 +20,9 @@
     },
     {
       "serverName": "claude.ai Notion"
+    },
+    {
+      "serverName": "claude.ai Claude Docs"
     }
   ]
 }
