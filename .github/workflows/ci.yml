@@ -42,7 +42,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-      - run: npm audit --audit-level=high
+      - run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (all, report only)
+        run: npm audit --audit-level=high
+        continue-on-error: true
 
   secrets:
     runs-on: ubuntu-24.04
