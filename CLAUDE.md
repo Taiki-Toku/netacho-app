@@ -61,6 +61,7 @@
 
 ## やってはいけない操作
 開発VM(DEV-VM01)では、管理設定(`/etc/claude-code/managed-settings.json`)とサンドボックスで止めている。拒否されたら、別のコマンドやスクリプトで回避せず、手順を示して止まる。
+クラウドのセッションには、これを止める仕組み(管理設定・サンドボックス)が無い。下の一覧は自分で守る。
 - **VM のみ**:`git push`、PR の作成・マージ(オーナーが自分のシェルで行う)
 - GitHub のリポジトリ設定や Secrets の変更
 - Supabase の本番・共有のデータベースを変える操作(`db reset`、`db push`)
@@ -72,6 +73,7 @@
 - **VM のみ**:push と PR の作成・マージはオーナーが行う。コミットしたら、ブランチ名と、PR の説明に貼る文面(何をしたか/なぜ/危ない点/試験とレビューの結果)を示して止まる
 
 ## クラウドのセッションのルール(Cloud session rules)
+- セッションの最初に `/mcp` を実行し、claude.ai のコネクタ(Notion・Google・AWS など)が出ていないことを確かめる。出ていたら作業を始めずに報告する
 - main に push しない。`claude/` で始まるブランチで作業して、そのブランチを push する。PR の作成・マージはオーナーが行う
 - `.github/workflows/` の下を変えたときは、PR の本文の先頭にそのことを書く
 - `gh issue` と `gh pr` はここでは動かない。issue と PR は `gh api repos/Taiki-Toku/netacho-app/...` で読む

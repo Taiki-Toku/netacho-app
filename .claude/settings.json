@@ -1,0 +1,25 @@
+{
+  "deniedMcpServers": [
+    {
+      "serverName": "claude.ai AWS MCP"
+    },
+    {
+      "serverName": "claude.ai Google Calendar"
+    },
+    {
+      "serverName": "claude.ai Google Docs"
+    },
+    {
+      "serverName": "claude.ai Google Drive"
+    },
+    {
+      "serverName": "claude.ai Google Sheets"
+    },
+    {
+      "serverName": "claude.ai Google Slides"
+    },
+    {
+      "serverName": "claude.ai Notion"
+    }
+  ]
+}
