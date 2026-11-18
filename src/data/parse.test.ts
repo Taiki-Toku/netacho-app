@@ -149,6 +149,7 @@ describe('parseGenres', () => {
       'product',
       'creative',
       'tools',
+      'idea',
     ])
   })
 

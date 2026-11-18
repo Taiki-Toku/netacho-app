@@ -25,6 +25,7 @@ describe('App(骨組み)', () => {
       'プロダクト',
       'VTuber・創作',
       'ツール・業界',
+      'アイデアラボ',
     ])
     expect(within(genres).getByRole('link', { name: 'トップ', current: 'page' })).toBeInTheDocument()
     const official = screen.getByRole('navigation', { name: 'OFFICIAL' })
