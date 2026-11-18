@@ -33,5 +33,10 @@
   "id": "tools",
   "label": "ツール・業界",
   "sortOrder": 80
+ },
+ {
+  "id": "idea",
+  "label": "アイデアラボ",
+  "sortOrder": 90
  }
 ]
