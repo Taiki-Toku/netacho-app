@@ -10,6 +10,9 @@ html {
   height: 100%;
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
+  /* 縦にスクロールしない短いページでも、スクロールバーの幅を空けておく。
+     空けないと、スクロールバーの有無で画面の幅が変わり、中央寄せの .workspace が横にずれる(依頼 8-1) */
+  scrollbar-gutter: stable;
 }
 
 /*
