@@ -73,7 +73,7 @@
 - **VM のみ**:push と PR の作成・マージはオーナーが行う。コミットしたら、ブランチ名と、PR の説明に貼る文面(何をしたか/なぜ/危ない点/試験とレビューの結果)を示して止まる
 
 ## クラウドのセッションのルール(Cloud session rules)
-- セッションの最初に `/mcp` を実行し、claude.ai のコネクタ(Notion・Google・AWS など)が出ていないことを確かめる。出ていたら作業を始めずに報告する
+- セッションの最初に `/mcp` を実行し、claude.ai のコネクタ(Notion・Google・AWS・Claude_Docs など)と github の道具が使えないことを確かめる。使えたら作業を始めずに報告する
 - main に push しない。`claude/` で始まるブランチで作業して、そのブランチを push する。PR の作成・マージはオーナーが行う
 - `.github/workflows/` の下を変えたときは、PR の本文の先頭にそのことを書く
 - `gh issue` と `gh pr` はここでは動かない。issue と PR は `gh api repos/Taiki-Toku/netacho-app/...` で読む
