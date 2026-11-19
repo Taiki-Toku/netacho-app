@@ -18,6 +18,7 @@
 | ベータ版の依頼書(範囲・画面・データの形・デザイン) | `docs/beta_brief.md` |
 | 設計判断の記録(ADR) | `docs/adr/NNN-題名.md`(必要になったら作る) |
 | 要件定義書・基本設計書・課題管理表 | 別の非公開リポジトリ(netacho-infra)にある。このリポジトリからは読めない。必要な内容は依頼書に書いてある |
+| Claude Code への依頼文(9-1 から) | `docs/requests/`(依頼文に書かれたファイルだけを読む) |
 
 - 依頼書と違う実装が必要になったら、実装せずに止まって報告する
 - 新しいアイデアや改善案は、実装せずに `docs/ideas.md` に1行足して報告する(オーナーが課題管理表に移す)
@@ -73,7 +74,7 @@
 - **VM のみ**:push と PR の作成・マージはオーナーが行う。コミットしたら、ブランチ名と、PR の説明に貼る文面(何をしたか/なぜ/危ない点/試験とレビューの結果)を示して止まる
 
 ## クラウドのセッションのルール(Cloud session rules)
-- セッションの最初に `/mcp` を実行し、claude.ai のコネクタ(Notion・Google・AWS・Claude_Docs など)と github の道具が使えないことを確かめる。使えたら作業を始めずに報告する
+- セッションの最初に、使える MCP の道具の名前(後から読み込む道具も含む)をサーバーごとに一覧にし、claude.ai のコネクタ(Notion・Google・AWS・Claude_Docs など)、github、予定の実行などの道具(`.claude/settings.json` の deny にある create_trigger・send_later など)が無いことを確かめる。あったら作業を始めずに報告し、その道具は呼ばない
 - main に push しない。`claude/` で始まるブランチで作業して、そのブランチを push する。PR の作成・マージはオーナーが行う
 - `.github/workflows/` の下を変えたときは、PR の本文の先頭にそのことを書く
 - `gh issue` と `gh pr` はここでは動かない。issue と PR は `gh api repos/Taiki-Toku/netacho-app/...` で読む
