@@ -66,7 +66,8 @@
 - **VM のみ**:`git push`、PR の作成・マージ(オーナーが自分のシェルで行う)
 - GitHub のリポジトリ設定や Secrets の変更
 - Supabase の本番・共有のデータベースを変える操作(`db reset`、`db push`)
-- `.env`、`~/.ssh`、gh の設定、Claude Code の設定ファイルの読み書き
+- `.env`、`~/.ssh`、gh の設定の読み書き
+- Claude Code の設定ファイル(`.claude/`)と CLAUDE.md は、読むのは自由。変えるのは `claude/` ブランチの PR でだけ行い、PR の本文の先頭に変えたことを書く(オーナーが差分を見てマージする)
 - **VM のみ**:開発サーバー(`npm run dev`)とローカルの Supabase(`supabase start`)の起動(サンドボックスの中からは使えないため、オーナーが別のシェルで起動する。必要なときは「起動してください」と頼む)
 
 ## Git のルール
@@ -74,7 +75,7 @@
 - **VM のみ**:push と PR の作成・マージはオーナーが行う。コミットしたら、ブランチ名と、PR の説明に貼る文面(何をしたか/なぜ/危ない点/試験とレビューの結果)を示して止まる
 
 ## クラウドのセッションのルール(Cloud session rules)
-- セッションの最初に、使える MCP の道具の名前(後から読み込む道具も含む)をサーバーごとに一覧にし、claude.ai のコネクタ(Notion・Google・AWS・Claude_Docs など)、github、予定の実行などの道具(`.claude/settings.json` の deny にある create_trigger・send_later など)が無いことを確かめる。あったら作業を始めずに報告し、その道具は呼ばない
+- セッションの最初に、使える MCP の道具の名前を、サーバーごとに一覧にして報告する。github・Claude_Docs・claude-code-remote は仕組みの側で入るので、一覧にあっても止まらない。claude.ai のコネクタ(Notion・Google・AWS など)の道具があったときだけ、作業を始めずに報告する。どの場合も、依頼に書かれていない Claude_Docs・github・予定の実行の道具は呼ばない
 - main に push しない。`claude/` で始まるブランチで作業して、そのブランチを push する。PR の作成・マージはオーナーが行う
 - `.github/workflows/` の下を変えたときは、PR の本文の先頭にそのことを書く
 - `gh issue` と `gh pr` はここでは動かない。issue と PR は `gh api repos/Taiki-Toku/netacho-app/...` で読む
