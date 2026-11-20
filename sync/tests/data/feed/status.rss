@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 架空の見本(RSS 2.0)。本物の記事の文は使っていない -->
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Example Cloud Status</title>
+    <link>https://cloud.example.com/status</link>
+    <description>Fictional status feed</description>
+    <atom:link href="https://cloud.example.com/status/feed" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>Fictional service issue in Region A</title>
+      <link>https://cloud.example.com/status/a1</link>
+      <description>&lt;b&gt;Fictional&lt;/b&gt; latency &amp;amp; errors.</description>
+      <pubDate>Fri, 20 Nov 2026 08:30:00 GMT</pubDate>
+      <guid isPermaLink="false">https://cloud.example.com/status#a1</guid>
+    </item>
+    <item>
+      <title>Fictional item without guid</title>
+      <link>https://cloud.example.com/status/a2</link>
+      <description>Second fictional item.</description>
+      <pubDate>not a date</pubDate>
+    </item>
+  </channel>
+</rss>

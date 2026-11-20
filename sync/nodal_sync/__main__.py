@@ -1,8 +1,10 @@
-"""起動:python -m nodal_sync run|watch(依頼 10-1 の 4.1・4.2・4.8・4.9)。
+"""起動:python -m nodal_sync run|watch|feed(依頼 10-1 の 4.1・4.2・4.8・4.9、依頼 12-1 の feed。詳細設計 3.7・3.8)。
 
 - 出力の最初に ::stop-commands::<乱数> を出し、終わりに ::<乱数>:: で戻す(値がワークフローのコマンドとして読まれないように)
 - 例外はすべてここで受け、トレースバックを出さずに決まった文と決まりの番号だけを出す(終了コード 2)
-- 終了コード:0=全部正しい/1=不正な日・書き込みの失敗・不正なファイルがある/2=止まった(何も書いていない)
+- run の終了コード:0=全部正しい/1=不正な日・書き込みの失敗・不正なファイルがある/2=止まった(何も書いていない)
+- feed の終了コード:0=全部成功か、続けての失敗が 3 回未満/1=続けて 3 回失敗した取得先がある・全部失敗した
+  (dry-run は1回の失敗でも 1)/2=止まった(設定・Expat の版・DB の接続・書き込みの失敗。何も書いていない)
 """
 
 from __future__ import annotations
@@ -50,8 +52,28 @@ MESSAGES = {
     "E-SRC-DIR": "data/items/ を読めませんでした",
     "E-SRC-DIRTY": "data/items/ に未コミットの変更があります",
     "E-GH-TOKEN": "GITHUB_TOKEN がありません",
+    "E-FEED-EXPAT": "Expat の版が 2.7.2 より古いので、フィードを読みません",
+    "E-FEED-CONFIG-READ": "フィードの設定を読めませんでした",
+    "E-FEED-CONFIG-JSON": "フィードの設定が JSON として正しくありません",
+    "E-FEED-CONFIG-KEYS": "フィードの設定のキーが正しくありません",
+    "E-FEED-CONFIG-WATCH": "フィードの設定の watch_products が正しくありません",
+    "E-FEED-CONFIG-SOURCES": "フィードの設定の sources の数が正しくありません",
+    "E-FEED-CONFIG-SOURCE-KEYS": "フィードの取得先のキーが正しくありません",
+    "E-FEED-CONFIG-ID": "フィードの取得先の id が正しくないか、重なっています",
+    "E-FEED-CONFIG-KIND": "フィードの取得先の kind が正しくありません",
+    "E-FEED-CONFIG-NAME": "フィードの取得先の vendor・product が正しくありません",
+    "E-FEED-CONFIG-FORMAT": "フィードの取得先の format が正しくありません",
+    "E-FEED-CONFIG-URL": "フィードの取得先の url が正しくありません",
+    "E-FEED-CONFIG-LANG": "フィードの取得先の lang が正しくありません",
+    "E-FEED-CONFIG-TRANSLATE": "フィードの取得先の translate が正しくありません",
+    "E-FEED-CONFIG-FILTER": "フィードの取得先の filter が正しくありません",
+    "E-FEED-CONFIG-ENABLED": "フィードの取得先の enabled が正しくありません",
+    "E-FEED-CONFIG-MAX-BYTES": "フィードの取得先の max_bytes が正しくありません",
+    "E-FEED-CONFIG-MAX-AGE": "フィードの取得先の max_age_days が正しくありません",
+    "E-FEED-DB-URL": "FEED_DB_URL がありません",
     "E-UNEXPECTED": "想定外の失敗",
 }
+FEED_FAIL_LIMIT = 3  # 続けて 3 回失敗したら終了コード 1(失敗メールが届く)
 
 
 class ArgError(Exception):
@@ -87,6 +109,10 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--from", dest="date_from")
     run.add_argument("--to", dest="date_to")
     run.add_argument("--reset-baseline", action="store_true")
+    feed = sub.add_parser("feed")
+    feed.add_argument("--config", required=True)
+    feed.add_argument("--ca")
+    feed.add_argument("--dry-run", action="store_true")
     return p
 
 
@@ -266,10 +292,124 @@ def _watch(args: argparse.Namespace, today: dt.date, env: Mapping[str, str], out
     return code
 
 
+def feed_exit_code(outcomes: list[Any], failures: Mapping[str, int] | None) -> int:
+    """詳細設計 3.7。failures(書いた後の consecutive_failures)が None なら dry-run で、1回の失敗でも 1。"""
+    if not outcomes:
+        return 0
+    failed = [o for o in outcomes if not o.ok]
+    if failures is None:
+        return 1 if failed else 0
+    if len(failed) == len(outcomes):
+        return 1
+    return 1 if any(n >= FEED_FAIL_LIMIT for n in failures.values()) else 0
+
+
+def _feed(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, fetcher: Any,
+          now: dt.datetime, connect: Any) -> int:
+    """取得 → 解析 → 検査 → 保存(詳細設計 3.4〜3.7)。外との通信を全部終えてから DB に書く。"""
+    from . import feedparse
+    from .feedconfig import FeedConfigError, load_feed_config
+    from .feedhttp import FeedFetcher
+
+    summary = report.FeedSummary(dry_run=args.dry_run)
+    states: dict[str, tuple[str | None, str | None]] = {}
+    url = ""
+    try:
+        # 1. 解析の前に Expat の版を確かめる(古い Expat は実体の展開の守りが足りない)
+        if not feedparse.expat_ok(feedparse.expat_version()):
+            raise Stop("E-FEED-EXPAT")
+        try:
+            cfg = load_feed_config(args.config)
+        except FeedConfigError as err:
+            raise Stop(err.code) from None
+        if not args.dry_run:
+            # 2. 前回の etag・last_modified を読む(読むだけ。接続はすぐ閉じ、外と通信する間は持たない)
+            url = env.get("FEED_DB_URL") or ""
+            if not url:
+                raise Stop("E-FEED-DB-URL")
+            from . import db, feeddb
+            open_db = connect if connect is not None else feeddb.connect
+            try:
+                conn = open_db(url, args.ca)
+            except db.DbError as err:
+                raise Stop(err.code) from None
+            try:
+                states = feeddb.read_states(conn)
+            except db.DbError as err:
+                raise Stop(err.code) from None
+            finally:
+                conn.close()
+    except Stop as e:
+        summary.stop_code = e.code
+        _say(out, e.code)
+        report.emit_summary(summary.render(), env, out)
+        return 2
+
+    # 3. 取得先を順番に取り、解析と filter をする(並列にしない)
+    f = fetcher if fetcher is not None else FeedFetcher()
+    outcomes: list[feedparse.SourceOutcome] = []
+    for src in cfg.sources:
+        if not src.enabled:
+            continue
+        etag, last_modified = states.get(src.id, (None, None))
+        fr = f.fetch(src.url, src.format, src.max_bytes, etag, last_modified)
+        o = feedparse.SourceOutcome(source=src, code=fr.code, not_modified=fr.not_modified,
+                                    etag=fr.etag, last_modified=fr.last_modified)
+        if fr.code is None and not fr.not_modified:
+            pr = feedparse.parse_feed(src, fr.body, cfg.watch_products, now)
+            if pr.error is not None:
+                o.code = pr.error
+            else:
+                o.entries, o.old = feedparse.split_old(pr.entries, src.max_age_days, now)
+                o.invalid, o.read, o.filtered = pr.invalid, pr.read, pr.filtered
+        outcomes.append(o)
+
+    # 4. 全部の取得先の分を1つのトランザクションで書く
+    stats: dict[str, Any] | None = None
+    if not args.dry_run:
+        from . import db, feeddb
+        open_db = connect if connect is not None else feeddb.connect
+        try:
+            try:
+                conn = open_db(url, args.ca)
+            except db.DbError as err:
+                raise Stop(err.code) from None
+            try:
+                stats, summary.pending = feeddb.write_all(conn, outcomes)
+            except db.DbError as err:
+                raise Stop(err.code) from None
+            finally:
+                conn.close()
+        except Stop as e:
+            summary.stop_code = e.code
+            _say(out, e.code)
+            report.emit_summary(summary.render(), env, out)
+            return 2
+
+    for o in outcomes:
+        s = report.FeedSourceSummary(source_id=o.source.id, read=o.read, old=o.old, filtered=o.filtered,
+                                     invalid=o.invalid)
+        s.result = o.code if o.code is not None else ("304" if o.not_modified else "ok")
+        if stats is None:
+            s.inserted = len(o.entries)  # dry-run では「入れる候補の数」
+        else:
+            st = stats[o.source.id]
+            s.inserted, s.updated, s.merged, s.unchanged = st.inserted, st.updated, st.merged, st.unchanged
+            s.failures = st.failures
+        summary.sources.append(s)
+
+    failures = None if stats is None else {k: v.failures for k, v in stats.items()}
+    code = feed_exit_code(outcomes, failures)
+    report.emit_summary(summary.render(), env, out)
+    report.log(out, f"feed を終えました(終了コード {code})")
+    return code
+
+
 def main(argv: list[str] | None = None, *, today: dt.date | None = None,
          env: Mapping[str, str] | None = None, out: TextIO | None = None,
-         fetcher: Fetcher | None = None, gh_get: Any = None) -> int:
-    """today・env・out・fetcher・gh_get は試験から差し替える。"""
+         fetcher: Fetcher | None = None, gh_get: Any = None, feed_fetcher: Any = None,
+         now: dt.datetime | None = None, feed_connect: Any = None) -> int:
+    """today・env・out・fetcher・gh_get・feed_fetcher・now・feed_connect は試験から差し替える。"""
     o: TextIO = out if out is not None else sys.stdout
     e: Mapping[str, str] = env if env is not None else os.environ
     token = secrets.token_hex(16)
@@ -290,6 +430,9 @@ def main(argv: list[str] | None = None, *, today: dt.date | None = None,
                 _say(o, err.code)
                 return 2
             code = _run(args, d, e, o, fetcher)
+        elif args.command == "feed":
+            n = now if now is not None else dt.datetime.now(dt.timezone.utc)
+            code = _feed(args, e, o, feed_fetcher, n, feed_connect)
         else:
             code = _watch(args, d, e, o, gh_get)
         return code
