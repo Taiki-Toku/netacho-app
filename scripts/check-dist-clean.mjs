@@ -24,6 +24,18 @@ if (!existsSync(DIST)) {
   process.exit(1)
 }
 
+// CSP の無い版を本番に出さないため、dist/_headers と CSP の行があることを確かめる(local-data の有無によらない)
+const HEADERS = join(DIST, '_headers')
+const CSP_PREFIX = "  Content-Security-Policy: default-src 'none';"
+if (!existsSync(HEADERS)) {
+  console.error('check:dist 失敗。dist/_headers がありません(セキュリティヘッダーが出ません)')
+  process.exit(1)
+}
+if (!readFileSync(HEADERS, 'utf8').split('\n').some((line) => line.startsWith(CSP_PREFIX))) {
+  console.error('check:dist 失敗。dist/_headers に Content-Security-Policy の行がありません')
+  process.exit(1)
+}
+
 const files = walk(DIST)
 const leakedPaths = files.filter((path) => path.includes('local-data'))
 if (leakedPaths.length > 0) {
