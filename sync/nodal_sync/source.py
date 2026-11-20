@@ -72,6 +72,17 @@ def check_history(data_dir: str, last_commit: str, head: str,
             raise SourceError("E-HISTORY-AUTHOR")
 
 
+def check_clean(data_dir: str) -> None:
+    """data/items/ に未コミット・追跡していない・無視されたファイルがあれば E-SRC-DIRTY。
+
+    履歴の検査はコミットだけを見るので、読むファイルが HEAD の中身と同じことをここで確かめる。
+    """
+    p = _git(data_dir, ["status", "--porcelain=v1", "-z", "--untracked-files=all",
+                        "--ignored=matching", "--", "data/items/"])
+    if p.returncode != 0 or p.stdout:
+        raise SourceError("E-SRC-DIRTY")
+
+
 @dataclass
 class Listing:
     by_day: dict[dt.date, list[tuple[str, bytes | None]]] = field(default_factory=dict)

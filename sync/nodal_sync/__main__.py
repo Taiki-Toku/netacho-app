@@ -48,6 +48,7 @@ MESSAGES = {
     "E-HISTORY-REWRITE": "履歴の書き換え:前回のコミットが HEAD の祖先ではありません",
     "E-HISTORY-AUTHOR": "authors に無い人が data/items/ を変えています",
     "E-SRC-DIR": "data/items/ を読めませんでした",
+    "E-SRC-DIRTY": "data/items/ に未コミットの変更があります",
     "E-GH-TOKEN": "GITHUB_TOKEN がありません",
     "E-UNEXPECTED": "想定外の失敗",
 }
@@ -166,6 +167,8 @@ def _run_with_db(args: argparse.Namespace, today: dt.date, env: Mapping[str, str
                 summary.notes.append("初回(履歴の検査を飛ばした)")
             else:
                 source.check_history(args.data_dir, last, head, cfg.is_author)
+            # 履歴の検査はコミットしか見ないので、作業ツリーが HEAD と同じことを確かめる(検査を飛ばしたときも)
+            source.check_clean(args.data_dir)
             listing = source.list_items(args.data_dir, set(days) if days is not None else None)
         except source.SourceError as e:
             if e.code == "E-HISTORY-REWRITE":

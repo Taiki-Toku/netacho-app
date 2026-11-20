@@ -210,6 +210,26 @@ def test_tst_sync_12_reset_baseline(db_urls: tuple[str, str], admin_sql: Any, re
     assert run(repo, cfg, db_urls[1]) == 0
 
 
+@pytest.mark.parametrize("kind", ["untracked", "modified", "ignored"])
+@pytest.mark.parametrize("first_run", [True, False])
+def test_tst_sync_11b_dirty_tree_writes_nothing(db_urls: tuple[str, str], admin_sql: Any, repo: GitRepo,
+                                                tmp_path: Path, kind: str, first_run: bool) -> None:
+    """TST-SYNC-11b:data/items/ にコミットしていないファイルがあれば、何も書かずに終了コード 2(初回・基準の付け直しも)。"""
+    from test_source import make_dirty
+    cfg = write_config(tmp_path)
+    if not first_run:
+        assert run(repo, cfg, db_urls[1]) == 0
+    before_items = admin_sql("select id, title, synced_at from public.items order by id")
+    before_state = admin_sql("select last_commit, updated_at from public.sync_state")
+    make_dirty(repo, kind)
+    summary = tmp_path / "summary.md"
+    assert run(repo, cfg, db_urls[1], summary=summary) == 2
+    assert run(repo, cfg, db_urls[1], "--reset-baseline", "--mode", "recent") == 2
+    assert admin_sql("select id, title, synced_at from public.items order by id") == before_items
+    assert admin_sql("select last_commit, updated_at from public.sync_state") == before_state
+    assert "E-SRC-DIRTY" in summary.read_text(encoding="utf-8")
+
+
 def test_bad_file_names_exit_1(db_urls: tuple[str, str], admin_sql: Any, repo: GitRepo,
                                tmp_path: Path) -> None:
     """4.2 の 4:名前の形が違うファイルがあれば、正しい日は書いて終了コード 1。"""

@@ -102,6 +102,42 @@ def test_tst_sync_11_feed_digest_only_passes(repo: GitRepo) -> None:
     source.check_history(str(repo.path), last, head, is_author)
 
 
+def make_dirty(repo: GitRepo, kind: str) -> None:
+    """data/items/ を、コミットしていない状態にする(追跡していない・変えた・無視された)。"""
+    if kind == "untracked":
+        repo.put_item(make_item("2026-11-20-05"))
+    elif kind == "modified":
+        repo.put_item(make_item("2026-11-20-01", title="架空の見出し(コミットしていない)"))
+    else:
+        repo.put_file(".gitignore", b"data/items/*.tmp\n")
+        repo.commit("ignore")
+        repo.put_file("data/items/2026-11-20-06.json.tmp", b"{}")
+
+
+@pytest.mark.parametrize("kind", ["untracked", "modified", "ignored"])
+def test_tst_sync_11b_dirty_tree_is_rejected(repo: GitRepo, kind: str) -> None:
+    """TST-SYNC-11b:data/items/ に未コミットの変更・追跡していない・無視されたファイルがあれば止まる。"""
+    source.check_clean(str(repo.path))
+    make_dirty(repo, kind)
+    with pytest.raises(source.SourceError) as e:
+        source.check_clean(str(repo.path))
+    assert e.value.code == "E-SRC-DIRTY"
+
+
+def test_tst_sync_11b_changes_outside_items_pass(repo: GitRepo) -> None:
+    """TST-SYNC-11b:data/items/ の外(feed_digest/ など)の未コミットの変更は見ない。"""
+    repo.put_file("feed_digest/2026-11-20.json", b"{}")
+    source.check_clean(str(repo.path))
+
+
+def test_tst_sync_11b_not_a_repo(tmp_path: Path) -> None:
+    """TST-SYNC-11b:git のリポジトリでなければ(終了コード 0 以外)止まる。"""
+    (tmp_path / "data" / "items").mkdir(parents=True)
+    with pytest.raises(source.SourceError) as e:
+        source.check_clean(str(tmp_path))
+    assert e.value.code == "E-SRC-DIRTY"
+
+
 def test_list_items_groups_by_day_and_counts_bad_files(tmp_path: Path) -> None:
     """4.2 の 4:ファイル名の日付で分ける。名前の形が違う・リンクは不正なファイルとして数え、読まない。"""
     repo = GitRepo(tmp_path / "r")

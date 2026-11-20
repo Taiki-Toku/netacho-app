@@ -104,6 +104,7 @@ python -m nodal_sync watch --config <config/sync.json> --data-dir <ai-netacho �
 | `E-HISTORY-REWRITE` | 履歴の書き換え(前回のコミットが HEAD の祖先でない・見つからない) |
 | `E-HISTORY-AUTHOR` | authors に無い作者かコミットした人が `data/items/` を変えた(マージコミットを含む) |
 | `E-SRC-DIR` | `data/items/` が無い・フォルダでない |
+| `E-SRC-DIRTY` | `data/items/` に未コミットの変更・追跡していないファイル・無視されたファイルがある(履歴の検査を飛ばすときも調べる) |
 | `E-GH-TOKEN` | watch で `GITHUB_TOKEN` が無い |
 | `E-UNEXPECTED` | 想定外の例外 |
 
