@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rowsToItems, rowToItem } from './itemRow.ts'
+import { ITEM_COLUMNS, rowsToItems, rowToItem } from './itemRow.ts'
 
 const row = {
   id: '2026-11-17-01',
@@ -64,5 +64,15 @@ describe('items の行の変換', () => {
     const items = rowsToItems([row, { ...row, title: '重複' }, { ...row, id: '2026-11-17-02', date: null }, 'x'])
     expect(items.map((i) => i.title)).toEqual(['架空の見出し'])
     expect(rowsToItems(null)).toEqual([])
+  })
+
+  it('TST-IMG-01 image_url が値なら imageUrl になり、null・空文字なら imageUrl の項目が無い', () => {
+    expect(rowToItem({ ...row, image_url: 'https://example.com/a.png' })?.imageUrl).toBe('https://example.com/a.png')
+    expect(rowToItem({ ...row, image_url: null })).not.toHaveProperty('imageUrl')
+    expect(rowToItem({ ...row, image_url: '' })).not.toHaveProperty('imageUrl')
+  })
+
+  it('TST-IMG-02 items の問い合わせの select に渡す列に image_url が入っている', () => {
+    expect(ITEM_COLUMNS.split(',')).toContain('image_url')
   })
 })
