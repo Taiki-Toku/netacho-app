@@ -60,6 +60,32 @@ describe('imageHref(画像の src にしてよい URL の判定)', () => {
     expect(imageHref('https://user:pass@example.com/a.png')).toBeNull()
     expect(imageHref('http://localhost:3001/other-port.png')).toBeNull()
   })
+
+  it('TST-IMG-03 https: でも、ホストが IP アドレス・localhost・*.localhost の画像は通さない', () => {
+    const blocked = [
+      'https://127.0.0.1/a.png',
+      'https://10.0.0.1/a.png',
+      'https://192.168.1.1/a.png',
+      'https://2130706433/a.png',
+      'https://0x7f.1/a.png',
+      'https://127.1/a.png',
+      'https://[::1]/a.png',
+      'https://[::ffff:10.0.0.1]/a.png',
+      'https://localhost/a.png',
+      'https://LOCALHOST./a.png',
+      'https://a.localhost/a.png',
+    ]
+    for (const value of blocked) {
+      expect(imageHref(value), value).toBeNull()
+    }
+  })
+
+  it('TST-IMG-04 ふつうの https: の画像と見本の画像は今までどおり通し、httpsHref(リンク)は IP アドレスも通す', () => {
+    expect(imageHref('https://example.com/a.png')).toBe('https://example.com/a.png')
+    expect(imageHref('https://localhost.example.com/a.png')).toBe('https://localhost.example.com/a.png')
+    expect(imageHref('fixtures/images/desk.svg')).toBe('http://localhost:3000/fixtures/images/desk.svg')
+    expect(httpsHref('https://127.0.0.1/')).toBe('https://127.0.0.1/')
+  })
 })
 
 describe('hostOf', () => {

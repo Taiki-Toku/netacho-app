@@ -23,14 +23,28 @@ export function httpsHref(value: string): string | null {
 }
 
 /**
+ * 画像のホスト名が IP アドレスか localhost なら true(K-056)。
+ * og:image に IP アドレスが入ることはまず無く、プライベートの範囲の表を持つより漏れが少ないので、IP アドレスはすべて止める。
+ * DNS 名の先がプライベートの宛先の場合は、ブラウザでは判定できない(詳細設計 5.1.2)。
+ * hostname は new URL が正規化した後のもの("2130706433"・"0x7f.1"・"127.1" は "127.0.0.1" に直っている)。
+ */
+function isLocalOrIpHost(hostname: string): boolean {
+  const host = hostname.replace(/\.$/, '').toLowerCase()
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return true
+  if (host.startsWith('[')) return true
+  return host === 'localhost' || host.endsWith('.localhost')
+}
+
+/**
  * 画像の src にしてよい URL なら整えた href を、そうでなければ null を返す。
  * 通すのは、https: の URL(httpsHref と同じ条件)と、同じオリジンに解決される相対パス(見本の画像 fixtures/images/ など)だけ。
+ * https: の URL でも、ホスト名が IP アドレス(IPv4・IPv6)、localhost、*.localhost のものは通さない(isLocalOrIpHost)。
  * "//evil.example/x.png" のような形は別のオリジンに解決されるので通らない。javascript: や data: はオリジンが無いので通らない。
  */
 export function imageHref(value: string): string | null {
   if (value === '') return null
   const https = httpsHref(value)
-  if (https !== null) return https
+  if (https !== null) return isLocalOrIpHost(new URL(https).hostname) ? null : https
   let url: URL
   let base: URL
   try {

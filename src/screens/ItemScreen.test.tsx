@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { rowsToItems } from '../data/itemRow.ts'
 import { parseItems } from '../data/parse.ts'
 import type { LoadedData } from '../data/source.ts'
 import { freshUserStore, renderApp } from '../test/renderApp.tsx'
@@ -176,6 +177,26 @@ describe('ネタの詳細', () => {
     fireEvent.error(img)
     expect(article.querySelector('img')).toBeNull()
     expect(within(article).getByText('E')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('TST-IMG-06 DB の行の image_url を画面に渡すと img の src になり、IP アドレスの画像は img にしない', async () => {
+    // DB の items の行の形の見本(架空)
+    const dbRow = { id: 'db-image', date: '2026-01-02', sort_order: 1, title: '架空:DB の画像', source_url: 'https://example.com/a' }
+    renderApp('#/item/db-image', {
+      ...sample,
+      items: rowsToItems([
+        { ...dbRow, image_url: 'https://example.com/a.png' },
+        { ...dbRow, id: 'db-ip-image', sort_order: 2, image_url: 'https://127.0.0.1/a.png' },
+      ]),
+    })
+    const article = await screen.findByRole('article')
+    const img = article.querySelector('img')
+    expect(img).toHaveAttribute('src', 'https://example.com/a.png')
+    expect(img).toHaveAttribute('referrerpolicy', 'no-referrer')
+
+    window.location.hash = '#/item/db-ip-image'
+    await screen.findAllByText('2 / 2')
+    expect(screen.getByRole('article').querySelector('img')).toBeNull()
   })
 
   it('読了バーを出す(読み上げない)', async () => {
