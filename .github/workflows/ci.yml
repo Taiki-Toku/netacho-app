@@ -121,6 +121,7 @@ jobs:
 
   # PR が、CI・AI の設定・ビルドの仕組み(_headers を作る処理を含む)・依存・配信の設定(Pages Functions・_redirects など)・秘密の値の検査の除外・lint の規則を変えていたら赤にする。
   # 赤は「オーナーが差分を目で確かめる」印で、壊れている印ではない(基本設計 9.3・10.2・10.5)。
+  # 同期のコード(sync/nodal_sync/。netacho-sync で本番の DB の資格情報を持って動く)と DB のマイグレーション(supabase/migrations/。本番の権限を決める)も守る対象にする(K-055)
   # この行が検査の一覧に無いときは、ci.yml から消された印なのでマージしない
   workflow-guard:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft != true
@@ -138,7 +139,7 @@ jobs:
         run: |
           set -euo pipefail
           changed="$(git diff --no-renames --name-only "${BASE_SHA}...${HEAD_SHA}")"
-          hits="$(printf '%s\n' "${changed}" | grep -E '^(\.github/|\.claude/|scripts/|functions/|CLAUDE\.md$|vite\.config\.ts$|src/lib/(buildInfo|securityHeaders)\.ts$|package\.json$|package-lock\.json$|\.npmrc$|\.gitleaks\.toml$|\.gitleaksignore$|wrangler\.(toml|json|jsonc)$|eslint\.config\.[cm]?[jt]s$|public/(_headers|_redirects|_routes\.json)$|sync/requirements[^/]*$)' || true)"
+          hits="$(printf '%s\n' "${changed}" | grep -E '^(\.github/|\.claude/|scripts/|functions/|CLAUDE\.md$|vite\.config\.ts$|src/lib/(buildInfo|securityHeaders)\.ts$|package\.json$|package-lock\.json$|\.npmrc$|\.gitleaks\.toml$|\.gitleaksignore$|wrangler\.(toml|json|jsonc)$|eslint\.config\.[cm]?[jt]s$|public/(_headers|_redirects|_routes\.json)$|sync/requirements[^/]*$|sync/nodal_sync/|supabase/migrations/)' || true)"
           if [ -n "${hits}" ]; then
             echo "::error::守る対象のファイルが変わっています。オーナーが差分を目で確かめてからマージしてください"
             printf '%s\n' "${hits}"
