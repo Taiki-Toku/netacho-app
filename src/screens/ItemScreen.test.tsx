@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { parseItems } from '../data/parse.ts'
 import type { LoadedData } from '../data/source.ts'
-import { renderApp } from '../test/renderApp.tsx'
+import { freshUserStore, renderApp } from '../test/renderApp.tsx'
 import { baseSample } from '../test/sampleData.ts'
 
 // 基本の 9 本(最新日 2026-01-02)。「表示の安全確認」のネタ(2026-01-02-07)が最新日にあり、前後の移動と一緒に確かめられる
@@ -309,6 +309,63 @@ describe('ネタの詳細', () => {
     expect(within(last).getByRole('link', { name: '前のニュース' })).toHaveAttribute('href', '#/item/2026-01-02-06')
     expect(within(last).queryByRole('link', { name: '次のニュース' })).not.toBeInTheDocument()
     expect(within(last).getByRole('link', { name: '一覧に戻る' })).toHaveAttribute('href', '#/home')
+  })
+
+  describe('開いた一覧の中での前後(?from=)', () => {
+    it('そのジャンルに1本だけなら、前は押せない文字、右は「一覧に戻る」でそのジャンルの一覧へ', async () => {
+      // 基本の見本では、セキュリティニュースは 2026-01-02-06 の1本だけ
+      renderApp('#/item/2026-01-02-06?from=genre:security-news', sample)
+      const article = await screen.findByRole('article')
+      expect(within(article).getAllByText('1 / 1')).toHaveLength(2)
+      const pager = screen.getByRole('navigation', { name: '前後のニュース' })
+      expect(within(pager).queryByRole('link', { name: '前のニュース' })).not.toBeInTheDocument()
+      expect(within(pager).getByText('前のニュース')).toBeInTheDocument()
+      expect(within(pager).queryByRole('link', { name: '次のニュース' })).not.toBeInTheDocument()
+      expect(within(pager).getByRole('link', { name: '一覧に戻る' })).toHaveAttribute('href', '#/genre/security-news')
+      // 上の戻るリンクも同じ一覧へ
+      expect(within(article).getAllByRole('link', { name: '一覧に戻る' })[0]).toHaveAttribute('href', '#/genre/security-news')
+      // from の値は画面に文字として出さない
+      expect(within(article).queryByText(/genre:/)).not.toBeInTheDocument()
+    })
+
+    it('前後のリンクに同じ from が付き、ジャンルの中だけで進む', async () => {
+      // 基本の見本の work は 2026-01-02-01 と 2026-01-01-01 の2本(日をまたぐ。間に同じ日の別ジャンルを挟まない)
+      renderApp('#/item/2026-01-02-01?from=genre:work', sample)
+      await screen.findAllByText('1 / 2')
+      const pager = screen.getByRole('navigation', { name: '前後のニュース' })
+      expect(within(pager).getByRole('link', { name: '次のニュース' })).toHaveAttribute('href', '#/item/2026-01-01-01?from=genre%3Awork')
+
+      window.location.hash = '#/item/2026-01-01-01?from=genre%3Awork'
+      await screen.findAllByText('2 / 2')
+      const last = screen.getByRole('navigation', { name: '前後のニュース' })
+      expect(within(last).getByRole('link', { name: '前のニュース' })).toHaveAttribute('href', '#/item/2026-01-02-01?from=genre%3Awork')
+      expect(within(last).getByRole('link', { name: '一覧に戻る' })).toHaveAttribute('href', '#/genre/work')
+    })
+
+    it('保存の一覧から開いたら、保存の順で前後を決め、戻り先は保存の一覧', async () => {
+      const store = freshUserStore()
+      store.toggleSaved('2026-01-02-05')
+      store.toggleSaved('2026-01-02-01')
+      // 新しく保存した順:01 → 05
+      renderApp('#/item/2026-01-02-01?from=saved', sample, store)
+      await screen.findAllByText('1 / 2')
+      const pager = screen.getByRole('navigation', { name: '前後のニュース' })
+      expect(within(pager).getByRole('link', { name: '次のニュース' })).toHaveAttribute('href', '#/item/2026-01-02-05?from=saved')
+      expect(within(screen.getByRole('article')).getAllByRole('link', { name: '一覧に戻る' })[0]).toHaveAttribute('href', '#/saved')
+    })
+
+    it('スワイプの移り先にも from が付く', async () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }))
+      try {
+        const article = await renderItem('2026-01-02-01?from=genre:work')
+        drag(article, -FAR, 0, SLOW)
+        lift(article, -FAR, 0, SLOW)
+        expect(window.location.hash).toBe('#/item/2026-01-01-01?from=genre%3Awork')
+        await screen.findAllByText('2 / 2')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
   })
 
   describe('左右のスワイプ', () => {

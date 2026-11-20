@@ -54,6 +54,28 @@ describe('router(ハッシュの読み書き)', () => {
     expect(hrefFor({ name: 'search', q: '' })).toBe('#/search')
   })
 
+  it('詳細はどの一覧から開いたか(?from=)を読み、hrefFor と往復する', () => {
+    expect(parseHash('#/item/a?from=genre:security')).toEqual({ name: 'item', id: 'a', from: { kind: 'genre', id: 'security' } })
+    expect(parseHash('#/item/a?from=saved')).toEqual({ name: 'item', id: 'a', from: { kind: 'saved' } })
+    const fromGenre = { name: 'item', id: 'a', from: { kind: 'genre', id: 'security-news' } } as const
+    expect(parseHash(hrefFor(fromGenre))).toEqual(fromGenre)
+    expect(parseHash(hrefFor({ name: 'item', id: 'a', from: { kind: 'saved' } }))).toEqual({ name: 'item', id: 'a', from: { kind: 'saved' } })
+    expect(hrefFor({ name: 'item', id: 'a', from: { kind: 'saved' } })).toBe('#/item/a?from=saved')
+    // from が無ければ ?… を付けない
+    expect(hrefFor({ name: 'item', id: 'a' })).toBe('#/item/a')
+  })
+
+  it('形の違う・知らない from は無視する(from なし)', () => {
+    expect(parseHash('#/item/a?from=foo')).toEqual({ name: 'item', id: 'a' })
+    expect(parseHash('#/item/a?from=genre:')).toEqual({ name: 'item', id: 'a' })
+    expect(parseHash('#/item/a?from=')).toEqual({ name: 'item', id: 'a' })
+    expect(parseHash('#/item/a')).toEqual({ name: 'item', id: 'a' })
+  })
+
+  it('screenKey は詳細の from では変わらない(id だけ)', () => {
+    expect(screenKey({ name: 'item', id: 'a', from: { kind: 'saved' } })).toBe(screenKey({ name: 'item', id: 'a' }))
+  })
+
   it('screenKey は絞り込みの違いでは変わらない(先頭にスクロールしない)', () => {
     expect(screenKey({ name: 'vuln', severity: 'all' })).toBe(screenKey({ name: 'vuln', severity: 'high' }))
     expect(screenKey({ name: 'genre', id: 'a', kind: 'all' })).not.toBe(screenKey({ name: 'genre', id: 'b', kind: 'all' }))

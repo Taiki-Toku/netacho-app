@@ -43,7 +43,7 @@ function screenFor(route: Route, data: LoadedData, loadedAt: Date, homeIntro: bo
     case 'vuln-detail':
       return <VulnDetailScreen data={data} id={route.id} />
     case 'item':
-      return <ItemScreen data={data} id={route.id} />
+      return <ItemScreen data={data} id={route.id} from={route.from} />
     case 'saved':
       return <SavedScreen data={data} />
     case 'search':

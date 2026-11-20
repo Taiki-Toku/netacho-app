@@ -2,7 +2,7 @@
 // 元記事の抜粋、試してみる(確かめること)、気をつけること、出典と元記事へのリンク、評価4つ、メモ(自動保存)、前後のニュース。上のバーの下端に読了バー。
 // 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このニュースについて」の欄に残す。前後の移動はボタンと左右スワイプ
 import { useEffect, useRef } from 'react'
-import { hrefFor, navigate, type Route } from '../app/router.ts'
+import { hrefFor, navigate, type ItemFrom, type Route } from '../app/router.ts'
 import { itemInitial } from '../components/ArticleRow.tsx'
 import { Icon } from '../components/Icon.tsx'
 import { ReadingProgress } from '../components/ReadingProgress.tsx'
@@ -25,10 +25,20 @@ import styles from './ItemScreen.module.css'
 interface ItemScreenProps {
   data: LoadedData
   id: string
+  /** どの一覧から開いたか(URL の ?from=)。前後のニュースと戻り先をその一覧で決める */
+  from?: ItemFrom
 }
 
-export function ItemScreen({ data, id }: ItemScreenProps) {
+/** 戻り先:ジャンルから開いたらそのジャンル、保存から開いたら保存。無ければ今朝のネタはトップ、前の日のネタはそのジャンル */
+function backRoute(items: readonly Item[], item: Item, from: ItemFrom | undefined): Route {
+  if (from?.kind === 'genre') return { name: 'genre', id: from.id, kind: 'all' }
+  if (from?.kind === 'saved') return { name: 'saved' }
+  return item.date === latestDate(items) || item.genre === null ? { name: 'home' } : { name: 'genre', id: item.genre, kind: 'all' }
+}
+
+export function ItemScreen({ data, id, from }: ItemScreenProps) {
   const { items, genres } = data
+  const saved = useUserState().saved
   const item = findItem(items, id)
   if (item === null) {
     return (
@@ -46,11 +56,17 @@ export function ItemScreen({ data, id }: ItemScreenProps) {
   }
 
   const genreLabel = genreLabelOf(item, genreLabelMap(genres))
-  // 戻り先:今朝のネタならトップ、前の日のネタならそのジャンル(ジャンルが無ければトップ)
-  const back: Route =
-    item.date === latestDate(items) || item.genre === null ? { name: 'home' } : { name: 'genre', id: item.genre, kind: 'all' }
 
-  return <ItemView key={item.id} item={item} genreLabel={genreLabel} back={back} nav={neighbors(items, item)} />
+  return (
+    <ItemView
+      key={item.id}
+      item={item}
+      genreLabel={genreLabel}
+      back={backRoute(items, item, from)}
+      nav={neighbors(items, item, from, saved)}
+      from={from}
+    />
+  )
 }
 
 interface ItemViewProps {
@@ -58,9 +74,12 @@ interface ItemViewProps {
   genreLabel: string
   back: Route
   nav: ReturnType<typeof neighbors>
+  /** 前後のリンク・スワイプの移り先にも同じ from を付ける(移っても同じ一覧の中で進む) */
+  from: ItemFrom | undefined
 }
 
-function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
+function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
+  const routeOf = (target: Item): Route => ({ name: 'item', id: target.id, from })
   const titleRef = useRef<HTMLHeadingElement>(null)
   const store = useUserStore()
   const feedback = useUserState().feedback[item.id] ?? {}
@@ -77,10 +96,10 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
     canLeft: nav.next !== null,
     canRight: nav.prev !== null,
     onLeft: () => {
-      if (nav.next !== null) navigate({ name: 'item', id: nav.next.id })
+      if (nav.next !== null) navigate(routeOf(nav.next))
     },
     onRight: () => {
-      if (nav.prev !== null) navigate({ name: 'item', id: nav.prev.id })
+      if (nav.prev !== null) navigate(routeOf(nav.prev))
     },
   })
 
@@ -240,7 +259,7 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
 
         <nav className={styles.pager} aria-label="前後のニュース">
           {nav.prev !== null ? (
-            <a className={styles.pagerLink} href={hrefFor({ name: 'item', id: nav.prev.id })} rel="prev">
+            <a className={styles.pagerLink} href={hrefFor(routeOf(nav.prev))} rel="prev">
               前のニュース
             </a>
           ) : (
@@ -250,7 +269,7 @@ function ItemView({ item, genreLabel, back, nav }: ItemViewProps) {
             {nav.position} / {nav.total}
           </span>
           {nav.next !== null ? (
-            <a className={styles.pagerLink} href={hrefFor({ name: 'item', id: nav.next.id })} rel="next">
+            <a className={styles.pagerLink} href={hrefFor(routeOf(nav.next))} rel="next">
               次のニュース
             </a>
           ) : (
