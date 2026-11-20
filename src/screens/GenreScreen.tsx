@@ -50,7 +50,7 @@ export function GenreScreen({ data, id, kind }: GenreScreenProps) {
       ) : (
         <ol className={pageStyles.listSpaced} aria-label={`${label}のニュース`}>
           {list.map((item) => (
-            <ArticleRow key={item.id} item={item} genreLabel={label} headingLevel={2} />
+            <ArticleRow key={item.id} item={item} genreLabel={label} headingLevel={2} from={{ kind: 'genre', id }} />
           ))}
         </ol>
       )}

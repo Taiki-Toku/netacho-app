@@ -36,9 +36,22 @@ export interface Neighbors {
   next: Item | null
 }
 
-/** 同じ放送日の進行表の中で、前後のネタを返す。詳細の画面の前後移動に使う */
-export function neighbors(items: readonly Item[], item: Item): Neighbors {
-  const list = itemsOnDate(items, item.date)
+/** 前後を決める一覧。router の ItemFrom はこの型を使う(data から app へ依存しないよう、ここで定める) */
+export type NeighborsFrom = { kind: 'genre'; id: string } | { kind: 'saved' }
+
+/**
+ * 前後のネタを返す。詳細の画面の前後移動に使う(仕様 4 章 5)。
+ * from がジャンルで記事がそのジャンルなら itemsInGenre の並び、保存で記事が保存の一覧にあれば保存の一覧の並び。
+ * どちらでもなければ同じ放送日の進行表の中で決める
+ */
+export function neighbors(items: readonly Item[], item: Item, from?: NeighborsFrom, saved: readonly string[] = []): Neighbors {
+  let list = itemsOnDate(items, item.date)
+  if (from?.kind === 'genre' && item.genre === from.id) {
+    list = itemsInGenre(items, from.id)
+  } else if (from?.kind === 'saved') {
+    const savedList = savedItems(items, saved)
+    if (savedList.some((candidate) => candidate.id === item.id)) list = savedList
+  }
   const index = list.findIndex((candidate) => candidate.id === item.id)
   if (index === -1) return { position: 1, total: 1, prev: null, next: null }
   return {
@@ -66,6 +79,14 @@ export function itemsInGenre(items: readonly Item[], genre: string): Item[] {
   return items
     .filter((item) => item.genre === genre)
     .sort((a, b) => b.date.localeCompare(a.date) || a.order - b.order || a.id.localeCompare(b.id))
+}
+
+/** 保存の画面用:保存した id の一覧(保存した順)から、新しく保存した順にネタを並べる。見つからない id は除く */
+export function savedItems(items: readonly Item[], saved: readonly string[]): Item[] {
+  return [...saved]
+    .reverse()
+    .map((id) => findItem(items, id))
+    .filter((item) => item !== null)
 }
 
 /** 公式フィードから、指定した種類だけを新しい順に取り出す */

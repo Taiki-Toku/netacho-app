@@ -10,9 +10,9 @@ describe('ジャンルの画面', () => {
     expect(screen.getByText('3本のニュース')).toBeInTheDocument()
     const list = screen.getByRole('list', { name: '仕事・自動化のニュース' })
     expect([...list.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual([
-      '#/item/2026-01-03-06',
-      '#/item/2026-01-02-01',
-      '#/item/2026-01-01-01',
+      '#/item/2026-01-03-06?from=genre%3Awork',
+      '#/item/2026-01-02-01?from=genre%3Awork',
+      '#/item/2026-01-01-01?from=genre%3Awork',
     ])
     expect(screen.queryByRole('heading', { level: 2, name: '公式のお知らせ' })).not.toBeInTheDocument()
     const genres = screen.getByRole('navigation', { name: 'GENRES' })

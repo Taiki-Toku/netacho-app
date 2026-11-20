@@ -2,17 +2,15 @@
 // ログアウトは設定の画面にある(v3.8 で移した)
 import { ArticleRow } from '../components/ArticleRow.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
-import { findItem, genreLabelMap, genreLabelOf } from '../data/queries.ts'
+import { genreLabelMap, genreLabelOf, savedItems } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { useUserState } from '../data/userStore.ts'
 import pageStyles from '../components/page.module.css'
 
 export function SavedScreen({ data }: { data: LoadedData }) {
   const labels = genreLabelMap(data.genres)
-  const list = [...useUserState().saved]
-    .reverse()
-    .map((id) => findItem(data.items, id))
-    .filter((item) => item !== null)
+  // 並べ方は詳細の前後の移動と同じもの(queries.ts の savedItems)
+  const list = savedItems(data.items, useUserState().saved)
 
   return (
     <section aria-labelledby="saved-title">
@@ -25,7 +23,7 @@ export function SavedScreen({ data }: { data: LoadedData }) {
       ) : (
         <ol className={pageStyles.listSpaced} aria-label="保存したニュース">
           {list.map((item) => (
-            <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} headingLevel={2} />
+            <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} headingLevel={2} from={{ kind: 'saved' }} />
           ))}
         </ol>
       )}

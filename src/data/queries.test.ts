@@ -11,6 +11,7 @@ import {
   itemsOnDate,
   latestDate,
   neighbors,
+  savedItems,
   searchFeed,
   searchItems,
   topVulnerability,
@@ -138,5 +139,42 @@ describe('queries', () => {
     expect(neighbors(items, last)).toMatchObject({ position: 7, total: 7, next: null })
     // 前の日には進まない
     expect(neighbors(items, findItem(items, '2026-01-01-02')!).next).toBeNull()
+  })
+
+  it('ジャンルの一覧から開いたら、そのジャンルの一覧(itemsInGenre の順)の中で前後を決める', () => {
+    const from = { kind: 'genre', id: 'security-news' } as const
+    const genreIds = itemsInGenre(all.items, 'security-news').map((i) => i.id)
+    // 先頭から次へたどると、itemsInGenre の並びそのもの(別のジャンルの記事が入らない)
+    const walked: string[] = []
+    let current = findItem(all.items, genreIds[0]!)
+    while (current !== null) {
+      walked.push(current.id)
+      current = neighbors(all.items, current, from).next
+    }
+    expect(walked).toEqual(genreIds)
+    const middle = findItem(all.items, '2026-01-03-02')!
+    expect(neighbors(all.items, middle, from)).toMatchObject({ position: 2, total: 5 })
+    expect(neighbors(all.items, middle, from).prev?.id).toBe('2026-01-03-01')
+    expect(neighbors(all.items, middle, from).next?.id).toBe('2026-01-03-03')
+    // 同じ日の全ジャンルなら次は別のジャンルの記事になるところ
+    expect(neighbors(all.items, findItem(all.items, '2026-01-03-04')!).next?.genre).not.toBe('security-news')
+  })
+
+  it('記事のジャンルと from のジャンルが違うときは、同じ放送日の中で決める(今の動き)', () => {
+    const item = findItem(items, '2026-01-02-04')!
+    expect(neighbors(items, item, { kind: 'genre', id: 'work' })).toEqual(neighbors(items, item))
+  })
+
+  it('保存の一覧から開いたら、保存の一覧(新しく保存した順)の中で前後を決める。一覧に無い記事は今の動き', () => {
+    const saved = ['2026-01-02-01', '2026-01-03-06', '2026-01-02-05', 'nowhere']
+    expect(savedItems(all.items, saved).map((i) => i.id)).toEqual(['2026-01-02-05', '2026-01-03-06', '2026-01-02-01'])
+    const from = { kind: 'saved' } as const
+    const middle = findItem(all.items, '2026-01-03-06')!
+    expect(neighbors(all.items, middle, from, saved)).toMatchObject({ position: 2, total: 3 })
+    expect(neighbors(all.items, middle, from, saved).prev?.id).toBe('2026-01-02-05')
+    expect(neighbors(all.items, middle, from, saved).next?.id).toBe('2026-01-02-01')
+    expect(neighbors(all.items, findItem(all.items, '2026-01-02-01')!, from, saved).next).toBeNull()
+    const notSaved = findItem(all.items, '2026-01-02-03')!
+    expect(neighbors(all.items, notSaved, from, saved)).toEqual(neighbors(all.items, notSaved))
   })
 })

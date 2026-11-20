@@ -19,7 +19,7 @@ describe('保存', () => {
     renderApp('#/saved', sample, store)
     await waitForHeading('保存したニュース')
     const list = screen.getByRole('list', { name: '保存したニュース' })
-    expect([...list.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['#/item/2026-01-03-06', '#/item/2026-01-02-01'])
+    expect([...list.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual(['#/item/2026-01-03-06?from=saved', '#/item/2026-01-02-01?from=saved'])
 
     // 一覧の保存ボタンで外すと、その場で消える
     fireEvent.click(within(list).getAllByRole('button', { name: '保存から外す' })[0]!)

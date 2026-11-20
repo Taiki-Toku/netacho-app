@@ -2,6 +2,7 @@
 // 依存パッケージを増やさないため自前で持つ(docs/adr/002-app-structure.md)。
 // 画面の状態(どのジャンル、どの絞り込み、検索語)を URL に持たせ、再読み込み・戻る・共有で同じ表示に戻れるようにする(仕様 7 章)。
 import { useMemo, useSyncExternalStore } from 'react'
+import type { NeighborsFrom } from '../data/queries.ts'
 import { FEED_KINDS, SEVERITIES, type FeedKind, type Severity } from '../data/types.ts'
 
 /** 公式のお知らせの絞り込み。all はすべて */
@@ -9,13 +10,16 @@ export type FeedFilter = 'all' | FeedKind
 /** 脆弱性の絞り込み。all はすべて */
 export type SeverityFilter = 'all' | Exclude<Severity, ''>
 
+/** 詳細をどの一覧から開いたか({ kind: 'genre'; id } | { kind: 'saved' })。前後のニュースと戻り先をその一覧で決める(仕様 4 章 5) */
+export type ItemFrom = NeighborsFrom
+
 export type Route =
   | { name: 'home' }
   | { name: 'genre'; id: string; kind: FeedFilter }
   | { name: 'feed'; kind: FeedFilter }
   | { name: 'vuln'; severity: SeverityFilter }
   | { name: 'vuln-detail'; id: string }
-  | { name: 'item'; id: string }
+  | { name: 'item'; id: string; from?: ItemFrom }
   | { name: 'saved' }
   | { name: 'search'; q: string }
   | { name: 'settings' }
@@ -29,6 +33,20 @@ function asFeedFilter(value: string | null): FeedFilter {
 
 function asSeverityFilter(value: string | null): SeverityFilter {
   return value !== null && value !== '' && (SEVERITIES as readonly string[]).includes(value) ? (value as SeverityFilter) : 'all'
+}
+
+/** from=genre:<id> / from=saved を読む。形が違う・知らない値は undefined(from なし) */
+function asItemFrom(value: string | null): ItemFrom | undefined {
+  if (value === 'saved') return { kind: 'saved' }
+  if (value?.startsWith('genre:') === true) {
+    const id = value.slice('genre:'.length)
+    if (id !== '') return { kind: 'genre', id }
+  }
+  return undefined
+}
+
+function fromParam(from: ItemFrom): string {
+  return from.kind === 'saved' ? 'saved' : `genre:${from.id}`
 }
 
 /** "#/genre/product?kind=release" のようなハッシュを Route にする。読めないものはトップ(ホーム)に落とす */
@@ -58,8 +76,12 @@ export function parseHash(hash: string): Route {
       return { name: 'feed', kind: asFeedFilter(query.get('kind')) }
     case 'vuln':
       return second !== undefined ? { name: 'vuln-detail', id: second } : { name: 'vuln', severity: asSeverityFilter(query.get('sev')) }
-    case 'item':
-      return second !== undefined ? { name: 'item', id: second } : HOME
+    case 'item': {
+      if (second === undefined) return HOME
+      const from = asItemFrom(query.get('from'))
+      // from が無いときは鍵ごと付けない(今までの Route と同じ形にする)
+      return from === undefined ? { name: 'item', id: second } : { name: 'item', id: second, from }
+    }
     case 'saved':
       return { name: 'saved' }
     case 'search':
@@ -91,7 +113,7 @@ export function hrefFor(route: Route): string {
     case 'vuln-detail':
       return `#/vuln/${encodeURIComponent(route.id)}`
     case 'item':
-      return `#/item/${encodeURIComponent(route.id)}`
+      return withQuery(`#/item/${encodeURIComponent(route.id)}`, route.from === undefined ? {} : { from: fromParam(route.from) })
     case 'saved':
       return '#/saved'
     case 'search':

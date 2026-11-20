@@ -1,7 +1,7 @@
 // 記事の行(今朝のラインナップ、ジャンル、保存、さがすで共通)。
 // 見出しが本物のリンク(a)。行全体をクリックにはしない。保存ボタンはリンクの外(仕様 7 章)。
 // 押せる範囲は、リンクの疑似要素(::after)で行全体に広げ、保存ボタンだけをその上に出す(CSS 側)
-import { hrefFor } from '../app/router.ts'
+import { hrefFor, type ItemFrom } from '../app/router.ts'
 import { isRated } from '../data/queries.ts'
 import { itemSourceName, sourceInitial } from '../data/sourceName.ts'
 import type { Item } from '../data/types.ts'
@@ -20,6 +20,8 @@ interface ArticleRowProps {
   headingLevel?: 2 | 3
   /** リードを1行に詰め、スマホでも出す(今朝のラインナップ。仕様 4 章 1) */
   oneLineLead?: boolean
+  /** どの一覧の行か(ジャンル・保存だけ)。リンクに付け、詳細の前後と戻り先をその一覧で決める(仕様 4 章 5) */
+  from?: ItemFrom
 }
 
 /** 画像の無いネタの札に出す頭文字。画面に出す媒体名(URL が無ければジャンル名)の最初の1文字を大文字で(仕様 4〜5 章) */
@@ -27,7 +29,7 @@ export function itemInitial(item: Item, genreLabel: string): string {
   return sourceInitial(itemSourceName(item, genreLabel))
 }
 
-export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineLead = false }: ArticleRowProps) {
+export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineLead = false, from }: ArticleRowProps) {
   const Heading = headingLevel === 2 ? 'h2' : 'h3'
   // 画像が無い・危ない・読み込みに失敗したときは、画像の場所を取らず、出典の横に小さな札を出す(仕様 5 章)
   const thumb = useThumb(item.imageUrl)
@@ -42,7 +44,7 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
       <div className={styles.body}>
         <span className={pageStyles.label}>{genreLabel}</span>
         <Heading className={styles.title}>
-          <a className={styles.link} href={hrefFor({ name: 'item', id: item.id })}>
+          <a className={styles.link} href={hrefFor({ name: 'item', id: item.id, from })}>
             {item.title !== '' ? item.title : '(見出しなし)'}
           </a>
         </Heading>
