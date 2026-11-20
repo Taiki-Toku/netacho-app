@@ -1,0 +1,47 @@
+{
+  "title": "Fictional Known Exploited Vulnerabilities Catalog (sample)",
+  "catalogVersion": "2026.11.20",
+  "dateReleased": "2026-11-20T00:00:00.000Z",
+  "count": 3,
+  "vulnerabilities": [
+    {
+      "cveID": "CVE-2026-90001",
+      "vendorProject": "ExampleVendor",
+      "product": "ExampleGuard",
+      "vulnerabilityName": "ExampleGuard Fictional Authentication Bypass",
+      "dateAdded": "2026-11-19",
+      "shortDescription": "Fictional authentication bypass in a sample product.",
+      "requiredAction": "Apply fictional updates.",
+      "dueDate": "2026-12-10",
+      "knownRansomwareCampaignUse": "Unknown",
+      "notes": "",
+      "cwes": ["CWE-287"]
+    },
+    {
+      "cveID": "CVE-2020-90009",
+      "vendorProject": "OldVendor",
+      "product": "OldProduct",
+      "vulnerabilityName": "OldProduct Fictional Old Issue",
+      "dateAdded": "2020-01-01",
+      "shortDescription": "A fictional old entry.",
+      "requiredAction": "Apply fictional updates.",
+      "dueDate": "2020-01-21",
+      "knownRansomwareCampaignUse": "Unknown",
+      "notes": "",
+      "cwes": []
+    },
+    {
+      "cveID": "not-a-cve",
+      "vendorProject": "BadVendor",
+      "product": "BadProduct",
+      "vulnerabilityName": "Fictional broken entry",
+      "dateAdded": "2026-11-19",
+      "shortDescription": "Fictional broken entry.",
+      "requiredAction": "",
+      "dueDate": "2026-12-10",
+      "knownRansomwareCampaignUse": "Unknown",
+      "notes": "",
+      "cwes": []
+    }
+  ]
+}

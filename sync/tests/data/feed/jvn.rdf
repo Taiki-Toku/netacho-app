@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 架空の見本(RSS 1.0。JVN iPedia 風。sec: の要素の名前は【推測】)。本物の記事の文は使っていない -->
+<rdf:RDF xmlns="http://purl.org/rss/1.0/"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:sec="http://jvn.jp/rss/mod_sec/3.0/"
+         xml:lang="ja">
+  <channel rdf:about="https://jvndb.example.jp/rss/new.rdf">
+    <title>架空の脆弱性の新着</title>
+    <link>https://jvndb.example.jp/</link>
+    <description>架空の見本</description>
+    <items>
+      <rdf:Seq>
+        <rdf:li rdf:resource="https://jvndb.example.jp/JVNDB-2026-900001"/>
+        <rdf:li rdf:resource="https://jvndb.example.jp/JVNDB-2026-900002"/>
+      </rdf:Seq>
+    </items>
+  </channel>
+  <item rdf:about="https://jvndb.example.jp/JVNDB-2026-900001">
+    <title>架空製品 ExampleGuard における認証回避の脆弱性</title>
+    <link>https://jvndb.example.jp/JVNDB-2026-900001</link>
+    <description>架空製品 ExampleGuard には、認証を回避される脆弱性が存在します。</description>
+    <sec:identifier>JVNDB-2026-900001</sec:identifier>
+    <sec:references source="NVD" id="CVE-2026-90001">https://nvd.example.org/vuln/detail/CVE-2026-90001</sec:references>
+    <sec:cvss score="9.8" severity="Critical" vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" version="3.0" type="Base"/>
+    <sec:cvss score="7.5" severity="High" vector="AV:N/AC:L/Au:N/C:P/I:P/A:P" version="2.0" type="Base"/>
+    <dc:date>2026-11-19T10:00:00+09:00</dc:date>
+  </item>
+  <item rdf:about="https://jvndb.example.jp/JVNDB-2026-900002">
+    <title>架空ツール SampleKit におけるクロスサイトスクリプティングの脆弱性</title>
+    <link>https://jvndb.example.jp/JVNDB-2026-900002</link>
+    <description>架空ツール SampleKit には cve-2026-90002 の脆弱性が存在します。</description>
+    <sec:identifier>JVNDB-2026-900002</sec:identifier>
+    <sec:cvss score="5.3" severity="Medium" version="3.0" type="Base"/>
+    <dc:date>2026-11-18T09:00:00+09:00</dc:date>
+  </item>
+</rdf:RDF>

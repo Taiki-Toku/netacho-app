@@ -61,6 +61,21 @@ python -m nodal_sync watch --config <config/sync.json> --data-dir <ai-netacho �
 件数、形を確かめた id、決まりの番号だけ。JSON とページの値(タイトル・本文・URL)、接続文字列、トークンは出さない。
 出力の最初に `::stop-commands::<乱数>` を出し、最後に `::<同じ値>::` で戻す。
 
+## 公式フィード(feed)
+
+公式の障害・脆弱性のフィードを取り、解析・検査して `feed_entries` に原文を入れる(依頼文は [`docs/requests/12-1_feed-fetch.md`](../docs/requests/12-1_feed-fetch.md))。翻訳と翌朝のニュースへの受け渡しはまだ作っていない。
+
+```sh
+python -m nodal_sync feed --config <config/feed_sources.json> --ca <CA 証明書> [--dry-run]
+```
+
+- DB には専用ロール `netacho_feed`(環境変数 `FEED_DB_URL`。表示しない)でつなぐ。`--dry-run` は取得・解析・filter までで、DB に接続しない
+- 設定の形は依頼文の付録 3.3。取得先を足す・止めるのは netacho-sync の設定の PR だけ
+- 起動の最初に Expat が 2.7.2 以上かを確かめる。DOCTYPE・ENTITY を含む XML は解析しない。Accept-Encoding を送らず、圧縮された応答は捨てる
+- 終了コード:0=全部成功か、続けての失敗が 3 回未満/1=続けて 3 回失敗した取得先がある・全部失敗した(dry-run は1回の失敗でも 1)/2=止まった(設定・Expat の版・DB の接続・書き込みの失敗。何も書いていない)
+- 要約に出すのは取得先の id・件数・決まりの番号(`E-FEED-CONFIG-*`・`E-FEED-EXPAT`・`E-FEED-DB-URL`・`E-HTTP-*`・`E-PARSE-*`・`E-ITEM-*`)だけ。記事の title・URL・本文は出さない
+- 試験の名前に `TST-FEED-xx` を入れてある(`grep -rn TST-FEED- tests`)。見本のフィードは `tests/data/feed/`(架空の値だけ)
+
 ## 決まりの番号
 
 ### 入力の JSON(schema.py)
