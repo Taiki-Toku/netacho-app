@@ -1,0 +1,9 @@
+# 同期(nodal_sync)の本番の依存。CI と netacho-sync は次のように入れる:
+#   python -m pip install --require-hashes --only-binary :all: --no-deps -r sync/requirements.txt
+# ハッシュは PyPI の JSON API の値(2026-11-20)。Python 3.12・Linux x86_64 の wheel だけを許す
+psycopg==3.3.9 \
+    --hash=sha256:d2d7d04a1ce6dab4f5b27316bea3b52585cafa2f2d631e5b09dd69823f5c26f6
+psycopg-binary==3.3.9 \
+    --hash=sha256:a99f0b9a19ed7a56bf5d6776456b8f15f5364db8853b0f5d184db394a45c391d
+typing-extensions==4.16.0 ; python_version < "3.13" \
+    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8

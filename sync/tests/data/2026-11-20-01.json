@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-20-01",
+  "date": "2026-11-20",
+  "order": 1,
+  "slot": "取り組みに効く",
+  "genre": "tools",
+  "title": "架空の見出し:見本のツールが新しい版を出した",
+  "lead": "架空のリード文。",
+  "summary": "架空の要約。\n2行目。",
+  "points": ["架空の要点1", "架空の要点2", "架空の要点3"],
+  "categories": ["架空の分類"],
+  "tags": ["見本", "架空"],
+  "sourceUrl": "",
+  "sourceTitle": "架空の出典",
+  "stars": {"hot": 4, "fun": 2},
+  "publishedAt": "2026-11-19",
+  "relatedFeedIds": ["0123456789abcdef0123456789abcdef"],
+  "relatedItemIds": ["2026-11-19-02"]
+}

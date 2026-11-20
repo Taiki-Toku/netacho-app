@@ -72,6 +72,53 @@ jobs:
           tar -xzf "gitleaks_${GL_VER}_linux_x64.tar.gz" gitleaks
           ./gitleaks git --redact --exit-code 1 .
 
+  # 同期のコード(sync/)の試験。PostgreSQL 16 に Supabase の模擬の土台と 0001〜0003 を流し、pytest を動かす(詳細設計 2.13・2.14)
+  # DB はこのジョブの中だけの使い捨てで、外からは届かない。パスワードを使わない(trust)のはそのため
+  sync:
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16.16@sha256:3950ad7c3148ca2175ef1b6c36c9efbf78957ae8fbe8b3a5d7c35af50500382f
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGDATABASE: postgres
+      NODAL_TEST_ADMIN_URL: postgresql://postgres@localhost:5432/postgres
+      NODAL_TEST_SYNC_URL: postgresql://netacho_sync@localhost:5432/postgres
+      NODAL_REQUIRE_DB: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: 依存のインストール(ハッシュの合う wheel だけ)
+        run: |
+          python -m pip install --require-hashes --only-binary :all: --no-deps -r sync/requirements.txt -r sync/requirements-dev.txt
+      - name: DB の土台とマイグレーション
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -q -f sync/tests/sql/supabase_mock.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/0001_init.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/0002_feed_and_items.sql
+          psql -v ON_ERROR_STOP=1 -q -f supabase/migrations/0003_sync_state.sql
+          psql -v ON_ERROR_STOP=1 -q -c "alter role netacho_sync login"
+      - run: python -m pytest -q
+        working-directory: sync
+
   # PR が、CI・AI の設定・ビルドの仕組み(_headers を作る処理を含む)・依存・配信の設定(Pages Functions・_redirects など)・秘密の値の検査の除外・lint の規則を変えていたら赤にする。
   # 赤は「オーナーが差分を目で確かめる」印で、壊れている印ではない(基本設計 9.3・10.2・10.5)。
   # この行が検査の一覧に無いときは、ci.yml から消された印なのでマージしない
@@ -91,7 +138,7 @@ jobs:
         run: |
           set -euo pipefail
           changed="$(git diff --no-renames --name-only "${BASE_SHA}...${HEAD_SHA}")"
-          hits="$(printf '%s\n' "${changed}" | grep -E '^(\.github/|\.claude/|scripts/|functions/|CLAUDE\.md$|vite\.config\.ts$|src/lib/(buildInfo|securityHeaders)\.ts$|package\.json$|package-lock\.json$|\.npmrc$|\.gitleaks\.toml$|\.gitleaksignore$|wrangler\.(toml|json|jsonc)$|eslint\.config\.[cm]?[jt]s$|public/(_headers|_redirects|_routes\.json)$)' || true)"
+          hits="$(printf '%s\n' "${changed}" | grep -E '^(\.github/|\.claude/|scripts/|functions/|CLAUDE\.md$|vite\.config\.ts$|src/lib/(buildInfo|securityHeaders)\.ts$|package\.json$|package-lock\.json$|\.npmrc$|\.gitleaks\.toml$|\.gitleaksignore$|wrangler\.(toml|json|jsonc)$|eslint\.config\.[cm]?[jt]s$|public/(_headers|_redirects|_routes\.json)$|sync/requirements[^/]*$)' || true)"
           if [ -n "${hits}" ]; then
             echo "::error::守る対象のファイルが変わっています。オーナーが差分を目で確かめてからマージしてください"
             printf '%s\n' "${hits}"
