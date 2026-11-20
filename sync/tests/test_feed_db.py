@@ -203,6 +203,61 @@ def test_tst_feed_15_two_rows_only_oldest_is_updated(feed_db: str, admin_sql: An
     assert rows == [(old.id, "low", Decimal("3.1"), [CVE_A, CVE_B]), (newer.id, None, None, [CVE_B])]
 
 
+def test_tst_feed_15_kev_body_cve_does_not_select_target(feed_db: str, admin_sql: Any) -> None:
+    """TST-FEED-15:KEV の本文に書かれただけの CVE では、まとめ先を選ばない(別の行の exploited を立てない)。"""
+    import json
+
+    from nodal_sync.feedparse import parse_feed
+    jvn, kev = source("example-jvn"), source("example-kev")
+    j = entry(jvn, "j1", cve_ids=[CVE_B], severity="high", cvss=Decimal("8.1"))
+    write(feed_db, [SourceOutcome(source=jvn, entries=[j])])
+    body = json.dumps({"vulnerabilities": [{
+        "cveID": CVE_A, "vendorProject": "V", "product": "P", "vulnerabilityName": "Fictional issue",
+        "shortDescription": f"Fictional chain with {CVE_B}.", "dateAdded": "2026-11-19"}]}).encode()
+    parsed = parse_feed(kev, body, (), dt.datetime(2026, 11, 20, 12, tzinfo=UTC))
+    stats, _ = write(feed_db, [SourceOutcome(source=kev, entries=parsed.entries)])
+    assert (stats["example-kev"].inserted, stats["example-kev"].merged) == (1, 0)
+    assert admin_sql("select source_id, exploited, cve_ids from public.feed_entries order by source_id") == [
+        ("example-jvn", False, [CVE_B]), ("example-kev", True, [CVE_A])]
+
+
+def test_tst_feed_15_jvn_body_cve_does_not_select_target(feed_db: str, admin_sql: Any) -> None:
+    """TST-FEED-15:JVN の本文に書かれただけの CVE では、まとめ先を選ばない(参照の CVE で探す)。"""
+    from nodal_sync.feedparse import parse_feed
+    jvn, kev = source("example-jvn"), source("example-kev")
+    k = entry(kev, CVE_A, cve_ids=[CVE_A], exploited=True)
+    write(feed_db, [SourceOutcome(source=kev, entries=[k])])
+    body = ('<rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '
+            'xmlns:sec="http://jvn.jp/rss/mod_sec/3.0/"><item rdf:about="https://jvndb.example.jp/Y">'
+            "<title>Fictional JVN</title><link>https://jvndb.example.jp/Y</link>"
+            f"<description>Similar to {CVE_A}.</description>"
+            f'<sec:references source="NVD" id="{CVE_B}"/><sec:cvss score="9.8" severity="Critical"/>'
+            "</item></rdf:RDF>").encode()
+    parsed = parse_feed(jvn, body, (), dt.datetime(2026, 11, 20, 12, tzinfo=UTC))
+    assert [e.cve_ids for e in parsed.entries] == [[CVE_B]]
+    stats, _ = write(feed_db, [SourceOutcome(source=jvn, entries=parsed.entries)])
+    assert (stats["example-jvn"].inserted, stats["example-jvn"].merged) == (1, 0)
+    assert admin_sql("select severity, cvss, cve_ids from public.feed_entries where id = %s", (k.id,)) == [
+        (None, None, [CVE_A])]
+
+
+def test_tst_feed_15_kev_merge_adds_missing_cve(feed_db: str, admin_sql: Any) -> None:
+    """TST-FEED-15:KEV でまとめるとき、exploited を立て、足りない CVE を足す。
+
+    解析を通した KEV の記事は cve_ids が [cveID] だけで、まとめ先は必ずその CVE を持つため、足す分は普通は出ない。
+    ここでは足す処理そのものを確かめるため、記事を手で作る。
+    """
+    jvn, kev = source("example-jvn"), source("example-kev")
+    j = entry(jvn, "j1", cve_ids=[CVE_A])
+    write(feed_db, [SourceOutcome(source=jvn, entries=[j])])
+    k = entry(kev, CVE_A, cve_ids=[CVE_A, CVE_B], exploited=True)
+    stats, _ = write(feed_db, [SourceOutcome(source=kev, entries=[k])])
+    assert stats["example-kev"].merged == 1
+    assert admin_sql("select id, exploited, cve_ids from public.feed_entries") == [(j.id, True, [CVE_A, CVE_B])]
+    stats, _ = write(feed_db, [SourceOutcome(source=kev, entries=[k])])
+    assert (stats["example-kev"].merged, stats["example-kev"].unchanged) == (0, 1)
+
+
 def test_tst_feed_16_consecutive_failures(feed_db: str, admin_sql: Any, tmp_path: Path) -> None:
     """TST-FEED-16:1回・2回の失敗は 0、3回目で 1。成功で 0 に戻る。全部失敗なら1回目でも 1。"""
     ids = ["example-status", "example-cloud"]

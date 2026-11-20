@@ -222,8 +222,8 @@ def test_tst_feed_05_tags_entities_control_chars() -> None:
     assert feedparse.clean_text("a\x07b\x1bc\ud800d\x00e\r\nf", single_line=True) == "abcde f"
     assert feedparse.clean_text("a\x07b\n\n\tc", single_line=False) == "ab\nc"
     # 文字の向きを変える制御文字(見た目の偽装)も除く。URL に入っていればリンクにしない
-    assert feedparse.clean_text("abc‮def⁦g", single_line=True) == "abcdefg"
-    assert feedparse.clean_url("https://news.example.com/‮gpj.exe") is None
+    assert feedparse.clean_text("abc\u202edef\u2066g", single_line=True) == "abcdefg"
+    assert feedparse.clean_url("https://news.example.com/\u202egpj.exe") is None
 
 
 def test_tst_feed_05_lengths() -> None:
@@ -291,11 +291,43 @@ def test_tst_feed_07_cve_extraction() -> None:
     assert e.cve_ids == ["CVE-2026-1111"] and e.cvss is None and e.severity is None
 
 
-def jvn_item(cvss: str) -> bytes:
+def jvn_item(cvss: str, title: str = "t", desc: str = "d") -> bytes:
     return ('<rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '
             'xmlns:sec="http://jvn.jp/rss/mod_sec/3.0/">'
-            '<item rdf:about="https://jvndb.example.jp/X"><title>t</title><link>https://jvndb.example.jp/X</link>'
-            f"<description>d</description>{cvss}</item></rdf:RDF>").encode()
+            f'<item rdf:about="https://jvndb.example.jp/X"><title>{title}</title><link>https://jvndb.example.jp/X</link>'
+            f"<description>{desc}</description>{cvss}</item></rdf:RDF>").encode()
+
+
+def test_tst_feed_07_kev_cve_ids_is_only_cve_id() -> None:
+    """TST-FEED-07:KEV の cve_ids は [cveID](大文字にそろえる)だけ。本文・題に書かれた CVE は拾わない。"""
+    kev = {"vulnerabilities": [{
+        "cveID": "cve-2026-90011", "vendorProject": "V", "product": "P",
+        "vulnerabilityName": "Fictional issue related to CVE-2026-90013",
+        "shortDescription": "Fictional chain with CVE-2026-90012.", "dateAdded": "2026-11-19"}]}
+    res = parse_feed(src(id="example-kev", kind="vuln", format="kev-json", filter="kev"),
+                     json.dumps(kev).encode(), WATCH, NOW)
+    e = res.entries[0]
+    assert e.cve_ids == ["CVE-2026-90011"]
+    assert e.id == entry_id("example-kev", "CVE-2026-90011")
+    assert e.url == "https://nvd.nist.gov/vuln/detail/CVE-2026-90011"
+
+
+REF = ('<sec:references source="NVD" id="CVE-2026-90021">'
+       "https://nvd.example.org/vuln/detail/CVE-2026-90021</sec:references>")
+
+
+@pytest.mark.parametrize("extra,want", [
+    (REF, ["CVE-2026-90021"]),                                                   # 参照があれば参照だけ
+    (REF + '<sec:references source="CVE" id="CVE-2026-90024"/>', ["CVE-2026-90021", "CVE-2026-90024"]),
+    ("", ["CVE-2026-90022", "CVE-2026-90023"]),                                  # 参照が無ければ題と本文
+    ("<sec:identifier>JVNDB-2026-900009 CVE-2026-90025</sec:identifier>",
+     ["CVE-2026-90022", "CVE-2026-90023"]),                                     # 参照でない要素は使わない
+], ids=["refs", "two-refs", "no-refs", "identifier-only"])
+def test_tst_feed_07_jvn_cves_from_references(extra: str, want: list[str]) -> None:
+    """TST-FEED-07:JVN の cve_ids は sec:references の CVE。無いときだけ title と summary から拾う。"""
+    e = one(jvn_item(extra, title="Fictional CVE-2026-90022 note", desc="Mentions CVE-2026-90023."),
+            format="rss1", kind="vuln")
+    assert e.cve_ids == want
 
 
 @pytest.mark.parametrize("cvss,want", [

@@ -61,7 +61,8 @@ CVE_RE = re.compile(r"(?<![0-9A-Za-z])CVE-[0-9]{4}-[0-9]{4,7}(?![0-9])", re.IGNO
 CVE_FULL_RE = re.compile(r"CVE-[0-9]{4}-[0-9]{4,7}")
 SCHEDULED_MARK = "this is a scheduled event"
 SEVERITIES = frozenset({"critical", "high", "medium", "low"})
-BIDI_CONTROLS = frozenset("؜‎‏‪‫‬‭‮⁦⁧⁨⁩")
+REFERENCE_NAMES = frozenset({"references", "reference"})  # JVN の sec:references(【推測】)
+BIDI_CONTROLS = frozenset("\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069")
 STATUS_WORDS = {
     "resolved": "復旧済み",
     "monitoring": "監視中",
@@ -339,7 +340,7 @@ class _Raw:
     url: str | None
     summary: str
     published_at: dt.datetime | None
-    extra_cve_texts: list[str] = field(default_factory=list)
+    # 記事が主に扱う CVE(KEV は cveID、JVN は参照の要素)。あればこれだけを cve_ids にする
     first_cves: list[str] = field(default_factory=list)
     severity: str | None = None
     cvss: Decimal | None = None
@@ -398,15 +399,17 @@ def _read_rss1(root: ET.Element, now: dt.datetime) -> list[_Raw]:
         raise _FeedError(E_PARSE_SHAPE)
     out: list[_Raw] = []
     for it in root.findall(f"{{{RSS1}}}item"):
-        # JVN の sec:identifier・sec:references・sec:cvss など(要素の名前は【推測】。名前空間は問わず名前で見る)
-        extra: list[str] = []
+        # JVN の sec:references・sec:cvss など(要素の名前は【推測】。名前空間は問わず名前で見る)
+        # CVE は参照の要素(references・reference)からだけ拾う。本文に書かれただけの CVE でまとめ先を決めないため
+        refs: list[str] = []
         severity: str | None = None
         best: Decimal | None = None
         for c in it:
             if _ns(c.tag) in (RSS1, DC, RDF):
                 continue
-            extra.append(_text(c))
-            extra.extend(v for v in c.attrib.values())
+            if _local(c.tag) in REFERENCE_NAMES:
+                refs.append(_text(c))
+                refs.extend(v for v in c.attrib.values())
             if _local(c.tag) == "cvss":
                 s = _score(c.get("score"))
                 if s is not None:
@@ -419,7 +422,7 @@ def _read_rss1(root: ET.Element, now: dt.datetime) -> list[_Raw]:
                         url=_text(_child(it, "link", RSS1)).strip() or None,
                         summary=_text(_child(it, "description", RSS1)),
                         published_at=parse_iso(_text(_child(it, "date", DC)), now),
-                        extra_cve_texts=extra, severity=severity, cvss=best))
+                        first_cves=find_cves(refs), severity=severity, cvss=best))
     return out
 
 
@@ -440,7 +443,7 @@ def _read_kev(body: bytes, now: dt.datetime, invalid: Counter[str]) -> list[_Raw
         if not all(isinstance(v.get(k, ""), str) for k in names):
             invalid[E_ITEM_SHAPE] += 1
             continue
-        cve = v.get("cveID", "").strip()
+        cve = v.get("cveID", "").strip().upper()
         if not CVE_FULL_RE.fullmatch(cve):
             invalid[E_ITEM_CVE if cve else E_ITEM_GUID] += 1
             continue
@@ -527,7 +530,8 @@ def parse_feed(source: Source, body: bytes, watch_products: tuple[str, ...],
         severity: str | None = None
         cvss: Decimal | None = None
         if is_vuln:
-            cves = find_cves([title_full, summary_full, *r.extra_cve_texts], r.first_cves)
+            # KEV は [cveID] だけ、JVN は参照の要素の CVE があればそれだけ。無いときだけ title と summary から拾う
+            cves = r.first_cves[:MAX_CVES] if r.first_cves else find_cves([title_full, summary_full])
             if source.format == "rss1":
                 severity, cvss = r.severity, r.cvss
         if not passes_filter(source.filter, title_full, summary_full, cvss, watch_products):

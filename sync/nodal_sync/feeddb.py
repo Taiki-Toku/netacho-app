@@ -55,8 +55,8 @@ SELECT_MERGE_TARGET = sql.SQL(
     "where kind = 'vuln' and cve_ids && %s::text[] "
     "order by first_seen_at, id limit 1 for update")
 
-MERGE_EXPLOITED = sql.SQL(
-    "update public.feed_entries set exploited = true where id = %s")
+MERGE_KEV = sql.SQL(
+    "update public.feed_entries set exploited = true, cve_ids = %s::text[] where id = %s")
 
 MERGE_JVN = sql.SQL(
     "update public.feed_entries set severity = %s::text, cvss = %s::numeric, cve_ids = %s::text[] "
@@ -135,17 +135,18 @@ def _merge(conn: psycopg.Connection[Any], o: SourceOutcome, e: Entry) -> str | N
         return None
     target_id, cves, severity, cvss, exploited = row
     fmt = o.source.format
+    # どちらも、まとめ先の行に足りない CVE を足す(50 個まで。0002 の CHECK)
+    new_cves = (list(cves) + [c for c in e.cve_ids if c not in cves])[:MAX_CVES]
     if fmt == "kev-json":
-        if exploited:
+        # KEV:exploited を立て、cveID が無ければ足す(KEV の cve_ids は [cveID] だけ)
+        if exploited and new_cves == list(cves):
             return "unchanged"
-        conn.execute(MERGE_EXPLOITED, (target_id,))
+        conn.execute(MERGE_KEV, (new_cves, target_id))
         return "merged"
     if fmt == "rss1":
-        # JVN の severity・cvss を優先する(JVN に値が無ければ元の値のまま)。CVE は足りない分を足す
+        # JVN の severity・cvss を優先する(JVN に値が無ければ元の値のまま)
         new_sev = e.severity if e.severity is not None else severity
         new_cvss = e.cvss if e.cvss is not None else cvss
-        new_cves = list(cves) + [c for c in e.cve_ids if c not in cves]
-        new_cves = new_cves[:MAX_CVES]
         if (new_sev, new_cvss, new_cves) == (severity, cvss, list(cves)):
             return "unchanged"
         conn.execute(MERGE_JVN, (new_sev, new_cvss, new_cves, target_id))
