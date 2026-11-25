@@ -1,7 +1,10 @@
 // Supabase モード(Backend を渡したとき)の画面の試験。Backend はモックで、通信はしない
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { App } from './App.tsx'
+import { FeedLoadError } from './data/backend.ts'
+import { rowsToFeed } from './data/feedRow.ts'
+import type { FeedEntry } from './data/types.ts'
 import genresJson from '../fixtures/genres.json'
 import { mockBackend } from './test/mockBackend.ts'
 import { freshUserStore, waitForHeading } from './test/renderApp.tsx'
@@ -138,7 +141,7 @@ describe('Supabase モード:ログイン', () => {
 })
 
 describe('Supabase モード:ネタの読み込み', () => {
-  it('読み込みに失敗したら、見本のネタを出さずに失敗の文言と再読み込みのボタンを出す', async () => {
+  it('TST-FEEDUI-04 読み込みに失敗したら、見本のネタを出さずに失敗の文言と再読み込みのボタンを出す', async () => {
     const backend = mockBackend({ signedIn: true, loadItems: () => Promise.reject(new Error('ニュースを読み込めませんでした(PGRST301)')) })
     renderSupabase(backend)
     expect(await screen.findByText('データを読み込めませんでした')).toBeInTheDocument()
@@ -165,6 +168,142 @@ describe('Supabase モード:ネタの読み込み', () => {
     await waitForHeading('今日のニュース')
     expect(screen.getByText('公式情報はまだありません')).toBeInTheDocument()
     expect(genresJson.map((genre) => genre.id)).not.toContain('vuln')
+  })
+})
+
+describe('Supabase モード:公式フィードの読み込み', () => {
+  // 架空の脆弱性(本物の feed_entries のデータではない)
+  const vulnWithoutSeverity: FeedEntry = {
+    id: 'vuln-no-severity',
+    kind: 'vuln',
+    product: '架空製品',
+    vendor: '架空ベンダー',
+    title: '深刻度の無い架空の脆弱性',
+    publishedAt: '2026-11-19T00:00:00+00:00',
+    sortAt: '2026-11-19T00:00:00+00:00',
+    url: '',
+    severity: '',
+    status: '',
+    cve: 'CVE-2099-0001',
+    cvss: null,
+  }
+
+  it('ネタと公式フィードを両方読み、失敗の1行は出さない', async () => {
+    const backend = mockBackend({ signedIn: true, loadItems: () => Promise.resolve(fullSample.items), loadFeed: () => Promise.resolve([vulnWithoutSeverity]) })
+    renderSupabase(backend, '#/vuln')
+    await waitForHeading('脆弱性')
+    expect(screen.getByRole('heading', { name: 'CVE-2099-0001' })).toBeInTheDocument()
+    expect(screen.queryByText(/^公式フィードを読み込めませんでした/)).not.toBeInTheDocument()
+    expect(backend.loadItems).toHaveBeenCalledTimes(1)
+    expect(backend.loadFeed).toHaveBeenCalledTimes(1)
+  })
+
+  it('TST-FEEDUI-03 公式フィードだけ失敗:ネタは出て、公式のお知らせ・脆弱性の画面に失敗の1行が出る。見本のフィードは出ない', async () => {
+    const backend = mockBackend({
+      signedIn: true,
+      loadItems: () => Promise.resolve(fullSample.items),
+      loadFeed: () => Promise.reject(new FeedLoadError('PGRST301')),
+    })
+    renderSupabase(backend)
+    expect(await waitForHeading('今日のニュース')).toBeInTheDocument()
+    expect(screen.queryByText('データを読み込めませんでした')).not.toBeInTheDocument()
+    // ネタが実際に出ている(最新日の1本の見出し)
+    const latest = fullSample.items.find((item) => item.date === '2026-01-03')
+    if (latest === undefined) throw new Error('見本に最新日のネタがありません')
+    expect(screen.getAllByText(latest.title).length).toBeGreaterThan(0)
+
+    for (const [hash, heading] of [
+      ['#/feed', '公式のお知らせ'],
+      ['#/vuln', '脆弱性'],
+    ] as const) {
+      window.location.hash = hash
+      await waitForHeading(heading)
+      const line = screen.getByText('公式フィードを読み込めませんでした(PGRST301)')
+      expect(line).toHaveAttribute('role', 'status')
+      for (const entry of fullSample.feed) {
+        expect(screen.queryByText(entry.title)).not.toBeInTheDocument()
+      }
+    }
+  })
+
+  it('TST-FEEDUI-03 FeedLoadError でない失敗(通信の例外など)は、中身を出さずに決まった文だけ', async () => {
+    const backend = mockBackend({
+      signedIn: true,
+      loadItems: () => Promise.resolve(fullSample.items),
+      loadFeed: () => Promise.reject(new TypeError('サーバーや通信の詳しい文言')),
+    })
+    renderSupabase(backend, '#/feed')
+    await waitForHeading('公式のお知らせ')
+    expect(screen.getByText('公式フィードを読み込めませんでした')).toHaveAttribute('role', 'status')
+    expect(screen.queryByText(/詳しい文言/)).not.toBeInTheDocument()
+  })
+
+  it('TST-FEEDUI-05 severity が空の脆弱性は「未評価」', async () => {
+    renderSupabase(
+      mockBackend({ signedIn: true, loadItems: () => Promise.resolve(fullSample.items), loadFeed: () => Promise.resolve([vulnWithoutSeverity]) }),
+      '#/vuln',
+    )
+    await waitForHeading('脆弱性')
+    const card = screen.getByText('深刻度の無い架空の脆弱性').closest('li')
+    if (card === null) throw new Error('脆弱性のカードがありません')
+    expect(within(card).getByText('未評価')).toBeInTheDocument()
+    expect(screen.queryByText('不明')).not.toBeInTheDocument()
+  })
+})
+
+describe('Supabase モード:公開日不明', () => {
+  // 架空の行(本物の feed_entries のデータではない)。行の変換(feedRow)を通して渡す
+  const row = { vendor: '架空ベンダー', product: '架空製品', url: null, severity: null, cvss: null, cve_ids: null, status: null }
+  const feed = rowsToFeed([
+    { ...row, id: 'old-known', kind: 'release', title: '公開日のある古いお知らせ', published_at: '2026-11-10T00:00:00+00:00', sort_at: '2026-11-10T00:00:00+00:00' },
+    { ...row, id: 'new-unknown', kind: 'release', title: '公開日の無い新しいお知らせ', published_at: null, sort_at: '2026-11-20T00:00:00+00:00' },
+    { ...row, id: 'vuln-unknown', kind: 'vuln', title: '公開日の無い架空の脆弱性', cve_ids: ['CVE-2099-0002'], published_at: null, sort_at: '2026-11-20T00:00:00+00:00' },
+  ])
+
+  function renderWithFeed(hash: string) {
+    renderSupabase(mockBackend({ signedIn: true, loadItems: () => Promise.resolve(fullSample.items), loadFeed: () => Promise.resolve(feed) }), hash)
+  }
+
+  it('TST-FEEDUI-08 published_at が null の行は「公開日不明」と出し、並びは sort_at の新しい順のまま', async () => {
+    renderWithFeed('#/feed')
+    await waitForHeading('公式のお知らせ')
+    const rows = within(screen.getByRole('list', { name: '公式のお知らせ' })).getAllByRole('listitem')
+    expect(rows.map((li) => li.textContent)).toEqual([expect.stringContaining('公開日の無い新しいお知らせ'), expect.stringContaining('公開日のある古いお知らせ')])
+    const [first, second] = rows
+    if (first === undefined || second === undefined) throw new Error('お知らせが2行ありません')
+    expect(within(first).getByText('公開日不明')).toBeInTheDocument()
+    // 公開日のある行は今までどおり日時(取った時刻を公開日として出さない)
+    expect(within(second).queryByText('公開日不明')).not.toBeInTheDocument()
+    expect(within(second).getByText('11/10 09:00')).toBeInTheDocument()
+    // 右の欄も同じ
+    const rail = screen.getByRole('heading', { level: 3, name: '公式のお知らせ' }).closest('section')
+    if (rail === null) throw new Error('右の欄がありません')
+    expect(within(rail).getByText('公開日不明')).toBeInTheDocument()
+  })
+
+  it('TST-FEEDUI-08 脆弱性のカードは「公開 」を付けずに「公開日不明」だけ。詳細の公開日も「公開日不明」', async () => {
+    renderWithFeed('#/vuln')
+    await waitForHeading('脆弱性')
+    const card = screen.getByText('公開日の無い架空の脆弱性').closest('li')
+    if (card === null) throw new Error('脆弱性のカードがありません')
+    expect(within(card).getByText('公開日不明')).toBeInTheDocument()
+    expect(within(card).queryByText(/公開 /)).not.toBeInTheDocument()
+
+    window.location.hash = '#/vuln/vuln-unknown'
+    await waitForHeading('CVE-2099-0002')
+    expect(screen.getByText('公開日不明')).toBeInTheDocument()
+  })
+
+  it('TST-FEEDUI-08 見本(fixtures)のフィードは今までどおり日時を出し、「公開日不明」は出ない', async () => {
+    expect(fullSample.feed.every((entry) => entry.sortAt === entry.publishedAt && entry.publishedAt !== '')).toBe(true)
+    window.location.hash = '#/feed'
+    render(<App load={() => Promise.resolve(fullSample)} userStore={freshUserStore()} />)
+    await waitForHeading('公式のお知らせ')
+    expect(screen.queryByText('公開日不明')).not.toBeInTheDocument()
+    window.location.hash = '#/vuln'
+    await waitForHeading('脆弱性')
+    expect(screen.queryByText('公開日不明')).not.toBeInTheDocument()
+    expect(screen.getAllByText(/^公開 \d+月\d+日$/).length).toBeGreaterThan(0)
   })
 })
 

@@ -251,7 +251,7 @@ describe('トップ(今朝のネタ)', () => {
   })
 
   it('ネタが1本も無いときは、その旨を出す(脆弱性の帯は残る)', async () => {
-    renderApp('', { items: [], genres: [], feed: [], source: 'fixtures' })
+    renderApp('', { items: [], genres: [], feed: [], feedError: null, source: 'fixtures' })
     expect(await screen.findByText('今日のニュースはまだありません')).toBeInTheDocument()
     expect(screen.getByText('公式情報はまだありません')).toBeInTheDocument()
   })

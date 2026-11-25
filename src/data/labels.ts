@@ -22,8 +22,12 @@ export const SEVERITY_LABELS: Record<Severity, string> = {
   high: 'High',
   medium: 'Medium',
   low: 'Low',
-  '': '不明',
+  // 深刻度の無いもの(KEV だけにあるものなど)
+  '': '未評価',
 }
+
+/** 公式フィードの公開日が分からないとき(publishedAt が空)。取った時刻を公開日として出さない */
+export const PUBLISHED_UNKNOWN = '公開日不明'
 
 /** 深刻度の順(件数のカードの並びと、脆弱性ウォッチで先頭に出す順) */
 export const SEVERITY_ORDER: readonly Exclude<Severity, ''>[] = ['critical', 'high', 'medium', 'low']

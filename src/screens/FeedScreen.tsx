@@ -20,6 +20,11 @@ export function FeedScreen({ data, kind }: FeedScreenProps) {
         公式のお知らせ
       </h1>
       <p className={pageStyles.subtitle}>各社の公式の配信(RSS)を、そのまま並べています。AIによる要約はしていません。</p>
+      {data.feedError !== null ? (
+        <p className={pageStyles.caption} role="status">
+          {data.feedError}
+        </p>
+      ) : null}
       <div className={pageStyles.toolbar}>
         <FilterChips current={kind} routeFor={(next) => ({ name: 'feed', kind: next })} />
         <span className={pageStyles.caption}>{entries.length}件</span>

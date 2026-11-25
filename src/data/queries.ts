@@ -89,11 +89,11 @@ export function savedItems(items: readonly Item[], saved: readonly string[]): It
     .filter((item) => item !== null)
 }
 
-/** 公式フィードから、指定した種類だけを新しい順に取り出す */
+/** 公式フィードから、指定した種類だけを新しい順(sortAt。公開日不明のものも並べられる)に取り出す */
 export function feedOfKinds(feed: readonly FeedEntry[], kinds: readonly FeedKind[]): FeedEntry[] {
   return feed
     .filter((entry) => kinds.includes(entry.kind))
-    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || a.id.localeCompare(b.id))
+    .sort((a, b) => Date.parse(b.sortAt) - Date.parse(a.sortAt) || a.id.localeCompare(b.id))
 }
 
 /** 公式のお知らせ(脆弱性以外)。kind を渡すとその種類だけ */

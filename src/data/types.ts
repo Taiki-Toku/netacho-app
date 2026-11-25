@@ -61,8 +61,10 @@ export interface FeedEntry {
   product: string
   vendor: string
   title: string
-  /** 公開日時(ISO 8601、UTC)。表示は日本時間にする */
+  /** 公開日時(ISO 8601、UTC)。表示は日本時間にする。分からないときは空(「公開日不明」と出す。取った時刻を代わりに出さない) */
   publishedAt: string
+  /** 並びに使う日時(ISO 8601)。公開日、無ければ最初に取った時刻。見本・local-data で無いときは publishedAt と同じ */
+  sortAt: string
   url: string
   /** kind が vuln のときだけ。それ以外は空 */
   severity: Severity

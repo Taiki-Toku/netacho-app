@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState.tsx'
 import { Icon } from '../components/Icon.tsx'
 import { SeverityPill } from '../components/SeverityPill.tsx'
 import { vulnName } from '../components/VulnCard.tsx'
+import { PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import { findFeedEntry } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { formatCvss, formatJstDate } from '../lib/format.ts'
@@ -39,7 +40,7 @@ export function VulnDetailScreen({ data, id }: VulnDetailScreenProps) {
   const fields: { label: string; value: string }[] = [
     { label: '対象の製品', value: entry.product },
     { label: 'ベンダー', value: entry.vendor },
-    { label: '公開日', value: formatJstDate(entry.publishedAt) },
+    { label: '公開日', value: entry.publishedAt === '' ? PUBLISHED_UNKNOWN : formatJstDate(entry.publishedAt) },
     { label: '修正の状況', value: entry.status !== '' ? entry.status : '不明' },
   ]
 
