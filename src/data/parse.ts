@@ -109,13 +109,22 @@ function asSeverity(value: unknown): Severity {
   return typeof value === 'string' && (SEVERITIES as readonly string[]).includes(value) ? (value as Severity) : ''
 }
 
-/** 公式フィード1本を整える。id・kind・publishedAt が形になっていなければ null(その1本は捨てる) */
+/**
+ * 公式フィード1本を整える。id・kind・sortAt が形になっていなければ null(その1本は捨てる)。
+ * publishedAt は空(公開日不明)か、読める日時だけ。それ以外の値なら捨てる
+ */
 export function parseFeedEntry(value: unknown): FeedEntry | null {
   if (!isRecord(value)) return null
   const id = asString(value.id)
   const kind = asFeedKind(value.kind)
   const publishedAt = asString(value.publishedAt)
-  if (id === '' || kind === null || Number.isNaN(Date.parse(publishedAt))) return null
+  // 見本・local-data は sortAt を持たないので、publishedAt を並びにも使う
+  const sortAt = value.sortAt === undefined ? publishedAt : asString(value.sortAt)
+  if (id === '' || kind === null || Number.isNaN(Date.parse(sortAt))) return null
+  // publishedAt は無い(null)・空・読める日時だけ。文字列でない値や読めない日時の行は捨てる
+  const rawPublishedAt = value.publishedAt
+  if (rawPublishedAt !== undefined && rawPublishedAt !== null && typeof rawPublishedAt !== 'string') return null
+  if (publishedAt !== '' && Number.isNaN(Date.parse(publishedAt))) return null
   const isVuln = kind === 'vuln'
   return {
     id,
@@ -124,6 +133,7 @@ export function parseFeedEntry(value: unknown): FeedEntry | null {
     vendor: asString(value.vendor),
     title: asString(value.title),
     publishedAt,
+    sortAt,
     url: asString(value.url),
     // severity・cve・cvss は vuln のとき、status は outage と vuln のときだけ持つ。それ以外の種類に付いていても捨てる
     severity: isVuln ? asSeverity(value.severity) : '',

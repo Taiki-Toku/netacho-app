@@ -19,6 +19,8 @@ export interface LoadedData {
   items: Item[]
   genres: Genre[]
   feed: FeedEntry[]
+  /** 公式フィードだけ読めなかったときの文(Supabase モードだけ)。local・fixtures では常に null */
+  feedError: string | null
   source: DataSource
 }
 
@@ -44,13 +46,17 @@ export function fixtureData(): LoadedData {
     items: parseItems([...sampleItems, ...sampleItemsExtra]).map(withBundledImage),
     genres: parseGenres(genresJson),
     feed: parseFeed(sampleFeed),
+    feedError: null,
     source: 'fixtures',
   }
 }
 
-/** Supabase モードのデータ一式:ネタは Supabase から、ジャンルは genres.json、公式フィードは空(表はまだ無い) */
-export function supabaseData(items: Item[]): LoadedData {
-  return { items, genres: parseGenres(genresJson), feed: [], source: 'supabase' }
+/**
+ * Supabase モードのデータ一式:ネタと公式フィードは Supabase から、ジャンルは genres.json。
+ * 公式フィードだけ読めなかったときは、feed を空にして feedError に文を入れる(見本のフィードに切り替えない)
+ */
+export function supabaseData(items: Item[], feed: FeedEntry[], feedError: string | null): LoadedData {
+  return { items, genres: parseGenres(genresJson), feed, feedError, source: 'supabase' }
 }
 
 export async function loadData(fetchFn: FetchLike = (input, init) => fetch(input, init)): Promise<LoadedData> {
@@ -59,7 +65,7 @@ export async function loadData(fetchFn: FetchLike = (input, init) => fetch(input
   if (localItems.length === 0) return fixtures
   // 本物のネタがあるときは、フィードも本物だけを使う(見本のフィードを混ぜない)。無ければ空
   const localFeed = parseFeed(await tryLoadLocal(fetchFn, LOCAL_FEED_PATH))
-  return { items: localItems, genres: fixtures.genres, feed: localFeed, source: 'local' }
+  return { items: localItems, genres: fixtures.genres, feed: localFeed, feedError: null, source: 'local' }
 }
 
 /** local-data の JSON を取りに行く。無い・読めない・JSON でないときは null */

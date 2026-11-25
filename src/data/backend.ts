@@ -1,7 +1,7 @@
-// Supabase モードで画面が使う関数の形(ログインの関数と、ネタの一覧を返す関数)。
+// Supabase モードで画面が使う関数の形(ログインの関数と、ネタ・公式フィードの一覧を返す関数)。
 // 本物は supabaseBackend.ts が作る。試験ではこの形のモックを渡す(ネットワークを使わない)。
 // このファイルは supabase-js を import しない(モードの判定とエラーの分類を、通信なしで試験するため)。
-import type { Item } from './types.ts'
+import type { FeedEntry, Item } from './types.ts'
 
 export type AuthFailure = 'invalid-code' | 'rate-limit' | 'not-allowed' | 'network' | 'unknown'
 
@@ -25,6 +25,8 @@ export interface Backend {
   auth: AuthApi
   /** ネタの一覧(新しい順・最大 1000 件)。読めなければ例外を投げる */
   loadItems(): Promise<Item[]>
+  /** 公式フィード(sort_at が 90 日前以後、新しい順・最大 1000 件)。読めなければ FeedLoadError を投げる */
+  loadFeed(): Promise<FeedEntry[]>
 }
 
 export interface SupabaseConfig {
@@ -45,6 +47,21 @@ const ERROR_CODE_PATTERN = /^[A-Za-z0-9_]{1,64}$/
 /** エラーの code(認証は otp_expired、表の読み込みは PGRST301 など)を、画面に添えてよい形(英数字と _ だけ、64 文字まで)のときだけ返す */
 export function safeErrorCode(value: unknown): string | undefined {
   return typeof value === 'string' && ERROR_CODE_PATTERN.test(value) ? value : undefined
+}
+
+const FEED_LOAD_FAILED = '公式フィードを読み込めませんでした'
+
+/** 公式フィードの読み込みの失敗。文言は決まった文に、検査を通った code だけを添える(サーバーの文言は持たない) */
+export class FeedLoadError extends Error {
+  constructor(code: string | undefined) {
+    super(code === undefined ? FEED_LOAD_FAILED : `${FEED_LOAD_FAILED}(${code})`)
+    this.name = 'FeedLoadError'
+  }
+}
+
+/** loadFeed の失敗を画面に出す文にする。FeedLoadError のほか(通信の例外など)は、中身を出さずに決まった文だけ */
+export function feedErrorMessage(error: unknown): string {
+  return error instanceof FeedLoadError ? error.message : FEED_LOAD_FAILED
 }
 
 const INVALID_CODE = new Set(['otp_expired', 'invalid_credentials'])

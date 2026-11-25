@@ -32,6 +32,11 @@ export function VulnScreen({ data, severity }: VulnScreenProps) {
         脆弱性
       </h1>
       <p className={pageStyles.subtitle}>深刻度と、修正の状況から確かめます。</p>
+      {data.feedError !== null ? (
+        <p className={pageStyles.caption} role="status">
+          {data.feedError}
+        </p>
+      ) : null}
       <nav className={styles.stats} aria-label="深刻度で絞り込む">
         {SEVERITY_ORDER.map((level) => {
           const on = severity === level

@@ -1,5 +1,6 @@
 // 脆弱性のカード:深刻度、公開日、CVE 番号(詳細へのリンク)、製品、CVSS、状況(仕様 4 章 4)
 import { hrefFor } from '../app/router.ts'
+import { PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import type { FeedEntry } from '../data/types.ts'
 import { formatCvss, formatJstDate } from '../lib/format.ts'
 import { SeverityPill } from './SeverityPill.tsx'
@@ -21,7 +22,8 @@ export function VulnCard({ entry, headingLevel = 3 }: VulnCardProps) {
     <li className={styles.card}>
       <div className={styles.top}>
         <SeverityPill severity={entry.severity} />
-        <span>公開 {formatJstDate(entry.publishedAt)}</span>
+        {/* 公開日が分からないときは「公開 」を付けずに「公開日不明」だけ */}
+        <span>{entry.publishedAt === '' ? PUBLISHED_UNKNOWN : `公開 ${formatJstDate(entry.publishedAt)}`}</span>
       </div>
       <div className={styles.main}>
         <div className={styles.body}>

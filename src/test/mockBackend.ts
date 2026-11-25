@@ -1,11 +1,12 @@
-// Supabase モードの試験用の Backend。通信はせず、ログインの状態とネタの一覧を手元で持つ
+// Supabase モードの試験用の Backend。通信はせず、ログインの状態とネタ・公式フィードの一覧を手元で持つ
 import { vi } from 'vitest'
 import type { AuthApi, AuthResult, Backend } from '../data/backend.ts'
-import type { Item } from '../data/types.ts'
+import type { FeedEntry, Item } from '../data/types.ts'
 
 interface MockOptions {
   signedIn?: boolean
   loadItems?: () => Promise<Item[]>
+  loadFeed?: () => Promise<FeedEntry[]>
   verifyResult?: AuthResult
   /** ログイン中の人のメールアドレス(架空) */
   email?: string
@@ -14,6 +15,7 @@ interface MockOptions {
 export function mockBackend({
   signedIn = false,
   loadItems = () => Promise.resolve([]),
+  loadFeed = () => Promise.resolve([]),
   verifyResult = { ok: true },
   email = 'owner@example.com',
 }: MockOptions = {}) {
@@ -43,6 +45,7 @@ export function mockBackend({
       }),
     },
     loadItems: vi.fn(loadItems),
+    loadFeed: vi.fn(loadFeed),
   } satisfies Backend
   return backend
 }

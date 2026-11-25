@@ -12,6 +12,7 @@ export const baseSample: LoadedData = {
   items: parseItems(sampleItems),
   genres: parseGenres(genresJson),
   feed: [],
+  feedError: null,
   source: 'fixtures',
 }
 

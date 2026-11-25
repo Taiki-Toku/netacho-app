@@ -1,5 +1,6 @@
 // 右の列(1101px 以上):脆弱性ウォッチ、公式のお知らせ(最新3件)、保存したネタ(最新3件)
 import { hrefFor } from '../app/router.ts'
+import { PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import { announcements, findItem, genreLabelMap, genreLabelOf, topVulnerability } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
@@ -73,7 +74,7 @@ export function RightRail({ data }: { data: LoadedData }) {
                 <strong>
                   {entry.product}:{entry.title}
                 </strong>
-                <span>{formatJstDateTime(entry.publishedAt)}</span>
+                <span>{entry.publishedAt === '' ? PUBLISHED_UNKNOWN : formatJstDateTime(entry.publishedAt)}</span>
               </li>
             ))}
           </ul>

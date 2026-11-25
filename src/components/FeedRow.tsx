@@ -1,6 +1,6 @@
 // 公式のお知らせの行。ベンダーのロゴは使わず、製品名の頭文字の札(1文字。出典の札と同じ作り方。仕様 4 章 3、4 章末「共通」)。
 // 見出しは https: の URL のときだけリンク(新しいタブ)。それ以外は文字のまま
-import { FEED_KIND_LABELS } from '../data/labels.ts'
+import { FEED_KIND_LABELS, PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import { sourceInitial } from '../data/sourceName.ts'
 import type { FeedEntry } from '../data/types.ts'
 import { formatJstDateTime } from '../lib/format.ts'
@@ -21,7 +21,7 @@ export function FeedRow({ entry }: { entry: FeedEntry }) {
         <div className={styles.top}>
           <strong>{entry.product}</strong>
           <PlainPill>{kindLabel}</PlainPill>
-          <span className={styles.when}>{formatJstDateTime(entry.publishedAt)}</span>
+          <span className={styles.when}>{entry.publishedAt === '' ? PUBLISHED_UNKNOWN : formatJstDateTime(entry.publishedAt)}</span>
         </div>
         <p className={styles.title}>
           {href === null ? (

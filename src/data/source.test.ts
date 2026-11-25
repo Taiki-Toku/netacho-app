@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fixtureData, loadData, type FetchLike } from './source.ts'
+import { fixtureData, loadData, supabaseData, type FetchLike } from './source.ts'
 
 function jsonResponse(body: unknown, init: { status?: number; contentType?: string } = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -38,6 +38,21 @@ describe('loadData(データを読む所)', () => {
     const data = await loadData(fetchFn)
     expect(data.source).toBe('local')
     expect(data.feed).toEqual([])
+  })
+
+  it('local・fixtures のモードでは feedError は常に null(フィードが無くても失敗の1行を出さない)', async () => {
+    const local = await loadData((input) =>
+      Promise.resolve(input.endsWith('/local-data/items.json') ? jsonResponse(localItems) : new Response('', { status: 404 })),
+    )
+    expect(local.feedError).toBeNull()
+    expect(fixtureData().feedError).toBeNull()
+  })
+
+  it('supabaseData は受け取った公式フィードと失敗の文をそのまま持ち、見本のフィードを混ぜない', () => {
+    const data = supabaseData([], [], '公式フィードを読み込めませんでした')
+    expect(data.source).toBe('supabase')
+    expect(data.feed).toEqual([])
+    expect(data.feedError).toBe('公式フィードを読み込めませんでした')
   })
 
   it('404 なら見本データに落ちる(ネタ 9+6 本、フィード 14 本)', async () => {

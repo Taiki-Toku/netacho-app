@@ -100,6 +100,24 @@ describe('parseFeed(公式フィードの整形)', () => {
     expect(parseFeed([{ id: 'a', kind: 'release', publishedAt: '2026-01-01T00:00:00Z' }])).toHaveLength(1)
   })
 
+  it('sortAt が無い(見本・local-data)ときは publishedAt を sortAt にする', () => {
+    expect(parseFeedEntry({ id: 'a', kind: 'release', publishedAt: '2026-01-01T00:00:00Z' })).toMatchObject({
+      publishedAt: '2026-01-01T00:00:00Z',
+      sortAt: '2026-01-01T00:00:00Z',
+    })
+  })
+
+  it('sortAt が読めなければ捨てる。publishedAt は空(公開日不明)か読める日時だけ通す', () => {
+    const base = { id: 'a', kind: 'release', sortAt: '2026-01-02T00:00:00Z' }
+    expect(parseFeedEntry({ ...base, publishedAt: '' })).toMatchObject({ publishedAt: '', sortAt: '2026-01-02T00:00:00Z' })
+    expect(parseFeedEntry({ ...base, publishedAt: null })?.publishedAt).toBe('')
+    expect(parseFeedEntry({ ...base, publishedAt: '2026-01-01T00:00:00Z' })?.publishedAt).toBe('2026-01-01T00:00:00Z')
+    expect(parseFeedEntry({ ...base, publishedAt: 'いつか' })).toBeNull()
+    expect(parseFeedEntry({ ...base, publishedAt: 20260101 })).toBeNull()
+    expect(parseFeedEntry({ ...base, sortAt: 'いつか', publishedAt: '2026-01-01T00:00:00Z' })).toBeNull()
+    expect(parseFeedEntry({ ...base, sortAt: null, publishedAt: '2026-01-01T00:00:00Z' })).toBeNull()
+  })
+
   it('種類に合わない severity / status / cve / cvss は捨て、知らない severity は空にする', () => {
     expect(
       parseFeedEntry({

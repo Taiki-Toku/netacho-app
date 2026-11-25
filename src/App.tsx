@@ -13,7 +13,7 @@ import { Sidebar } from './components/Sidebar.tsx'
 import { ToastProvider } from './components/Toast.tsx'
 import { TopBar } from './components/TopBar.tsx'
 import { DataProvider, useData, useReloadData } from './data/DataProvider.tsx'
-import type { Backend } from './data/backend.ts'
+import { feedErrorMessage, type Backend } from './data/backend.ts'
 import { latestDate, vulnerabilities } from './data/queries.ts'
 import { supabaseData, type LoadedData } from './data/source.ts'
 import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore } from './data/userStore.ts'
@@ -132,7 +132,18 @@ function SupabaseRoot({ backend }: { backend: Backend }) {
     [backend],
   )
 
-  const load = useCallback(async () => supabaseData(await backend.loadItems()), [backend])
+  // ネタと公式フィードを並べて読む。ネタの失敗は画面全体のエラー(例外のまま)。
+  // 公式フィードだけの失敗は、feed を空にして文を添え、ネタは出す(見本のフィードに切り替えない)
+  const load = useCallback(async () => {
+    const [items, feed] = await Promise.all([
+      backend.loadItems(),
+      backend.loadFeed().then(
+        (entries) => ({ entries, error: null }),
+        (error: unknown) => ({ entries: [], error: feedErrorMessage(error) }),
+      ),
+    ])
+    return supabaseData(items, feed.entries, feed.error)
+  }, [backend])
 
   const onSignedIn = useCallback(() => {
     // ログインしたらホームから始める(前にログアウトした画面に戻らない)
