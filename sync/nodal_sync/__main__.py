@@ -6,8 +6,8 @@
 - feed の終了コード:0=全部成功か、続けての失敗が 3 回未満/1=続けて 3 回失敗した取得先がある・全部失敗した
   (dry-run は1回の失敗でも 1)/2=止まった(設定・Expat の版・DB の接続・書き込みの失敗。何も書いていない)
 - feed の翻訳(依頼 12-4。詳細設計 3.13):原文の保存の後に別のトランザクションで訳す。翻訳の失敗では終了コードを
-  変えない。ただし 401(E-TR-AUTH)は 1、鍵と地域の片方だけ・形の誤り(E-TR-CONFIG)は 2。取得と保存の終了コードと
-  合わせるときは大きいほう
+  変えない。ただし 401(E-TR-AUTH)と翻訳の途中の DB の失敗(E-DB-*。原文の保存は残る)は 1、
+  鍵と地域の片方だけ・形の誤り(E-TR-CONFIG)は 2。取得と保存の終了コードと合わせるときは大きいほう
 """
 
 from __future__ import annotations
@@ -334,8 +334,8 @@ def _translate(args: argparse.Namespace, cfg: Any, env: Mapping[str, str], out: 
     open_db = connect if connect is not None else feeddb.connect
     feedtranslate.run(feeddb, lambda: open_db(url, args.ca), cfg, creds,
                       send if send is not None else feedtranslate.HttpsSender(), now, tr)
-    if tr.stop == feedtranslate.E_TR_AUTH:
-        _say(out, tr.stop)
+    if tr.exit_code and tr.stop:
+        _say(out, tr.stop)  # E-TR-AUTH・E-DB-*(決まった文と番号だけ)
     return tr.exit_code
 
 

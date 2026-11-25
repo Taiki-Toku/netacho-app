@@ -484,9 +484,11 @@ def month_start(now: dt.datetime) -> dt.date:
 
 def run(store: Any, open_conn: Callable[[], Any], cfg: FeedConfig, creds: Credentials, send: Send,
         now: dt.datetime, result: TranslateSummary) -> None:
-    """訳して保存する。結果は result に入れる(401 なら result.exit_code = 1)。
+    """訳して保存する。結果は result に入れる(401 と DB の失敗なら result.exit_code = 1)。
 
-    store は feeddb(試験で差し替えられる)。DB の失敗はそこで止め、番号を result.stop に入れる。
+    store は feeddb(試験で差し替えられる)。DB の失敗(接続・読み出し・保存・usage・失敗の記録)はそこで止め、
+    番号を result.stop に入れて終了コードを 1 にする(オーナーの判断 2026-11-25。気づけるように)。
+    原文の保存はこの前にコミット済みなので、そのまま残る。
     """
     result.state = "ran"
     month = month_start(now)
@@ -494,6 +496,7 @@ def run(store: Any, open_conn: Callable[[], Any], cfg: FeedConfig, creds: Creden
         conn = open_conn()
     except store.DbError as e:
         result.stop = e.code
+        result.exit_code = 1
         return
     try:
         try:
@@ -533,5 +536,6 @@ def run(store: Any, open_conn: Callable[[], Any], cfg: FeedConfig, creds: Creden
             result.pending = store.count_pending(conn)
         except store.DbError as e:
             result.stop = e.code
+            result.exit_code = 1
     finally:
         conn.close()

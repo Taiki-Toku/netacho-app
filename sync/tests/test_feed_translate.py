@@ -76,8 +76,10 @@ def prow(rid: str, source_id: str = "example-cloud", title: str = "Fictional tit
 
 
 class FakeConn:
+    closed = False
+
     def close(self) -> None:
-        pass
+        self.closed = True
 
 
 @pytest.fixture
@@ -695,7 +697,7 @@ def test_tst_tr_08_other_failures_count_up_to_failed(tr_db: str, admin_sql: Any)
 
 def test_tst_tr_09_all_failures_keep_originals(tr_db: str, admin_sql: Any, tmp_path: Path,
                                               fake_expat: None) -> None:
-    """TST-TR-09:翻訳が全部失敗しても(通信の失敗・DB の失敗)、原文は保存されていて、終了コードは変わらない。"""
+    """TST-TR-09:翻訳が全部失敗しても、原文は保存されている。通信の失敗では終了コードは変わらず、DB の失敗では 1。"""
     env = {"FEED_DB_URL": "postgresql://unused@localhost/unused", **KEYS}
     summary = tmp_path / "summary.md"
     code = cli_feed(["--config", write_feed_config(tmp_path, ["example-status", "example-cloud"])],
@@ -707,7 +709,7 @@ def test_tst_tr_09_all_failures_keep_originals(tr_db: str, admin_sql: Any, tmp_p
         ("pending", 1)]
     assert "失敗した要求 E-TR-OTHER 1" in summary.read_text(encoding="utf-8")
 
-    # 翻訳の接続(3 回目)で DB が使えなくても、原文の保存はそのまま
+    # 翻訳の接続(3 回目)で DB が使えなくても、原文の保存はそのまま。終了コードは 1
     admin_sql("delete from public.feed_entries")
     admin_sql("delete from public.feed_source_state")
     calls: list[int] = []
@@ -720,8 +722,102 @@ def test_tst_tr_09_all_failures_keep_originals(tr_db: str, admin_sql: Any, tmp_p
         return feed_conn(tr_db)
 
     summary.write_text("")
+    out = io.StringIO()
     code = cli_feed(["--config", write_feed_config(tmp_path, ["example-status"])],
-                    {**env, "GITHUB_STEP_SUMMARY": str(summary)}, connect=third_fails, send=never_send)
-    assert code == 0 and len(calls) == 3
+                    {**env, "GITHUB_STEP_SUMMARY": str(summary)}, connect=third_fails, send=never_send, out=out)
+    assert code == 1 and len(calls) == 3
     assert admin_sql("select count(*) from public.feed_entries") == [(2,)]
     assert "止まった理由 E-DB-CONNECT" in summary.read_text(encoding="utf-8")
+    assert "E-DB-CONNECT" in out.getvalue()
+
+
+def test_tst_tr_09_db_error_on_save_exits_1(tr_db: str, admin_sql: Any, tmp_path: Path, fake_expat: None,
+                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """TST-TR-09:訳の保存で DB が失敗したら、そこで止めて終了コード 1。原文の行は保存されていて pending のまま。"""
+    from nodal_sync import db, feeddb
+
+    def broken_save(*a: Any, **k: Any) -> Any:
+        raise db.DbError("E-DB-WRITE")
+
+    monkeypatch.setattr(feeddb, "save_translations", broken_save)
+    out = io.StringIO()
+    summary = tmp_path / "summary.md"
+    send = FakeSend()
+    code = cli_feed(["--config", write_feed_config(tmp_path, ["example-status", "example-cloud"])],
+                    {"FEED_DB_URL": "postgresql://unused@localhost/unused", "GITHUB_STEP_SUMMARY": str(summary),
+                     **KEYS},
+                    connect=lambda url, ca: feed_conn(tr_db), send=send, out=out)
+    assert code == 1 and len(send.calls) == 1
+    assert admin_sql("select count(*) from public.feed_entries") == [(4,)]
+    assert admin_sql("select distinct translate_status, translate_attempts, title_ja from public.feed_entries") == [
+        ("pending", 0, None)]
+    assert usage(admin_sql) == []
+    text = out.getvalue() + summary.read_text(encoding="utf-8")
+    assert "止まった理由 E-DB-WRITE" in text and FAKE_KEY not in text
+    assert "E-DB-WRITE" in out.getvalue() and "postgresql://" not in text
+
+
+class FailingStore:
+    """メモリの中の偽の DB。fail_on に名前を入れた操作で DbError にする(DB を使わずに止まり方を確かめる)。"""
+
+    class DbError(Exception):
+        def __init__(self, code: str) -> None:
+            super().__init__(code)
+            self.code = code
+
+    def __init__(self, fail_on: str, rows: list[ft.PendingRow]) -> None:
+        self.fail_on = fail_on
+        self.rows = rows
+
+    def _maybe(self, name: str, code: str) -> None:
+        if name == self.fail_on:
+            raise self.DbError(code)
+
+    def read_usage(self, conn: Any, month: dt.date) -> int:
+        self._maybe("read_usage", "E-DB-READ")
+        return 0
+
+    def read_translate_targets(self, conn: Any, mx: int) -> list[ft.PendingRow]:
+        self._maybe("read_translate_targets", "E-DB-READ")
+        return self.rows
+
+    def save_translations(self, conn: Any, saves: list[ft.Save], month: dt.date, chars: int) -> tuple[int, int]:
+        self._maybe("save_translations", "E-DB-WRITE")
+        return len(saves), chars
+
+    def record_failures(self, conn: Any, ids: list[str], mx: int) -> int:
+        self._maybe("record_failures", "E-DB-WRITE")
+        return 0
+
+    def count_pending(self, conn: Any) -> int:
+        self._maybe("count_pending", "E-DB-READ")
+        return 0
+
+
+def test_tst_tr_09_db_errors_stop_with_exit_1() -> None:
+    """TST-TR-09:翻訳の途中の DB の失敗(接続・読み出し・保存・失敗の記録)は、そこで止めて終了コード 1。次の要求は送らない。"""
+    cfg = cfg_of(src("example-cloud", translate="title"))
+    rows = [prow(f"r{i}") for i in range(150)]   # 2 要求になる
+    cases = [("connect", "E-DB-CONNECT", 0, ft.Reply(200)), ("read_usage", "E-DB-READ", 0, None),
+             ("read_translate_targets", "E-DB-READ", 0, None), ("save_translations", "E-DB-WRITE", 1, None),
+             ("record_failures", "E-DB-WRITE", 1, ft.Reply(500)), ("count_pending", "E-DB-READ", 2, None)]
+    for fail_on, code, sends, reply in cases:
+        store = FailingStore(fail_on, rows)
+        conns: list[FakeConn] = []
+
+        def open_conn() -> FakeConn:
+            if fail_on == "connect":
+                raise store.DbError("E-DB-CONNECT")
+            conns.append(FakeConn())
+            return conns[-1]
+
+        send = FakeSend(reply) if reply is not None else FakeSend()
+        res = TranslateSummary()
+        ft.run(store, open_conn, cfg, ft.Credentials(FAKE_KEY, FAKE_REGION), send, NOW, res)
+        assert (res.stop, res.exit_code, len(send.calls)) == (code, 1, sends), fail_on
+        assert all(c.closed for c in conns), fail_on   # 失敗しても接続は閉じる
+    # 通信の失敗だけなら終了コードは変えない
+    res = TranslateSummary()
+    ft.run(FailingStore("", rows), FakeConn, cfg, ft.Credentials(FAKE_KEY, FAKE_REGION),
+           FakeSend(ft.Reply(503)), NOW, res)
+    assert (res.stop, res.exit_code) == (None, 0)
