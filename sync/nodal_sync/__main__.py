@@ -11,6 +11,9 @@
 - feed-backup・feed-restore(依頼 12-6。詳細設計 3.14)の終了コード:0=成功(dry-run を含む)/2=止まった
   (引数・FEED_DB_URL・接続・読み出し・書き出し先・ファイルの形・不正な行 E-RESTORE-ROW・書き込みの失敗)。
   feed-restore が 2 のときは DB に何も書いていない
+- feed-digest・feed-digest-backlog(依頼 12-7。詳細設計 3.15)の終了コード:0=成功(dry-run を含む。
+  7日より古い null の行 E-DIGEST-OLD は要約に出すだけ)/2=止まった(引数・FEED_DB_URL・接続・読み出し・
+  書き出し先・ファイルの形 E-DIGEST-FILE・書き込みの失敗)。2 のときは DB に何も書いていない
 """
 
 from __future__ import annotations
@@ -83,6 +86,10 @@ MESSAGES = {
     "E-BACKUP-WRITE": "バックアップのファイルを書けませんでした",
     "E-RESTORE-FILE": "--in のファイルの形が正しくありません(何も書いていない)",
     "E-RESTORE-ROW": "バックアップに不正な行があります(何も書いていない)",
+    "E-DIGEST-OLD": "7日より古い null の行があります(一覧に入れていない)",
+    "E-DIGEST-ROW": "DB の行の形が一覧に合いません(何も書いていない)",
+    "E-DIGEST-WRITE": "feed_digest のファイルを書けませんでした",
+    "E-DIGEST-FILE": "feed_digest のファイルの形か id が正しくありません(何も書いていない)",
     "E-UNEXPECTED": "想定外の失敗",
 }
 FEED_FAIL_LIMIT = 3  # 続けて 3 回失敗したら終了コード 1(失敗メールが届く)
@@ -133,6 +140,15 @@ def build_parser() -> argparse.ArgumentParser:
     fr.add_argument("--in", dest="in_dir", required=True)
     fr.add_argument("--ca")
     fr.add_argument("--dry-run", action="store_true")
+    fd = sub.add_parser("feed-digest")
+    fd.add_argument("--data-dir", required=True)
+    fd.add_argument("--ca")
+    fd.add_argument("--dry-run", action="store_true")
+    fd.add_argument("--commit-db", action="store_true")
+    fd.add_argument("--date", dest="digest_date")
+    fdb = sub.add_parser("feed-digest-backlog")
+    fdb.add_argument("--before", required=True)
+    fdb.add_argument("--ca")
     return p
 
 
@@ -533,6 +549,107 @@ def _feed_restore(args: argparse.Namespace, env: Mapping[str, str], out: TextIO,
     return 0
 
 
+def _open_digest_db(args: argparse.Namespace, env: Mapping[str, str], connect: Any) -> Any:
+    """FEED_DB_URL で netacho_feed につなぐ(application_name は nodal-digest)。失敗は Stop。"""
+    url = env.get("FEED_DB_URL") or ""
+    if not url:
+        raise Stop("E-FEED-DB-URL")
+    from . import db, feeddigest
+    open_db = connect if connect is not None else feeddigest.connect
+    try:
+        return open_db(url, args.ca)
+    except db.DbError as err:
+        raise Stop(err.code) from None
+
+
+def _feed_digest(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, connect: Any,
+                 now: dt.datetime) -> int:
+    """一覧を作って書く。--commit-db はファイルの id の行の digest_date をその日にする(詳細設計 3.15.2・3.15.3)。"""
+    from . import db, feeddigest
+    summary = report.DigestSummary(dry_run=args.dry_run, mode="commit" if args.commit_db else "build")
+    try:
+        if args.commit_db:
+            day = feeddigest.parse_day(args.digest_date)
+            if day is None:
+                raise Stop("E-ARGS-DATE")
+            summary.day = day
+            try:
+                ids = feeddigest.read_ids(args.data_dir, day)  # DB に触れる前に、全部の id を確かめる
+            except feeddigest.DigestError as err:
+                raise Stop(err.code) from None
+            summary.listed = len(ids)
+            if not args.dry_run:
+                conn = _open_digest_db(args, env, connect)
+                try:
+                    res = feeddigest.commit_db(conn, day, ids)
+                except db.DbError as err:
+                    raise Stop(err.code) from None
+                finally:
+                    conn.close()
+                summary.updated, summary.unchanged, summary.missing = res.updated, res.unchanged, res.missing
+        else:
+            if args.digest_date is not None:
+                raise Stop("E-ARGS-DATE")  # 一覧の日付は日本時間の今日だけ(--date は --commit-db のときだけ)
+            if not os.path.isdir(args.data_dir) or os.path.islink(args.data_dir):
+                raise Stop("E-ARGS-DATA-DIR")
+            summary.day = feeddigest.jst_today(now)
+            conn = _open_digest_db(args, env, connect)
+            try:
+                d = feeddigest.build(conn, now)
+            except db.DbError as err:
+                raise Stop(err.code) from None
+            except feeddigest.DigestError as err:
+                raise Stop(err.code) from None
+            finally:
+                conn.close()
+            summary.day = d.day
+            summary.entries, summary.today_rows, summary.new_rows, summary.old = (
+                len(d.entries), d.today_rows, d.new_rows, d.old)
+            if not args.dry_run:
+                try:
+                    summary.path = feeddigest.write_file(args.data_dir, d)
+                except feeddigest.DigestError as err:
+                    raise Stop(err.code) from None
+    except Stop as e:
+        summary.stop_code = e.code
+        _say(out, e.code)
+        report.emit_summary(summary.render(), env, out)
+        return 2
+    if summary.old:
+        _say(out, "E-DIGEST-OLD")
+    report.emit_summary(summary.render(), env, out)
+    report.log(out, "feed-digest を終えました(終了コード 0)")
+    return 0
+
+
+def _feed_digest_backlog(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, connect: Any,
+                         now: dt.datetime) -> int:
+    """始めるときの1回だけ:その日より前の null の行に印を付ける(詳細設計 3.15.5)。"""
+    from . import db, feeddigest
+    summary = report.DigestSummary(command="feed-digest-backlog", mode="backlog")
+    try:
+        before = feeddigest.parse_day(args.before)
+        # 日本時間の今日より後は止める(今日の行に今日の印が付くと、今日の一覧に載ってしまう)
+        if before is None or before > feeddigest.jst_today(now):
+            raise Stop("E-ARGS-DATE")
+        summary.day = before
+        conn = _open_digest_db(args, env, connect)
+        try:
+            summary.marked = feeddigest.backlog(conn, before)
+        except db.DbError as err:
+            raise Stop(err.code) from None
+        finally:
+            conn.close()
+    except Stop as e:
+        summary.stop_code = e.code
+        _say(out, e.code)
+        report.emit_summary(summary.render(), env, out)
+        return 2
+    report.emit_summary(summary.render(), env, out)
+    report.log(out, "feed-digest-backlog を終えました(終了コード 0)")
+    return 0
+
+
 def main(argv: list[str] | None = None, *, today: dt.date | None = None,
          env: Mapping[str, str] | None = None, out: TextIO | None = None,
          fetcher: Fetcher | None = None, gh_get: Any = None, feed_fetcher: Any = None,
@@ -565,6 +682,12 @@ def main(argv: list[str] | None = None, *, today: dt.date | None = None,
             code = _feed_backup(args, e, o, feed_connect)
         elif args.command == "feed-restore":
             code = _feed_restore(args, e, o, feed_connect)
+        elif args.command == "feed-digest":
+            n = now if now is not None else dt.datetime.now(dt.timezone.utc)
+            code = _feed_digest(args, e, o, feed_connect, n)
+        elif args.command == "feed-digest-backlog":
+            n = now if now is not None else dt.datetime.now(dt.timezone.utc)
+            code = _feed_digest_backlog(args, e, o, feed_connect, n)
         else:
             code = _watch(args, d, e, o, gh_get)
         return code
