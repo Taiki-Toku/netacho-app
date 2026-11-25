@@ -5,6 +5,9 @@
 - run の終了コード:0=全部正しい/1=不正な日・書き込みの失敗・不正なファイルがある/2=止まった(何も書いていない)
 - feed の終了コード:0=全部成功か、続けての失敗が 3 回未満/1=続けて 3 回失敗した取得先がある・全部失敗した
   (dry-run は1回の失敗でも 1)/2=止まった(設定・Expat の版・DB の接続・書き込みの失敗。何も書いていない)
+- feed の翻訳(依頼 12-4。詳細設計 3.13):原文の保存の後に別のトランザクションで訳す。翻訳の失敗では終了コードを
+  変えない。ただし 401(E-TR-AUTH)は 1、鍵と地域の片方だけ・形の誤り(E-TR-CONFIG)は 2。取得と保存の終了コードと
+  合わせるときは大きいほう
 """
 
 from __future__ import annotations
@@ -71,6 +74,8 @@ MESSAGES = {
     "E-FEED-CONFIG-MAX-BYTES": "フィードの取得先の max_bytes が正しくありません",
     "E-FEED-CONFIG-MAX-AGE": "フィードの取得先の max_age_days が正しくありません",
     "E-FEED-DB-URL": "FEED_DB_URL がありません",
+    "E-TR-CONFIG": "翻訳の鍵と地域の設定が正しくありません(原文は保存済み)",
+    "E-TR-AUTH": "翻訳の鍵が受け付けられませんでした(原文は保存済み)",
     "E-UNEXPECTED": "想定外の失敗",
 }
 FEED_FAIL_LIMIT = 3  # 続けて 3 回失敗したら終了コード 1(失敗メールが届く)
@@ -113,6 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
     feed.add_argument("--config", required=True)
     feed.add_argument("--ca")
     feed.add_argument("--dry-run", action="store_true")
+    feed.add_argument("--no-translate", action="store_true")
     return p
 
 
@@ -304,8 +310,37 @@ def feed_exit_code(outcomes: list[Any], failures: Mapping[str, int] | None) -> i
     return 1 if any(n >= FEED_FAIL_LIMIT for n in failures.values()) else 0
 
 
+def _translate(args: argparse.Namespace, cfg: Any, env: Mapping[str, str], out: TextIO, url: str,
+               connect: Any, send: Any, now: dt.datetime, tr: report.TranslateSummary) -> int:
+    """原文の保存の後に訳す(詳細設計 3.13)。dry-run・--no-translate・鍵なしは、外にも DB にも何も送らない。"""
+    from . import feedtranslate
+    if args.dry_run:
+        tr.state = "dry-run"
+        return 0
+    if args.no_translate:
+        tr.state = "no-translate"
+        return 0
+    try:
+        creds = feedtranslate.read_credentials(env)
+    except feedtranslate.TranslateConfigError as err:
+        tr.state = "config"
+        tr.stop = err.code
+        _say(out, err.code)
+        return 2
+    if creds is None:
+        tr.state = "no-key"
+        return 0
+    from . import feeddb
+    open_db = connect if connect is not None else feeddb.connect
+    feedtranslate.run(feeddb, lambda: open_db(url, args.ca), cfg, creds,
+                      send if send is not None else feedtranslate.HttpsSender(), now, tr)
+    if tr.stop == feedtranslate.E_TR_AUTH:
+        _say(out, tr.stop)
+    return tr.exit_code
+
+
 def _feed(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, fetcher: Any,
-          now: dt.datetime, connect: Any) -> int:
+          now: dt.datetime, connect: Any, translate_send: Any = None) -> int:
     """取得 → 解析 → 検査 → 保存(詳細設計 3.4〜3.7)。外との通信を全部終えてから DB に書く。"""
     from . import feedparse
     from .feedconfig import FeedConfigError, load_feed_config
@@ -400,6 +435,10 @@ def _feed(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, fetcher
 
     failures = None if stats is None else {k: v.failures for k, v in stats.items()}
     code = feed_exit_code(outcomes, failures)
+
+    # 5. 翻訳(原文の書き込みのトランザクションは、ここまでに終わっている)
+    summary.translate = report.TranslateSummary()
+    code = max(code, _translate(args, cfg, env, out, url, connect, translate_send, now, summary.translate))
     report.emit_summary(summary.render(), env, out)
     report.log(out, f"feed を終えました(終了コード {code})")
     return code
@@ -408,8 +447,8 @@ def _feed(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, fetcher
 def main(argv: list[str] | None = None, *, today: dt.date | None = None,
          env: Mapping[str, str] | None = None, out: TextIO | None = None,
          fetcher: Fetcher | None = None, gh_get: Any = None, feed_fetcher: Any = None,
-         now: dt.datetime | None = None, feed_connect: Any = None) -> int:
-    """today・env・out・fetcher・gh_get・feed_fetcher・now・feed_connect は試験から差し替える。"""
+         now: dt.datetime | None = None, feed_connect: Any = None, translate_send: Any = None) -> int:
+    """today・env・out・fetcher・gh_get・feed_fetcher・now・feed_connect・translate_send は試験から差し替える。"""
     o: TextIO = out if out is not None else sys.stdout
     e: Mapping[str, str] = env if env is not None else os.environ
     token = secrets.token_hex(16)
@@ -432,7 +471,7 @@ def main(argv: list[str] | None = None, *, today: dt.date | None = None,
             code = _run(args, d, e, o, fetcher)
         elif args.command == "feed":
             n = now if now is not None else dt.datetime.now(dt.timezone.utc)
-            code = _feed(args, e, o, feed_fetcher, n, feed_connect)
+            code = _feed(args, e, o, feed_fetcher, n, feed_connect, translate_send)
         else:
             code = _watch(args, d, e, o, gh_get)
         return code

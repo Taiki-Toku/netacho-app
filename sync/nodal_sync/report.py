@@ -82,12 +82,48 @@ class FeedSourceSummary:
     failures: int | None = None  # 書いた後の consecutive_failures(dry-run は None)
 
 
+TRANSLATE_SKIPPED = {
+    "no-key": "翻訳なし(鍵なし)",
+    "dry-run": "翻訳なし(dry-run)",
+    "no-translate": "翻訳なし(--no-translate)",
+}
+
+
+@dataclass
+class TranslateSummary:
+    """翻訳の行(詳細設計 3.13.7)。件数・字数・決まりの番号だけ。原文・訳・鍵は持たない。"""
+    state: str = ""            # no-key / dry-run / no-translate / config / ran
+    translated: int = 0        # done にした行
+    failed: int = 0            # failed になった行
+    other: Counter[str] = field(default_factory=Counter)  # 失敗した要求(E-TR-OTHER・E-TR-RESPONSE)
+    skipped: int = 0           # translate が none・設定に無い取得先の行(pending のまま)
+    sent_chars: int = 0
+    metered: int = 0           # X-metered-usage の合計
+    month_chars: int | None = None
+    pending: int | None = None
+    stop: str | None = None    # 止まった理由(E-TR-* ・月の上限・E-DB-*)
+    exit_code: int = 0
+
+    def render(self) -> str:
+        if self.state in TRANSLATE_SKIPPED:
+            return f"- {TRANSLATE_SKIPPED[self.state]}"
+        if self.state == "config":
+            return f"- 翻訳:止まった {self.stop}(原文は保存済み)"
+        others = "、".join(f"{c} {n}" for c, n in sorted(self.other.items())) or "-"
+        month = "-" if self.month_chars is None else str(self.month_chars)
+        pending = "-" if self.pending is None else str(self.pending)
+        return (f"- 翻訳:訳した {self.translated}/failed になった {self.failed}/失敗した要求 {others}/"
+                f"訳さない取得先の行 {self.skipped}/pending の残り {pending}/送った字数 {self.sent_chars}/"
+                f"X-metered-usage {self.metered}/今月の累計 {month}/止まった理由 {self.stop or '-'}")
+
+
 @dataclass
 class FeedSummary:
     dry_run: bool = False
     stop_code: str | None = None
     sources: list[FeedSourceSummary] = field(default_factory=list)
     pending: int | None = None
+    translate: TranslateSummary | None = None
 
     def render(self) -> str:
         out = ["## nodal-sync feed", ""]
@@ -101,6 +137,10 @@ class FeedSummary:
             f"- 取得先:{len(self.sources)}(成功 {ok}/失敗 {len(self.sources) - ok})",
             f"- 新しい行:{sum(s.inserted for s in self.sources)}",
             f"- 訳の待ち(pending):{'-' if self.pending is None else self.pending}",
+        ]
+        if self.translate is not None:
+            out.append(self.translate.render())
+        out += [
             "",
             "| 取得先 | 結果 | 記事 | 追加 | 更新 | まとめた | 変化なし | 古くて入れない | filter で外した | 不正 | 続けての失敗 |",
             "|---|---|---|---|---|---|---|---|---|---|---|",
