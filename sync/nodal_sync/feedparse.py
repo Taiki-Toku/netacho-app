@@ -70,8 +70,12 @@ STATUS_WORDS = {
     "investigating": "調査中",
     "update": "更新",
 }
-# 状態の語 + 空白 + "-"。語の前は先頭か英数字以外(Unresolved などに当てない)。入れ子の繰り返しは無い
-STATUS_RE = re.compile(r"(?<![0-9A-Za-z])(resolved|monitoring|identified|investigating|update)\s+-",
+# 計画メンテナンスの状態の語(詳細設計 3.5)。最初の状態の語がこれなら filter で外す。status にはしない
+MAINTENANCE_WORDS = frozenset({"scheduled", "in progress", "verifying", "completed"})
+# 状態の語(障害と計画メンテナンス)+ 空白 + "-"。語の前は先頭か英数字以外(Unresolved・Rescheduled などに当てない)。
+# 入れ子の繰り返しは無い(\s+ は語の中と語の後ろに1つずつで、間に固定の文字が入る)
+STATUS_RE = re.compile(r"(?<![0-9A-Za-z])(resolved|monitoring|identified|investigating|update"
+                       r"|scheduled|in\s+progress|verifying|completed)\s+-",
                        re.IGNORECASE | re.ASCII)
 
 
@@ -466,11 +470,24 @@ def _read_kev(body: bytes, now: dt.datetime, invalid: Counter[str]) -> list[_Raw
 # ---------------------------------------------------------------
 # filter と status
 # ---------------------------------------------------------------
+def _first_state_word(summary: str) -> str:
+    """summary の中で最初に現れる「状態の語 - 」の語(小文字、語の間の空白は1つ)。無ければ空。"""
+    m = STATUS_RE.search(summary)
+    return " ".join(m.group(1).lower().split()) if m else ""
+
+
 def statuspage_status(summary: str) -> str:
     """summary の中で最初に現れる「状態の語 - 」で障害の状態を決める(本文は「日時 状態の語 - 本文」の形)。
+    最初の語が計画メンテナンスの語なら空(その記事は filter で外れる)。
     呼ぶ側は保存する summary と同じ先頭 MAX_SUMMARY 字だけを渡す。"""
-    m = STATUS_RE.search(summary)
-    return STATUS_WORDS[m.group(1).lower()] if m else ""
+    return STATUS_WORDS.get(_first_state_word(summary), "")
+
+
+def is_statuspage_maintenance(summary: str) -> bool:
+    """計画メンテナンスなら真(詳細設計 3.5)。先頭 MAX_SUMMARY 字で最初の状態の語が計画メンテナンスの語か、
+    THIS IS A SCHEDULED EVENT を含む(今までの決まり。これは今までどおり summary 全体で見る)。"""
+    return (_first_state_word(summary[:MAX_SUMMARY]) in MAINTENANCE_WORDS
+            or SCHEDULED_MARK in summary.casefold())
 
 
 def passes_filter(kind_filter: str, title: str, summary: str, cvss: Decimal | None,
@@ -479,7 +496,7 @@ def passes_filter(kind_filter: str, title: str, summary: str, cvss: Decimal | No
     if kind_filter in ("all", "kev"):
         return True
     if kind_filter == "statuspage-incident":
-        return SCHEDULED_MARK not in summary.casefold()
+        return not is_statuspage_maintenance(summary)
     hay = (title + "\n" + summary).casefold()
     hit = any(p in hay for p in watch_products)
     if kind_filter == "watch-products":
