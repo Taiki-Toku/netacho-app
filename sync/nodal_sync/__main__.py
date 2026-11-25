@@ -8,6 +8,9 @@
 - feed の翻訳(依頼 12-4。詳細設計 3.13):原文の保存の後に別のトランザクションで訳す。翻訳の失敗では終了コードを
   変えない。ただし 401(E-TR-AUTH)と翻訳の途中の DB の失敗(E-DB-*。原文の保存は残る)は 1、
   鍵と地域の片方だけ・形の誤り(E-TR-CONFIG)は 2。取得と保存の終了コードと合わせるときは大きいほう
+- feed-backup・feed-restore(依頼 12-6。詳細設計 3.14)の終了コード:0=成功(dry-run を含む)/2=止まった
+  (引数・FEED_DB_URL・接続・読み出し・書き出し先・ファイルの形・不正な行 E-RESTORE-ROW・書き込みの失敗)。
+  feed-restore が 2 のときは DB に何も書いていない
 """
 
 from __future__ import annotations
@@ -76,6 +79,10 @@ MESSAGES = {
     "E-FEED-DB-URL": "FEED_DB_URL がありません",
     "E-TR-CONFIG": "翻訳の鍵と地域の設定が正しくありません(原文は保存済み)",
     "E-TR-AUTH": "翻訳の鍵が受け付けられませんでした(原文は保存済み)",
+    "E-BACKUP-OUT": "--out がフォルダでないか、feed/ の形が正しくありません",
+    "E-BACKUP-WRITE": "バックアップのファイルを書けませんでした",
+    "E-RESTORE-FILE": "--in のファイルの形が正しくありません(何も書いていない)",
+    "E-RESTORE-ROW": "バックアップに不正な行があります(何も書いていない)",
     "E-UNEXPECTED": "想定外の失敗",
 }
 FEED_FAIL_LIMIT = 3  # 続けて 3 回失敗したら終了コード 1(失敗メールが届く)
@@ -119,6 +126,13 @@ def build_parser() -> argparse.ArgumentParser:
     feed.add_argument("--ca")
     feed.add_argument("--dry-run", action="store_true")
     feed.add_argument("--no-translate", action="store_true")
+    fb = sub.add_parser("feed-backup")
+    fb.add_argument("--out", required=True)
+    fb.add_argument("--ca")
+    fr = sub.add_parser("feed-restore")
+    fr.add_argument("--in", dest="in_dir", required=True)
+    fr.add_argument("--ca")
+    fr.add_argument("--dry-run", action="store_true")
     return p
 
 
@@ -444,6 +458,81 @@ def _feed(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, fetcher
     return code
 
 
+def _open_feed_db(args: argparse.Namespace, env: Mapping[str, str], connect: Any) -> Any:
+    """FEED_DB_URL で netacho_feed につなぐ(application_name は nodal-backup)。失敗は Stop。"""
+    url = env.get("FEED_DB_URL") or ""
+    if not url:
+        raise Stop("E-FEED-DB-URL")
+    from . import db, feedbackup
+    open_db = connect if connect is not None else feedbackup.connect
+    try:
+        return open_db(url, args.ca)
+    except db.DbError as err:
+        raise Stop(err.code) from None
+
+
+def _feed_backup(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, connect: Any) -> int:
+    """DB を全部読んでから、--out の下の feed/ と usage.jsonl を書き直す(詳細設計 3.14.2)。"""
+    from . import db, feedbackup
+    summary = report.BackupSummary()
+    try:
+        if not os.path.isdir(args.out) or os.path.islink(args.out):
+            raise Stop("E-BACKUP-OUT")
+        conn = _open_feed_db(args, env, connect)
+        try:
+            res = feedbackup.backup(conn, args.out)
+        except db.DbError as err:
+            raise Stop(err.code) from None
+        except feedbackup.BackupError as err:
+            raise Stop(err.code) from None
+        finally:
+            conn.close()
+    except Stop as e:
+        summary.stop_code = e.code
+        _say(out, e.code)
+        report.emit_summary(summary.render(), env, out)
+        return 2
+    summary.months, summary.usage = res.months, res.usage
+    report.emit_summary(summary.render(), env, out)
+    report.log(out, "feed-backup を終えました(終了コード 0)")
+    return 0
+
+
+def _feed_restore(args: argparse.Namespace, env: Mapping[str, str], out: TextIO, connect: Any) -> int:
+    """先に全部の行を検査し、合えば1つのトランザクションで upsert する(詳細設計 3.14.3)。"""
+    from . import db, feedbackup
+    summary = report.RestoreSummary(dry_run=args.dry_run, max_listed=feedbackup.MAX_LISTED)
+    try:
+        try:
+            loaded = feedbackup.load_backup(args.in_dir)
+        except feedbackup.BackupError as err:
+            raise Stop(err.code) from None
+        summary.read, summary.usage_read = len(loaded.entries), len(loaded.usage)
+        if loaded.bad:
+            summary.bad = loaded.bad
+            raise Stop("E-RESTORE-ROW")
+        if not args.dry_run:
+            conn = _open_feed_db(args, env, connect)
+            try:
+                e_counts, u_counts = feedbackup.restore(conn, loaded)
+            except db.DbError as err:
+                raise Stop(err.code) from None
+            finally:
+                conn.close()
+            summary.inserted, summary.updated, summary.unchanged = (
+                e_counts.inserted, e_counts.updated, e_counts.unchanged)
+            summary.usage_inserted, summary.usage_updated, summary.usage_unchanged = (
+                u_counts.inserted, u_counts.updated, u_counts.unchanged)
+    except Stop as e:
+        summary.stop_code = e.code
+        _say(out, e.code)
+        report.emit_summary(summary.render(), env, out)
+        return 2
+    report.emit_summary(summary.render(), env, out)
+    report.log(out, "feed-restore を終えました(終了コード 0)")
+    return 0
+
+
 def main(argv: list[str] | None = None, *, today: dt.date | None = None,
          env: Mapping[str, str] | None = None, out: TextIO | None = None,
          fetcher: Fetcher | None = None, gh_get: Any = None, feed_fetcher: Any = None,
@@ -472,6 +561,10 @@ def main(argv: list[str] | None = None, *, today: dt.date | None = None,
         elif args.command == "feed":
             n = now if now is not None else dt.datetime.now(dt.timezone.utc)
             code = _feed(args, e, o, feed_fetcher, n, feed_connect, translate_send)
+        elif args.command == "feed-backup":
+            code = _feed_backup(args, e, o, feed_connect)
+        elif args.command == "feed-restore":
+            code = _feed_restore(args, e, o, feed_connect)
         else:
             code = _watch(args, d, e, o, gh_get)
         return code

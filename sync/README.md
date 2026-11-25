@@ -98,6 +98,33 @@ python -m nodal_sync feed --config <config/feed_sources.json> --ca <CA 証明書
 - 翻訳の失敗では終了コードを変えない。ただし 401(`E-TR-AUTH`)と、翻訳の途中の DB の失敗(`E-DB-*`。接続・読み出し・訳の保存・usage・失敗の記録)はそこで止めて 1、`E-TR-CONFIG` は 2。どれも原文の保存は済んでいて残る。取得と保存の終了コードと合わせるときは大きいほう
 - 試験の名前に `TST-TR-xx` を入れてある(`grep -rn TST-TR- tests`)。Translator への送信は差し替え、ネットワークに出ない
 
+## 公式フィードのバックアップと戻し(feedbackup.py。詳細設計 3.14、REQ-N-16)
+
+公式フィードの行は Supabase にしか無い(RSS は新しい記事しか持たず、取り直せない)ので、毎日 netacho-sync の backup ブランチに書き出す。依頼文は [`docs/requests/12-6_feed-backup.md`](../docs/requests/12-6_feed-backup.md)。git の操作(checkout・commit・push、日付でのコミットの選び方)はワークフロー(netacho-sync)が行い、このコードはしない。
+
+```sh
+python -m nodal_sync feed-backup  --out <backup ブランチの checkout> --ca <CA 証明書>
+python -m nodal_sync feed-restore --in  <backup ブランチの checkout> --ca <CA 証明書> [--dry-run]
+```
+
+- DB には `FEED_DB_URL`(netacho_feed。表示しない)でつなぐ。application_name は `nodal-backup`
+- feed-backup:`feed_entries`(生成列の `sort_at` を除く全部の列)と `feed_translate_usage` を、読むだけのトランザクション(repeatable read)で読んでから、`--out` の下の `feed/` を空にし、`feed/YYYY-MM.jsonl`(first_seen_at の日本時間の月)と `usage.jsonl` を書く。`feed_source_state` は書き出さない。書くのはこの2つだけ
+  - 1行に1件の JSON。キーは列の順、行は id の順(usage は month の順)。時刻は UTC の `YYYY-MM-DDTHH:MM:SS.ffffffZ`、numeric は文字列、date は `YYYY-MM-DD`。同じ中身なら同じバイト列になる
+- feed-restore:先に全部の行を 0002 の列の型と CHECK で確かめ、1行でも合わなければ何も書かずに `E-RESTORE-ROW`(ファイル名と行番号だけを出す)。合えば1つのトランザクションで upsert する
+  - `feed_entries`:同じ id は、上書きして中身が変わるときだけ上書きする(比べる列から updated_at と first_seen_at を外し、exploited は guard と同じ `t.exploited or excluded.exploited` と比べる。変わらない行は updated_at も変わらない)。DB にあって backup に無い行は残す。first_seen_at は DB の値のまま、exploited は true から戻らない(feed_entries_guard)
+  - `feed_translate_usage`:月ごとに chars・requests の大きいほうを残す
+  - `--dry-run`:検査と件数だけで、DB に接続しない
+- 終了コード:0=成功(dry-run を含む)/2=止まった。feed-restore の 2 は DB に何も書いていない
+- 要約に出すのは、月ごとの行数(feed-backup)、読んだ・追加・上書き・変わらないの数(feed-restore)、不正な行のファイル名と行番号だけ。行の中身は出さない
+- 試験の名前に `TST-BK-xx` を入れてある(`grep -rn TST-BK- tests`)
+
+| 番号 | 意味 |
+|---|---|
+| `E-BACKUP-OUT` | `--out` がフォルダでない(リンクを含む)・`feed/` がリンクか、下にフォルダがある・`usage.jsonl` がフォルダ |
+| `E-BACKUP-WRITE` | ファイルを書けない |
+| `E-RESTORE-FILE` | `--in`・`feed/`・`usage.jsonl` が無い、`feed/` に `YYYY-MM.jsonl` の形でない名前・リンク・256 MB を超えるファイルがある(名前は出さない) |
+| `E-RESTORE-ROW` | 型・CHECK に合わない行、キーの過不足・同じキー、同じ id・同じ月の2回目の行がある |
+
 ## 決まりの番号
 
 ### 入力の JSON(schema.py)
