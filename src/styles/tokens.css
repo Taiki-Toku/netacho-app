@@ -55,6 +55,8 @@
   --fs-page-heading: clamp(26px, 3vw, 34px);
   --fs-detail-heading: clamp(24px, 3vw, 34px);
   --fs-feature-heading: clamp(21px, 2.1vw, 27px);
+  /* 機械翻訳の訳文(design_spec v3.9 の 1-4) */
+  --font-size-translation: 13px;
   /* 行間 */
   --lh-1: 1;
   --lh-tight: 1.2;
@@ -93,6 +95,8 @@
   --sp-13: 52px;
   --sp-20: 80px;
   --sp-26: 104px;
+  /* 原文の見出しと機械翻訳の行の間(design_spec v3.9 の 1-4) */
+  --space-translation: 4px;
 
   /* 形 */
   --radius-xs: 4px;

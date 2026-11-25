@@ -90,6 +90,14 @@
   margin-top: var(--sp-0h);
 }
 
+/* 訳がある行の原文(lang="en" を付けるための span)。上の .miniItem span の決まりを打ち消し、見出しの文字のままにする */
+.miniItem .original {
+  display: inline;
+  font-size: inherit;
+  color: inherit;
+  margin: 0;
+}
+
 .miniLink {
   display: block;
 }

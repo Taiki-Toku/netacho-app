@@ -45,7 +45,7 @@ describe('公式フィードの読み込み', () => {
     await createSupabaseBackend(config, now).loadFeed()
     expect(queryCalls).toEqual([
       ['from', ['feed_entries']],
-      ['select', ['id,kind,vendor,product,title,url,published_at,sort_at,severity,cvss,cve_ids,status']],
+      ['select', ['id,kind,vendor,product,title,url,published_at,sort_at,severity,cvss,cve_ids,status,title_ja,translate_status']],
       ['gte', ['sort_at', '2026-08-22T00:00:00.000Z']],
       ['order', ['sort_at', { ascending: false }]],
       ['limit', [1000]],
@@ -71,6 +71,21 @@ describe('公式フィードの読み込み', () => {
     }
     const entries = await createSupabaseBackend(config, now).loadFeed()
     expect(entries.map((entry) => entry.id)).toEqual(['r1'])
+  })
+
+  it('TST-TRUI-02 問い合わせの列に title_ja・translate_status が入り、done の行だけ訳を持つ', async () => {
+    const base = { kind: 'release', vendor: 'v', product: 'p', title: 'Fictional title', url: null, published_at: null, sort_at: '2026-11-19T00:00:00+00:00', severity: null, cvss: null, cve_ids: null, status: null }
+    queryResult = {
+      data: [
+        { ...base, id: 't1', title_ja: '架空の訳', translate_status: 'done' },
+        { ...base, id: 't2', title_ja: '架空の訳', translate_status: 'pending' },
+      ],
+      error: null,
+    }
+    const entries = await createSupabaseBackend(config, now).loadFeed()
+    const select = queryCalls.find(([name]) => name === 'select')?.[1][0]
+    expect(String(select).split(',')).toEqual(expect.arrayContaining(['title_ja', 'translate_status']))
+    expect(entries.map((entry) => entry.titleJa)).toEqual(['架空の訳', undefined])
   })
 
   it('失敗したら FeedLoadError を投げ、文言には code だけを添える(サーバーの文言は出さない)', async () => {

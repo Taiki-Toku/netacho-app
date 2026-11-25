@@ -1,0 +1,31 @@
+/*
+  機械翻訳の1行(design_spec v3.9 の 1-4・3-3)。どの画面でも1行で、はみ出す分は末尾を省略記号にする。
+  省略は見た目だけで、訳の全文は DOM に残る(読み上げで取れる)。
+*/
+.line {
+  margin: var(--space-translation) 0 0;
+  font-size: var(--font-size-translation);
+  line-height: var(--lh-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 置かれた場所が grid・flex でも、訳の長さで親の幅を押し広げない(横スクロールを出さない) */
+  contain: inline-size;
+}
+
+/* 置かれた場所の span の決まり(例:右の列の .miniItem span)に左右されないよう、ここで決め直す */
+.line .label {
+  display: inline;
+  margin: 0 var(--sp-1h) 0 0;
+  font-size: var(--fs-12);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.line .text {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--weight-regular);
+  color: var(--ink-soft);
+}

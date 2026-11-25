@@ -154,6 +154,24 @@ describe('parseFeed(公式フィードの整形)', () => {
     expect(feed[0]?.title).toBe('<b>先</b>')
     expect(feed[0]?.url).toBe('javascript:alert(1)')
   })
+
+  it('TST-TRUI-01 titleJa は空白だけでない 1,000 字以内の文字列だけ通す。それ以外は項目を作らず、行は残す', () => {
+    const base = { id: 'a', kind: 'release', publishedAt: '2026-01-01T00:00:00Z', title: 'Fictional title' }
+    expect(parseFeedEntry({ ...base, titleJa: '架空の訳' })?.titleJa).toBe('架空の訳')
+    expect(parseFeedEntry({ ...base, titleJa: 'あ'.repeat(1000) })?.titleJa).toHaveLength(1000)
+    // サロゲートペアの字は1字と数える
+    expect(parseFeedEntry({ ...base, titleJa: '𠮷'.repeat(1000) })?.titleJa).toBe('𠮷'.repeat(1000))
+    for (const titleJa of [undefined, null, '', ' \n ', 1, true, ['架空'], { ja: '架空' }, 'あ'.repeat(1001), '𠮷'.repeat(1001)]) {
+      const entry = parseFeedEntry({ ...base, titleJa })
+      expect(entry?.id).toBe('a')
+      expect(entry).not.toHaveProperty('titleJa')
+    }
+  })
+
+  it('TST-TRUI-05 titleJa の中身は解釈しない(HTML の文字もそのまま)', () => {
+    const base = { id: 'a', kind: 'release', publishedAt: '2026-01-01T00:00:00Z', title: 'Fictional title' }
+    expect(parseFeedEntry({ ...base, titleJa: '<script>alert(1)</script>' })?.titleJa).toBe('<script>alert(1)</script>')
+  })
 })
 
 describe('parseGenres', () => {

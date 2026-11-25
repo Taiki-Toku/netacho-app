@@ -123,6 +123,14 @@ describe('queries', () => {
     expect(searchFeed(all.feed, '見本ソフト').map((e) => e.id)).toEqual(['feed-001', 'feed-002', 'feed-005', 'feed-008'])
   })
 
+  it('TST-TRUI-04 公式フィードの検索は見出しの訳でも当たる(原文と訳のどちらかに当たれば出す)', () => {
+    const feed = all.feed.map((entry) => (entry.id === 'feed-001' ? { ...entry, titleJa: '架空のかやくご飯' } : entry))
+    expect(searchFeed(feed, 'かやくご飯').map((e) => e.id)).toEqual(['feed-001'])
+    // 訳の語と原文の語を混ぜても当たる
+    expect(searchFeed(feed, 'かやくご飯 見本ソフト').map((e) => e.id)).toEqual(['feed-001'])
+    expect(searchFeed(all.feed, 'かやくご飯')).toEqual([])
+  })
+
   it('id でネタを探す。無ければ null', () => {
     expect(findItem(items, '2026-01-02-03')?.order).toBe(3)
     expect(findItem(items, 'nowhere')).toBeNull()

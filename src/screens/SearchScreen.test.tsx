@@ -45,6 +45,24 @@ describe('さがす', () => {
     window.location.hash = ''
   })
 
+  it('TST-TRUI-04 公式のお知らせ・脆弱性は見出しの訳の語でも当たり、結果にも訳の行を出す', async () => {
+    const data = {
+      ...sample,
+      feed: sample.feed.map((entry) =>
+        entry.id === 'feed-011' ? { ...entry, titleJa: '架空のかやくご飯' } : entry.id === 'feed-007' ? { ...entry, titleJa: '架空のかやくご飯の脆弱性' } : entry,
+      ),
+    }
+    renderApp('#/search?q=かやくご飯', data)
+    expect(await waitForHeading('「かやくご飯」の結果')).toBeInTheDocument()
+    const feed = screen.getByRole('list', { name: '一致するお知らせ' })
+    expect(feed.querySelectorAll('li')).toHaveLength(1)
+    expect(within(feed).getByText('架空のかやくご飯').closest('p')).toHaveAttribute('lang', 'ja')
+    const vulns = screen.getByRole('list', { name: '一致する脆弱性' })
+    expect(within(vulns).getByRole('link', { name: 'CVE-2026-90001' })).toBeInTheDocument()
+    expect(within(vulns).getByText('架空のかやくご飯の脆弱性').closest('p')).toHaveTextContent('機械翻訳架空のかやくご飯の脆弱性')
+    window.location.hash = ''
+  })
+
   it('検索語が空なら案内を出す。検索語に HTML が入っていても文字のまま', async () => {
     renderApp('#/search', sample)
     expect(await waitForHeading('さがす')).toBeInTheDocument()

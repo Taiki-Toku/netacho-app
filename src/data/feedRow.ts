@@ -3,8 +3,8 @@
 import { parseFeed, parseFeedEntry } from './parse.ts'
 import type { FeedEntry } from './types.ts'
 
-/** 画面が使う列だけを取る。summary と訳の列はまだ読まない(訳の表示のときに足す) */
-export const FEED_COLUMNS = 'id,kind,vendor,product,title,url,published_at,sort_at,severity,cvss,cve_ids,status'
+/** 画面が使う列だけを取る。訳は見出しの訳と翻訳の状態だけ。summary・summary_ja は今の画面で使わないので読まない(詳細設計 5.3.1) */
+export const FEED_COLUMNS = 'id,kind,vendor,product,title,url,published_at,sort_at,severity,cvss,cve_ids,status,title_ja,translate_status'
 
 /** PostgREST が numeric を文字列で返す場合に備えて、文字列は Number に直す(範囲の検査は parseFeedEntry)。空の文字列は値なし */
 function cvssValue(value: unknown): unknown {
@@ -34,6 +34,9 @@ function rowToJson(row: unknown): unknown {
     cve: Array.isArray(r.cve_ids) ? (r.cve_ids as unknown[])[0] : '',
     cvss: cvssValue(r.cvss),
     status: r.status,
+    // 訳は翻訳が済んだ行(translate_status が done)のときだけ渡す。pending・failed などに残った title_ja は使わない。
+    // 文字列か・空でないか・長さの検査は parseFeedEntry
+    titleJa: r.translate_status === 'done' ? r.title_ja : undefined,
   }
 }
 
