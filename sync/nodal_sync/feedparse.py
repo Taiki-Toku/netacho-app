@@ -68,7 +68,11 @@ STATUS_WORDS = {
     "monitoring": "監視中",
     "identified": "原因を特定",
     "investigating": "調査中",
+    "update": "更新",
 }
+# 状態の語 + 空白 + "-"。語の前は先頭か英数字以外(Unresolved などに当てない)。入れ子の繰り返しは無い
+STATUS_RE = re.compile(r"(?<![0-9A-Za-z])(resolved|monitoring|identified|investigating|update)\s+-",
+                       re.IGNORECASE | re.ASCII)
 
 
 # ---------------------------------------------------------------
@@ -463,9 +467,10 @@ def _read_kev(body: bytes, now: dt.datetime, invalid: Counter[str]) -> list[_Raw
 # filter と status
 # ---------------------------------------------------------------
 def statuspage_status(summary: str) -> str:
-    """summary の先頭の語で障害の状態を決める(語の並びは【推測】。本番の dry_run で確かめる)。"""
-    m = re.match(r"[A-Za-z]+", summary)
-    return STATUS_WORDS.get(m.group(0).lower(), "") if m else ""
+    """summary の中で最初に現れる「状態の語 - 」で障害の状態を決める(本文は「日時 状態の語 - 本文」の形)。
+    呼ぶ側は保存する summary と同じ先頭 MAX_SUMMARY 字だけを渡す。"""
+    m = STATUS_RE.search(summary)
+    return STATUS_WORDS[m.group(1).lower()] if m else ""
 
 
 def passes_filter(kind_filter: str, title: str, summary: str, cvss: Decimal | None,
@@ -539,7 +544,7 @@ def parse_feed(source: Source, body: bytes, watch_products: tuple[str, ...],
             continue
         status = ""
         if source.filter == "statuspage-incident":
-            status = statuspage_status(summary_full)[:MAX_STATUS]
+            status = statuspage_status(summary_full[:MAX_SUMMARY])[:MAX_STATUS]
         res.entries.append(Entry(
             id=eid,
             title=title_full[:MAX_TITLE],

@@ -49,8 +49,9 @@ def test_tst_feed_02_atom_statuspage() -> None:
     a = e["Fictional delays in the sample service"]
     assert a.id == entry_id("example-status", "tag:status.example.com,2005:Incident/1001")
     assert a.url == "https://status.example.com/incidents/1001"
-    assert a.summary == ("Resolved - This fictional incident has been resolved.\n"
-                         "Investigating - We are looking into fictional delays.")
+    # <br> が改行になり、日時と状態の語がくっつかない
+    assert a.summary == ("Nov 20, 10:00 UTC\nResolved - This fictional incident has been resolved.\n"
+                         "Nov 20, 09:00 UTC\nInvestigating - We are looking into fictional delays.")
     assert a.published_at == dt.datetime(2026, 11, 20, 9, 0, tzinfo=UTC)
     assert a.status == "復旧済み"
     assert (a.vendor, a.product, a.cve_ids, a.severity, a.cvss, a.exploited) == (
@@ -60,6 +61,35 @@ def test_tst_feed_02_atom_statuspage() -> None:
     assert b.summary == "Monitoring - A fictional fix has been applied."   # content が無ければ summary
     assert b.published_at == dt.datetime(2026, 11, 18, 3, 0, tzinfo=UTC)   # published が無ければ updated
     assert b.status == "監視中"
+
+
+@pytest.mark.parametrize("summary,want", [
+    ("Jun 22, 09:06 CDT Investigating - Fictional engineers are looking into it.", "調査中"),
+    ("Nov 3, 10:00 UTC Resolved - A fictional fix is complete.", "復旧済み"),
+    ("Monitoring - A fictional fix has been applied.", "監視中"),
+    ("Nov 3, 10:00 UTC\nidentified - A fictional cause was found.", "原因を特定"),  # 大文字・小文字を区別しない
+    ("Nov 3, 10:00 UTC\nUpdate - Fictional work continues.", "更新"),
+    ("A fictional note without any state word.", ""),
+    ("Unresolved - fictional text.", ""),               # 語の途中には当たらない
+    ("Nov 3, 10:00 UTC Resolvedx - fictional text.", ""),  # 別の語(語の後ろが空白でない)
+    ("Nov 3, 11:00 UTC\nResolved - fictional fix.\nNov 3, 10:00 UTC\nInvestigating - fictional look.", "復旧済み"),
+])
+def test_tst_feed_02_statuspage_status(summary: str, want: str) -> None:
+    """TST-FEED-02:statuspage の状態は、本文で最初に現れる「状態の語 - 」で決める。"""
+    assert feedparse.statuspage_status(summary) == want
+
+
+def test_tst_feed_02_statuspage_status_after_2000() -> None:
+    """TST-FEED-02:保存する summary の先頭 2,000 字より後にだけ状態の語があるときは空。"""
+    s = src(filter="statuspage-incident")
+    long = "x" * feedparse.MAX_SUMMARY + " Resolved - fictional."
+    body = ('<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">'
+            '<entry><id>tag:x,2005:Incident/1</id><title>Fictional long</title>'
+            f'<summary>{long}</summary></entry></feed>').encode()
+    res = parse_feed(s, body, WATCH, NOW)
+    assert res.error is None and len(res.entries) == 1
+    assert res.entries[0].status == ""
+    assert feedparse.statuspage_status(long) == "復旧済み"  # 切る前なら当たる(切ってから渡していることの確認)
 
 
 def test_tst_feed_02_rss2() -> None:
