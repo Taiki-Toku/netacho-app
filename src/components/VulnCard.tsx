@@ -4,6 +4,7 @@ import { PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import type { FeedEntry } from '../data/types.ts'
 import { formatCvss, formatJstDate } from '../lib/format.ts'
 import { SeverityPill } from './SeverityPill.tsx'
+import { TranslationLine } from './TranslationLine.tsx'
 import styles from './VulnCard.module.css'
 
 export function vulnName(entry: FeedEntry): string {
@@ -36,7 +37,12 @@ export function VulnCard({ entry, headingLevel = 3 }: VulnCardProps) {
             {entry.product}
             {entry.vendor !== '' ? `(${entry.vendor})` : ''}
           </p>
-          <p className={styles.summary}>{entry.title}</p>
+          {/* 訳があるときは、原文(英日の翻訳の元)に lang="en" を付ける */}
+          <p className={styles.summary} lang={entry.title !== '' && entry.titleJa !== undefined ? 'en' : undefined}>
+            {entry.title}
+          </p>
+          {/* 原文の直下に訳を1行で(design_spec v3.9 の 4-4)。リンクの外。訳が無ければ何も出さない */}
+          <TranslationLine original={entry.title} translation={entry.titleJa} />
         </div>
         <div className={styles.score}>
           <strong>{formatCvss(entry.cvss)}</strong>

@@ -97,3 +97,59 @@ describe('脆弱性', () => {
     expect(within(rail).getByText('しおりの印を押すと、ここに並びます。')).toBeInTheDocument()
   })
 })
+
+// feed-007(Critical)にだけ架空の訳を付けた見本
+const translated = { ...sample, feed: sample.feed.map((entry) => (entry.id === 'feed-007' ? { ...entry, titleJa: '架空の脆弱性の訳' } : entry)) }
+
+describe('脆弱性の訳(詳細設計 5.3)', () => {
+  it('TST-TRUI-03 カード:訳がある脆弱性は原文の直下に「機械翻訳」と訳を出す。リンクの外。無いカードは今のまま', async () => {
+    renderApp('#/vuln', translated)
+    await waitForHeading('脆弱性')
+    const cards = screen.getByRole('list', { name: '脆弱性の一覧' }).querySelectorAll('li')
+    const line = within(cards[0]!).getByText('架空の脆弱性の訳').closest('p')!
+    expect(line).toHaveAttribute('lang', 'ja')
+    expect(line).toHaveTextContent('機械翻訳架空の脆弱性の訳')
+    expect(line.closest('a')).toBeNull()
+    expect(line.previousElementSibling).toHaveAttribute('lang', 'en')
+    expect(line.previousElementSibling).toHaveTextContent(/認証を回避される脆弱性/)
+    expect(within(cards[0]!).getByRole('link', { name: 'CVE-2026-90001' })).toBeInTheDocument()
+    for (const card of [...cards].slice(1)) {
+      expect(card).not.toHaveTextContent('機械翻訳')
+      expect(card.querySelector('[lang]')).toBeNull()
+    }
+    window.location.hash = ''
+  })
+
+  it('TST-TRUI-03 個別の画面:CVE 番号・深刻度の後、原文の直下に訳を出す。訳の無い脆弱性は今のまま', async () => {
+    renderApp('#/vuln/feed-007', translated)
+    await waitForHeading('CVE-2026-90001')
+    const article = screen.getByRole('article')
+    const line = within(article).getByText('架空の脆弱性の訳').closest('p')!
+    expect(line).toHaveAttribute('lang', 'ja')
+    expect(line).toHaveTextContent('機械翻訳架空の脆弱性の訳')
+    expect(line.closest('a')).toBeNull()
+    expect(line.previousElementSibling).toHaveAttribute('lang', 'en')
+    expect(line.previousElementSibling).toHaveTextContent(/認証を回避される脆弱性/)
+
+    window.location.hash = '#/vuln/feed-008'
+    await waitForHeading('CVE-2026-90002')
+    expect(screen.getByRole('article')).not.toHaveTextContent('機械翻訳')
+    expect(screen.getByRole('article').querySelector('[lang]')).toBeNull()
+    window.location.hash = ''
+  })
+
+  it('TST-TRUI-05 訳の中の <script> などは要素にならず、文字のまま出る(カードと個別の画面)', async () => {
+    const text = '<script>alert(1)</script><img src=x onerror=alert(1)>'
+    const data = { ...sample, feed: sample.feed.map((entry) => (entry.id === 'feed-007' ? { ...entry, titleJa: text } : entry)) }
+    renderApp('#/vuln', data)
+    await waitForHeading('脆弱性')
+    const list = screen.getByRole('list', { name: '脆弱性の一覧' })
+    expect(within(list).getByText(text)).toBeInTheDocument()
+    expect(list.querySelector('script, img')).toBeNull()
+    window.location.hash = '#/vuln/feed-007'
+    await waitForHeading('CVE-2026-90001')
+    expect(within(screen.getByRole('article')).getByText(text)).toBeInTheDocument()
+    expect(screen.getByRole('article').querySelector('script, img')).toBeNull()
+    window.location.hash = ''
+  })
+})

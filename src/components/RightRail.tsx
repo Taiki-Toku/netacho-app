@@ -7,6 +7,7 @@ import { itemSourceName } from '../data/sourceName.ts'
 import { useUserState } from '../data/userStore.ts'
 import { formatCvss, formatJstDateTime } from '../lib/format.ts'
 import { SeverityPill } from './SeverityPill.tsx'
+import { TranslationLine } from './TranslationLine.tsx'
 import { vulnName } from './VulnCard.tsx'
 import pageStyles from './page.module.css'
 import styles from './RightRail.module.css'
@@ -72,8 +73,18 @@ export function RightRail({ data }: { data: LoadedData }) {
             {latest.map((entry) => (
               <li key={entry.id} className={styles.miniItem}>
                 <strong>
-                  {entry.product}:{entry.title}
+                  {entry.product}:
+                  {/* 訳があるときは、原文(英日の翻訳の元)の文字にだけ lang="en" を付ける */}
+                  {entry.title !== '' && entry.titleJa !== undefined ? (
+                    <span className={styles.original} lang="en">
+                      {entry.title}
+                    </span>
+                  ) : (
+                    entry.title
+                  )}
                 </strong>
+                {/* 製品名と原文の下、時刻の上に訳を1行で(design_spec v3.9 の 4-1)。訳が無ければ何も出さない */}
+                <TranslationLine original={entry.title} translation={entry.titleJa} />
                 <span>{entry.publishedAt === '' ? PUBLISHED_UNKNOWN : formatJstDateTime(entry.publishedAt)}</span>
               </li>
             ))}

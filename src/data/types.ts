@@ -74,4 +74,9 @@ export interface FeedEntry {
   cve: string
   /** kind が vuln のときだけ。CVSS の基本値(0〜10)。無ければ null */
   cvss: number | null
+  /**
+   * 見出し(title)の機械翻訳(日本語)。翻訳が済んだ行で、空でないときだけ持つ(無ければ項目ごと無い)。
+   * 外から来た信用しないデータ。表示は React の標準の描画だけで、リンクにしない(詳細設計 5.3、design_spec 3-3)
+   */
+  titleJa?: string
 }

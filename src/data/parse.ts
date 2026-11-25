@@ -43,6 +43,15 @@ function asCvss(value: unknown): number | null {
   return Math.round(value * 10) / 10
 }
 
+/** 訳の長さの上限(字。サロゲートペアは1字と数える。詳細設計 5.3.1) */
+export const TITLE_JA_MAX = 1000
+
+/** 見出しの訳。空白だけでない文字列で、上限の字数以内のものだけ。それ以外は undefined(項目を作らない) */
+function asTitleJa(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value.trim() === '') return undefined
+  return Array.from(value).length <= TITLE_JA_MAX ? value : undefined
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -126,6 +135,7 @@ export function parseFeedEntry(value: unknown): FeedEntry | null {
   if (rawPublishedAt !== undefined && rawPublishedAt !== null && typeof rawPublishedAt !== 'string') return null
   if (publishedAt !== '' && Number.isNaN(Date.parse(publishedAt))) return null
   const isVuln = kind === 'vuln'
+  const titleJa = asTitleJa(value.titleJa)
   return {
     id,
     kind,
@@ -140,6 +150,8 @@ export function parseFeedEntry(value: unknown): FeedEntry | null {
     status: isVuln || kind === 'outage' ? asString(value.status) : '',
     cve: isVuln ? asString(value.cve) : '',
     cvss: isVuln ? asCvss(value.cvss) : null,
+    // 訳は無いのが普通なので、形にならないときは項目ごと持たない(行は捨てない)。中身は解釈しない
+    ...(titleJa !== undefined ? { titleJa } : {}),
   }
 }
 

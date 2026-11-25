@@ -3,6 +3,7 @@ import { hrefFor } from '../app/router.ts'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { Icon } from '../components/Icon.tsx'
 import { SeverityPill } from '../components/SeverityPill.tsx'
+import { TranslationLine } from '../components/TranslationLine.tsx'
 import { vulnName } from '../components/VulnCard.tsx'
 import { PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import { findFeedEntry } from '../data/queries.ts'
@@ -60,7 +61,12 @@ export function VulnDetailScreen({ data, id }: VulnDetailScreenProps) {
           <span>CVSS</span>
         </div>
       </div>
-      <p className={styles.summary}>{entry.title}</p>
+      {/* 訳があるときは、原文(英日の翻訳の元)に lang="en" を付ける */}
+      <p className={styles.summary} lang={entry.title !== '' && entry.titleJa !== undefined ? 'en' : undefined}>
+        {entry.title}
+      </p>
+      {/* 識別情報(CVE 番号・深刻度)の後、原文の直下に訳を1行で(design_spec v3.9 の 4-4)。訳が無ければ何も出さない */}
+      <TranslationLine original={entry.title} translation={entry.titleJa} />
       <dl className={styles.fields}>
         {fields
           .filter((field) => field.value !== '')

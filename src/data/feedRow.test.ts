@@ -88,7 +88,47 @@ describe('feed_entries の行の変換', () => {
     expect(rowsToFeed({ id: 'x' })).toEqual([])
   })
 
-  it('読む列は決まった 12 列だけ(summary と訳の列は読まない)', () => {
-    expect(FEED_COLUMNS.split(',')).toEqual(['id', 'kind', 'vendor', 'product', 'title', 'url', 'published_at', 'sort_at', 'severity', 'cvss', 'cve_ids', 'status'])
+  it('TST-TRUI-02 読む列は決まった 14 列だけ(訳は title_ja と translate_status だけ。summary・summary_ja は読まない)', () => {
+    expect(FEED_COLUMNS.split(',')).toEqual([
+      'id',
+      'kind',
+      'vendor',
+      'product',
+      'title',
+      'url',
+      'published_at',
+      'sort_at',
+      'severity',
+      'cvss',
+      'cve_ids',
+      'status',
+      'title_ja',
+      'translate_status',
+    ])
+    expect(FEED_COLUMNS).not.toContain('summary')
+  })
+})
+
+describe('feed_entries の行の訳(詳細設計 5.3.1)', () => {
+  it('TST-TRUI-01 translate_status が done で title_ja が空でない文字列のときだけ titleJa が入る', () => {
+    expect(rowToFeedEntry({ ...vulnRow, title_ja: '架空の訳', translate_status: 'done' })?.titleJa).toBe('架空の訳')
+  })
+
+  it('TST-TRUI-01 pending・failed・状態なしでは、title_ja があっても titleJa を作らない', () => {
+    for (const translate_status of ['pending', 'failed', null, undefined, 'DONE', '']) {
+      const entry = rowToFeedEntry({ ...vulnRow, title_ja: '架空の訳', translate_status })
+      expect(entry).not.toBeNull()
+      expect(entry).not.toHaveProperty('titleJa')
+    }
+  })
+
+  it('TST-TRUI-01 done でも、空・空白だけ・null・文字列でない・1,000 字超えの title_ja は titleJa を作らない(行は残す)', () => {
+    for (const title_ja of ['', '   ', null, undefined, 123, ['架空'], { text: '架空' }, 'あ'.repeat(1001)]) {
+      const entry = rowToFeedEntry({ ...vulnRow, title_ja, translate_status: 'done' })
+      expect(entry?.id).toBe('vuln-1')
+      expect(entry).not.toHaveProperty('titleJa')
+    }
+    // ちょうど 1,000 字は入る
+    expect(rowToFeedEntry({ ...vulnRow, title_ja: 'あ'.repeat(1000), translate_status: 'done' })?.titleJa).toHaveLength(1000)
   })
 })

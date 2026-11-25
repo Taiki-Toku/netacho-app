@@ -181,8 +181,8 @@ export function searchGenres(genres: readonly Genre[], query: string): Genre[] {
   return genres.filter((genre) => matches([genre.label, genre.id], query))
 }
 
-/** 公式フィードの検索(製品名・ベンダー・見出し・CVE 番号)。渡した一覧の順は保つ */
+/** 公式フィードの検索(製品名・ベンダー・見出し・見出しの訳・CVE 番号)。渡した一覧の順は保つ */
 export function searchFeed(entries: readonly FeedEntry[], query: string): FeedEntry[] {
-  return entries.filter((entry) => matches([entry.product, entry.vendor, entry.title, entry.cve], query))
+  return entries.filter((entry) => matches([entry.product, entry.vendor, entry.title, entry.titleJa ?? '', entry.cve], query))
 }
 
