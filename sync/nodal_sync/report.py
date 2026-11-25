@@ -153,6 +153,71 @@ class FeedSummary:
         return "\n".join(out) + "\n"
 
 
+@dataclass
+class BackupSummary:
+    """feed-backup の要約(詳細設計 3.14.2)。月(YYYY-MM。DB の時刻の年と月から作った値)と行数だけ。"""
+    stop_code: str | None = None
+    months: list[tuple[str, int]] = field(default_factory=list)
+    usage: int = 0
+
+    def render(self) -> str:
+        out = ["## nodal-sync feed-backup", ""]
+        if self.stop_code:
+            out.append(f"- 止まった:{self.stop_code}")
+            return "\n".join(out) + "\n"
+        out += [
+            f"- feed_entries:{sum(n for _, n in self.months)} 行({len(self.months)} か月)",
+            f"- feed_translate_usage:{self.usage} 行",
+            "",
+            "| 月(日本時間) | 行 |",
+            "|---|---|",
+        ]
+        out += [f"| {m} | {n} |" for m, n in self.months]
+        return "\n".join(out) + "\n"
+
+
+@dataclass
+class RestoreSummary:
+    """feed-restore の要約(詳細設計 3.14.3)。件数と、不正な行のファイル名(形を確かめた名前)・行番号だけ。"""
+    dry_run: bool = False
+    stop_code: str | None = None
+    bad: list[tuple[str, int]] = field(default_factory=list)
+    max_listed: int = 20
+    read: int = 0
+    inserted: int | None = None
+    updated: int | None = None
+    unchanged: int | None = None
+    usage_read: int = 0
+    usage_inserted: int | None = None
+    usage_updated: int | None = None
+    usage_unchanged: int | None = None
+
+    def render(self) -> str:
+        out = ["## nodal-sync feed-restore", ""]
+        if self.dry_run:
+            out.append("- dry-run(検査と件数だけ。DB には接続していない)")
+        if self.stop_code:
+            out.append(f"- 止まった:{self.stop_code}(何も書いていない)")
+            if self.bad:
+                out.append(f"- 不正な行:{len(self.bad)}")
+                out += [f"  - {name} の {n} 行目" for name, n in self.bad[:self.max_listed]]
+                if len(self.bad) > self.max_listed:
+                    out.append(f"  - ほか {len(self.bad) - self.max_listed} 行")
+            return "\n".join(out) + "\n"
+
+        def num(v: int | None) -> str:
+            return "-" if v is None else str(v)
+
+        out += [
+            "| 表 | 読んだ | 追加 | 上書き | 変わらない |",
+            "|---|---|---|---|---|",
+            f"| feed_entries | {self.read} | {num(self.inserted)} | {num(self.updated)} | {num(self.unchanged)} |",
+            f"| feed_translate_usage | {self.usage_read} | {num(self.usage_inserted)} | "
+            f"{num(self.usage_updated)} | {num(self.usage_unchanged)} |",
+        ]
+        return "\n".join(out) + "\n"
+
+
 def render_watch(findings: list[tuple[str, int, list[str]]]) -> str:
     out = ["## nodal-sync watch", ""]
     if not findings:
