@@ -1,4 +1,4 @@
-"""公式フィードの DB への書き込み(依頼 12-1。詳細設計 3.6・3.7)。ロールは netacho_feed(select・insert・update だけ)。
+"""公式フィードの DB への書き込み(依頼 12-1。詳細設計 3.6・3.7。翻訳の分は依頼 12-4・詳細設計 3.13)。ロールは netacho_feed(select・insert・update だけ)。
 
 - 接続は同期と同じ形(verify-full と --ca)。application_name だけ nodal-feed にする
 - SQL はすべて固定の文で、値はプレースホルダで渡す(文字列の連結で値を入れない)
@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass
 from typing import Any
 
@@ -17,6 +18,7 @@ from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 from .db import DbError, build_conninfo
 from .feedparse import MAX_CVES, Entry, SourceOutcome
+from .feedtranslate import PendingRow, Save
 
 APP_NAME = "nodal-feed"
 
@@ -87,6 +89,37 @@ STATE_FAILURE = sql.SQL(
 
 COUNT_PENDING = sql.SQL(
     "select count(*) from public.feed_entries where translate_status = 'pending'")
+
+# --- 翻訳(依頼 12-4。詳細設計 3.13) ---
+# 訳す候補:pending で、失敗が上限より少ない行を新しい順に(索引 feed_entries_pending_idx)
+SELECT_TRANSLATE_TARGETS = sql.SQL(
+    "select id, source_id, vendor, product, title, summary from public.feed_entries "
+    "where translate_status = 'pending' and translate_attempts < %s "
+    "order by sort_at desc, id")
+
+SELECT_USAGE = sql.SQL(
+    "select chars from public.feed_translate_usage where month = %s")
+
+# 送ったときと原文が同じで、まだ pending の行だけを done にする(訳している間に変わった行は次の回に訳し直す)
+SAVE_TRANSLATION = sql.SQL(
+    "update public.feed_entries set "
+    "title_ja = %(title_ja)s, summary_ja = %(summary_ja)s::text, translated_at = now(), translate_status = 'done' "
+    "where id = %(id)s and translate_status = 'pending' and title = %(title)s and summary = %(summary)s")
+
+# 今月の行に足す(無ければ作る)。足した後の chars を返す
+ADD_USAGE = sql.SQL(
+    "insert into public.feed_translate_usage as u (month, chars, requests) values (%s, %s, 1) "
+    "on conflict (month) do update set "
+    "chars = u.chars + excluded.chars, requests = u.requests + 1, updated_at = now() "
+    "returning chars")
+
+# 失敗の回数を 1 足し、上限に達したら failed にする(右辺の translate_attempts は足す前の値)
+RECORD_FAILURE = sql.SQL(
+    "update public.feed_entries set "
+    "translate_attempts = translate_attempts + 1, "
+    "translate_status = case when translate_attempts + 1 >= %(max)s then 'failed' else translate_status end "
+    "where id = any(%(ids)s::text[]) and translate_status = 'pending' "
+    "returning translate_status")
 
 
 @dataclass
@@ -208,3 +241,65 @@ def write_all(conn: psycopg.Connection[Any], outcomes: list[SourceOutcome]) -> t
     except psycopg.Error:
         raise DbError("E-DB-WRITE") from None
     return stats, pending
+
+
+def read_usage(conn: psycopg.Connection[Any], month: dt.date) -> int:
+    """今月(日本時間の月の初日)の chars。行が無ければ 0。"""
+    try:
+        with conn.transaction():
+            conn.execute("set local statement_timeout = '30s'")
+            row = conn.execute(SELECT_USAGE, (month,)).fetchone()
+    except psycopg.Error:
+        raise DbError("E-DB-READ") from None
+    return int(row[0]) if row is not None else 0
+
+
+def read_translate_targets(conn: psycopg.Connection[Any], max_attempts: int) -> list[PendingRow]:
+    """訳す候補の行(新しい順)。取得先の設定で選ぶのは feedtranslate.select_jobs。"""
+    try:
+        with conn.transaction():
+            conn.execute("set local statement_timeout = '30s'")
+            rows = conn.execute(SELECT_TRANSLATE_TARGETS, (max_attempts,)).fetchall()
+    except psycopg.Error:
+        raise DbError("E-DB-READ") from None
+    return [PendingRow(id=r[0], source_id=r[1], vendor=r[2], product=r[3], title=r[4], summary=r[5])
+            for r in rows]
+
+
+def count_pending(conn: psycopg.Connection[Any]) -> int:
+    try:
+        with conn.transaction():
+            conn.execute("set local statement_timeout = '30s'")
+            row = conn.execute(COUNT_PENDING).fetchone()
+    except psycopg.Error:
+        raise DbError("E-DB-READ") from None
+    return int(row[0]) if row is not None else 0
+
+
+def save_translations(conn: psycopg.Connection[Any], saves: list[Save], month: dt.date,
+                      chars: int) -> tuple[int, int]:
+    """1要求の訳を1つのトランザクションで保存し、usage に chars と要求 1 回を足す。(done にした数, 今月の chars)。"""
+    done = 0
+    try:
+        with conn.transaction():
+            conn.execute("set local statement_timeout = '30s'")
+            for s in saves:
+                cur = conn.execute(SAVE_TRANSLATION, {
+                    "id": s.id, "title": s.title, "summary": s.summary,
+                    "title_ja": s.title_ja, "summary_ja": s.summary_ja})
+                done += max(cur.rowcount, 0)
+            row = conn.execute(ADD_USAGE, (month, chars)).fetchone()
+    except psycopg.Error:
+        raise DbError("E-DB-WRITE") from None
+    return done, int(row[0]) if row is not None else 0
+
+
+def record_failures(conn: psycopg.Connection[Any], ids: list[str], max_attempts: int) -> int:
+    """1要求の行の失敗の回数を1つのトランザクションで足す(上限で failed)。failed になった数を返す。"""
+    try:
+        with conn.transaction():
+            conn.execute("set local statement_timeout = '30s'")
+            rows = conn.execute(RECORD_FAILURE, {"ids": ids, "max": max_attempts}).fetchall()
+    except psycopg.Error:
+        raise DbError("E-DB-WRITE") from None
+    return sum(1 for r in rows if r[0] == "failed")

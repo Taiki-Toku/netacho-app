@@ -63,10 +63,10 @@ python -m nodal_sync watch --config <config/sync.json> --data-dir <ai-netacho �
 
 ## 公式フィード(feed)
 
-公式の障害・脆弱性のフィードを取り、解析・検査して `feed_entries` に原文を入れる(依頼文は [`docs/requests/12-1_feed-fetch.md`](../docs/requests/12-1_feed-fetch.md))。翻訳と翌朝のニュースへの受け渡しはまだ作っていない。
+公式の障害・脆弱性のフィードを取り、解析・検査して `feed_entries` に原文を入れ、そのあと英語の行を機械翻訳する(依頼文は [`docs/requests/12-1_feed-fetch.md`](../docs/requests/12-1_feed-fetch.md)、翻訳は [`docs/requests/12-4_feed-translate.md`](../docs/requests/12-4_feed-translate.md))。翌朝のニュースへの受け渡しはまだ作っていない。
 
 ```sh
-python -m nodal_sync feed --config <config/feed_sources.json> --ca <CA 証明書> [--dry-run]
+python -m nodal_sync feed --config <config/feed_sources.json> --ca <CA 証明書> [--dry-run] [--no-translate]
 ```
 
 - DB には専用ロール `netacho_feed`(環境変数 `FEED_DB_URL`。表示しない)でつなぐ。`--dry-run` は取得・解析・filter までで、DB に接続しない
@@ -75,6 +75,28 @@ python -m nodal_sync feed --config <config/feed_sources.json> --ca <CA 証明書
 - 終了コード:0=全部成功か、続けての失敗が 3 回未満/1=続けて 3 回失敗した取得先がある・全部失敗した(dry-run は1回の失敗でも 1)/2=止まった(設定・Expat の版・DB の接続・書き込みの失敗。何も書いていない)
 - 要約に出すのは取得先の id・件数・決まりの番号(`E-FEED-CONFIG-*`・`E-FEED-EXPAT`・`E-FEED-DB-URL`・`E-HTTP-*`・`E-PARSE-*`・`E-ITEM-*`)だけ。記事の title・URL・本文は出さない
 - 試験の名前に `TST-FEED-xx` を入れてある(`grep -rn TST-FEED- tests`)。見本のフィードは `tests/data/feed/`(架空の値だけ)
+
+### 翻訳(feedtranslate.py。詳細設計 3.13)
+
+- 原文の書き込みのトランザクションが終わってから、別の接続で訳す(訳の失敗で原文の保存を巻き戻さない)
+- 環境変数 `AZURE_TRANSLATOR_KEY`・`AZURE_TRANSLATOR_REGION`(表示しない)の両方があるときだけ訳す。両方無い・空なら「翻訳なし(鍵なし)」。片方だけ・印字できる ASCII で 1〜200 字でないときは `E-TR-CONFIG`(終了コード 2。原文は保存済み)
+- `--dry-run`・`--no-translate` では訳さない(Translator にも DB にも何も送らない)
+- 宛先は `api.cognitive.microsofttranslator.com` の v3.0 だけ(TLS は標準の検証。転送は辿らない。1要求 20 秒・応答 1 MB まで・Accept-Encoding なし)
+- 訳すのは pending で失敗が 3 回未満の行を新しい順に、取得先の `translate`(title・title+summary)のとおり。none・設定に無い取得先の行は pending のまま残す。1回の起動で 30,000 字まで、1要求は 100 要素・50,000 字まで
+- 原文は html.escape してから送り、CVE・KB・版・製品名を `<span class="notranslate">` で囲む。訳はタグ・実体参照・制御文字を整え、title_ja 1,000 字・summary_ja 4,000 字で切る
+- 保存は要求ごとに1つのトランザクション。送ったときと原文が同じ pending の行だけを done にし、`feed_translate_usage` の今月(日本時間)に `X-metered-usage`(無ければ送った字数)と要求 1 回を足す
+- 今月の chars が 1,500,000 以上なら訳さない(途中で超えたらそこで止める)
+
+| 応答 | 扱い | 番号 |
+|---|---|---|
+| 429・403 | その回をやめる。行は pending のまま(回数を足さない) | `E-TR-QUOTA` |
+| 401 | その回をやめ、終了コード 1 | `E-TR-AUTH` |
+| 400・408・3xx・5xx・時間切れ・通信の失敗 | その要求の行の回数を 1 足す。3 回で failed | `E-TR-OTHER` |
+| 200 だが形が違う(長さ・to・text・圧縮) | 同上 | `E-TR-RESPONSE` |
+
+- 要約の翻訳の行に出すのは、訳した件数・failed になった件数・失敗した要求の番号・訳さない取得先の行・pending の残り・送った字数・`X-metered-usage` の合計・今月の累計・止まった理由(`E-TR-*`・月の上限・`E-DB-*`)だけ。原文・訳・鍵は出さない
+- 翻訳の失敗では終了コードを変えない。ただし 401(`E-TR-AUTH`)と、翻訳の途中の DB の失敗(`E-DB-*`。接続・読み出し・訳の保存・usage・失敗の記録)はそこで止めて 1、`E-TR-CONFIG` は 2。どれも原文の保存は済んでいて残る。取得と保存の終了コードと合わせるときは大きいほう
+- 試験の名前に `TST-TR-xx` を入れてある(`grep -rn TST-TR- tests`)。Translator への送信は差し替え、ネットワークに出ない
 
 ## 決まりの番号
 
