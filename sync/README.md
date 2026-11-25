@@ -111,7 +111,7 @@ python -m nodal_sync feed-restore --in  <backup ブランチの checkout> --ca <
 - feed-backup:`feed_entries`(生成列の `sort_at` を除く全部の列)と `feed_translate_usage` を、読むだけのトランザクション(repeatable read)で読んでから、`--out` の下の `feed/` を空にし、`feed/YYYY-MM.jsonl`(first_seen_at の日本時間の月)と `usage.jsonl` を書く。`feed_source_state` は書き出さない。書くのはこの2つだけ
   - 1行に1件の JSON。キーは列の順、行は id の順(usage は month の順)。時刻は UTC の `YYYY-MM-DDTHH:MM:SS.ffffffZ`、numeric は文字列、date は `YYYY-MM-DD`。同じ中身なら同じバイト列になる
 - feed-restore:先に全部の行を 0002 の列の型と CHECK で確かめ、1行でも合わなければ何も書かずに `E-RESTORE-ROW`(ファイル名と行番号だけを出す)。合えば1つのトランザクションで upsert する
-  - `feed_entries`:同じ id は、updated_at 以外の列のどれかが違うときだけ上書きする(同じ行は updated_at も変わらない)。DB にあって backup に無い行は残す。first_seen_at は DB の値のまま、exploited は true から戻らない(feed_entries_guard)
+  - `feed_entries`:同じ id は、上書きして中身が変わるときだけ上書きする(比べる列から updated_at と first_seen_at を外し、exploited は guard と同じ `t.exploited or excluded.exploited` と比べる。変わらない行は updated_at も変わらない)。DB にあって backup に無い行は残す。first_seen_at は DB の値のまま、exploited は true から戻らない(feed_entries_guard)
   - `feed_translate_usage`:月ごとに chars・requests の大きいほうを残す
   - `--dry-run`:検査と件数だけで、DB に接続しない
 - 終了コード:0=成功(dry-run を含む)/2=止まった。feed-restore の 2 は DB に何も書いていない

@@ -479,6 +479,51 @@ def test_tst_bk_04_upsert_rules(sqlrun: Any, bk_db: str, tmp_path: Path, fb: Any
     assert "Fictional" not in text
 
 
+def test_tst_bk_04_guarded_columns_only_differ_is_unchanged(sqlrun: Any, bk_db: str, tmp_path: Path,
+                                                           fb: Any) -> None:
+    """TST-BK-04:DB で exploited が true、backup で false、first_seen_at も backup で違うだけの行は、
+    「変わらない」と数え、updated_at を変えない(古い backup を戻しても、次の書き出しのファイルが変わらない)。"""
+    x = insert_entry(sqlrun, 1, kind="vuln", source_id="example-kev", cve_ids=["CVE-2026-91001"], exploited=True)
+    src = tmp_path / "src"
+    src.mkdir()
+    assert run_backup(bk_db, src) == 0
+    first = files(src)
+    [row] = read_rows(src / "feed" / "2026-11.jsonl")
+    assert row["exploited"] is True
+    d = tmp_path / "in"
+    write_rows(d / "feed" / "2026-11.jsonl",
+               [dict(row, exploited=False, first_seen_at="2026-11-25T00:00:00.000000Z")])
+    write_rows(d / "usage.jsonl", [])
+    before = snapshot(sqlrun)
+    summary = tmp_path / "summary.md"
+    assert run_restore(bk_db, d, summary=summary) == 0
+    assert "| feed_entries | 1 | 0 | 0 | 1 |" in summary.read_text(encoding="utf-8")
+    assert snapshot(sqlrun) == before  # updated_at・exploited・first_seen_at のどれも変わらない
+    got = sqlrun("select exploited, updated_at from public.feed_entries where id = %s", (x,))
+    assert got[0][0] is True
+    again = tmp_path / "again"
+    again.mkdir()
+    assert run_backup(bk_db, again) == 0
+    assert files(again) == first
+
+
+def test_tst_bk_04_exploited_false_to_true_is_overwritten(sqlrun: Any, bk_db: str, tmp_path: Path,
+                                                          fb: Any) -> None:
+    """TST-BK-04:逆向き(DB で false、backup で true)は上書きし、exploited が true になる。"""
+    y = insert_entry(sqlrun, 2, kind="vuln", source_id="example-kev", cve_ids=["CVE-2026-91002"])
+    src = tmp_path / "src"
+    src.mkdir()
+    assert run_backup(bk_db, src) == 0
+    [row] = read_rows(src / "feed" / "2026-11.jsonl")
+    d = tmp_path / "in"
+    write_rows(d / "feed" / "2026-11.jsonl", [dict(row, exploited=True)])
+    write_rows(d / "usage.jsonl", [])
+    summary = tmp_path / "summary.md"
+    assert run_restore(bk_db, d, summary=summary) == 0
+    assert "| feed_entries | 1 | 0 | 1 | 0 |" in summary.read_text(encoding="utf-8")
+    assert sqlrun("select exploited from public.feed_entries where id = %s", (y,)) == [(True,)]
+
+
 # ---------------------------------------------------------------
 # TST-BK-05
 # ---------------------------------------------------------------

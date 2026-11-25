@@ -67,8 +67,10 @@ USAGE_NAMES = tuple(c for c, _ in USAGE_COLUMNS)
 
 # 上書きで変えない列:id(衝突の鍵)、first_seen_at(feed_entries_guard が変えさせない)、updated_at(guard が今の時刻にする)
 SET_NAMES = tuple(c for c in ENTRY_NAMES if c not in ("id", "first_seen_at", "updated_at"))
-# 比べる列:updated_at を入れない(入れると全部の行が上書きされ、guard が updated_at を変える。3.14.3)
-COMPARE_NAMES = tuple(c for c in ENTRY_NAMES if c not in ("id", "updated_at"))
+# 比べる列:上書きしても中身が変わらない行を上書きしない(上書きすると guard が updated_at を今の時刻にし、
+# 次の書き出しでその月のファイルが変わる。3.14.3)。updated_at は入れない。first_seen_at は guard が変えさせない
+# ので入れない。exploited は guard と同じ (t.exploited or excluded.exploited) と比べる(2026-11-26 のレビューの決定)
+COMPARE_NAMES = tuple(c for c in ENTRY_NAMES if c not in ("id", "first_seen_at", "updated_at"))
 
 TS_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 TS_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z")
@@ -130,7 +132,10 @@ UPSERT_ENTRY = sql.SQL(
     sets=sql.SQL(", ").join(
         sql.SQL("{c} = excluded.{c}").format(c=sql.Identifier(c)) for c in SET_NAMES),
     cur=_cols(COMPARE_NAMES, "t"),
-    new=_cols(COMPARE_NAMES, "excluded"),
+    new=sql.SQL(", ").join(
+        sql.SQL("({t} or {e})").format(t=sql.Identifier("t", c), e=sql.Identifier("excluded", c))
+        if c == "exploited" else sql.Identifier("excluded", c)
+        for c in COMPARE_NAMES),
 )
 
 # 月ごとに大きいほうを残す。chars・requests のどちらも増えないときは書かない
