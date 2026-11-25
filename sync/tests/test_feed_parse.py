@@ -394,6 +394,59 @@ def test_tst_feed_08_filters() -> None:
     assert pf("watch-products-or-cvss9", "ExampleGuard", "", None, WATCH)
 
 
+@pytest.mark.parametrize("summary,keep", [
+    ("Nov 19, 16:50 UTC Scheduled - We will be performing fictional maintenance.", False),
+    ("Nov 19, 16:50 UTC\nscheduled - fictional maintenance.", False),    # 大文字・小文字を区別しない
+    ("Nov 19, 17:00 UTC\nIn progress - Fictional maintenance is underway.\n"
+     "Nov 19, 16:50 UTC\nScheduled - fictional plan.", False),
+    ("Nov 19, 17:00 UTC In \t progress - fictional work.", False),       # 語の間は空白1つ以上
+    ("Nov 19, 18:00 UTC\nVerifying - Fictional checks.\nNov 19, 17:00 UTC\nIn progress - fictional work.", False),
+    ("Nov 19, 19:00 UTC\nCompleted - Fictional maintenance is done.\n"
+     "Nov 19, 16:50 UTC\nScheduled - fictional plan.", False),
+    ("Nov 20, 10:00 UTC\nResolved - Fictional fix.\nNov 19, 16:50 UTC\nScheduled - fictional plan.", True),
+    ("Nov 20, 10:00 UTC\nInvestigating - Fictional look. THIS IS A SCHEDULED EVENT", False),  # 今までどおり
+    ("Rescheduled - fictional text.", True),           # 語の途中は計画メンテナンスとして扱わない
+    ("Inprogress - fictional text.", True),            # 語の間に空白が無いものは当たらない
+    ("Nov 19, 16:50 UTC Scheduledx - fictional text.", True),
+    ("A fictional note without any state word.", True),
+])
+def test_tst_feed_08_statuspage_maintenance(summary: str, keep: bool) -> None:
+    """TST-FEED-08:statuspage の計画メンテナンスは、最初の状態の語か THIS IS A SCHEDULED EVENT で外す。"""
+    assert feedparse.passes_filter("statuspage-incident", "x", summary, None, WATCH) is keep
+    # 計画メンテナンスの語は status にしない
+    if not keep and "SCHEDULED EVENT" not in summary:
+        assert feedparse.statuspage_status(summary) == ""
+
+
+def test_tst_feed_08_statuspage_maintenance_after_2000() -> None:
+    """TST-FEED-08:計画メンテナンスの語が先頭 2,000 字より後にだけあるときは外さない。"""
+    long = "x" * feedparse.MAX_SUMMARY + " Scheduled - fictional."
+    assert feedparse.passes_filter("statuspage-incident", "x", long, None, WATCH)
+
+
+def test_tst_feed_08_statuspage_scheduled_mark_whole_summary() -> None:
+    """TST-FEED-08:THIS IS A SCHEDULED EVENT は今までどおり summary 全体で見る(2,000 字より後でも外す)。"""
+    long = "x" * feedparse.MAX_SUMMARY + " THIS IS A SCHEDULED EVENT"
+    assert not feedparse.passes_filter("statuspage-incident", "x", long, None, WATCH)
+
+
+def test_tst_feed_08_statuspage_incident_then_scheduled_status() -> None:
+    """TST-FEED-08:最初が障害の語なら入れ、status は障害の語で決まる(後ろの Scheduled は使わない)。"""
+    summary = "Nov 20, 10:00 UTC\nResolved - Fictional fix.\nNov 19, 16:50 UTC\nScheduled - fictional plan."
+    assert feedparse.passes_filter("statuspage-incident", "x", summary, None, WATCH)
+    assert feedparse.statuspage_status(summary) == "復旧済み"
+
+
+def test_tst_feed_08_statuspage_regex_long_input() -> None:
+    """TST-FEED-08:長い入力(空白の連続・語の繰り返し)でも状態の語の探し方が遅くならない。"""
+    import time
+    hostile = ("in " + " " * 5000 + "progress" + " " * 5000) * 20 + "scheduled " * 5000
+    start = time.monotonic()
+    feedparse.is_statuspage_maintenance(hostile)
+    feedparse.statuspage_status(hostile)
+    assert time.monotonic() - start < 1.0
+
+
 def test_tst_feed_08_jvn_with_watch_filter() -> None:
     """TST-FEED-08:JVN の見本で watch-products-or-cvss9。CVSS 9.8 の記事と、製品名に当たる記事が入る。"""
     s = src(id="jvn-new", kind="vuln", format="rss1", lang="ja", filter="watch-products-or-cvss9")
