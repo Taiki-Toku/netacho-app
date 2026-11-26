@@ -125,6 +125,35 @@ python -m nodal_sync feed-restore --in  <backup ブランチの checkout> --ca <
 | `E-RESTORE-FILE` | `--in`・`feed/`・`usage.jsonl` が無い、`feed/` に `YYYY-MM.jsonl` の形でない名前・リンク・256 MB を超えるファイルがある(名前は出さない) |
 | `E-RESTORE-ROW` | 型・CHECK に合わない行、キーの過不足・同じキー、同じ id・同じ月の2回目の行がある |
 
+## 翌朝のニュースへの受け渡し(feeddigest.py。詳細設計 3.15、REQ-D-06、K-037)
+
+公式フィードに出たものを翌朝の配信タスクが記事にできるよう、毎朝の一覧を ai-netacho の `feed_digest/` に置く。依頼文は [`docs/requests/12-7_feed-digest.md`](../docs/requests/12-7_feed-digest.md)。git の操作(checkout・commit・push)はワークフロー(netacho-sync の feed.yml)が行い、このコードはしない。
+
+```sh
+python -m nodal_sync feed-digest --data-dir <ai-netacho の clone> --ca <CA 証明書> [--dry-run]
+python -m nodal_sync feed-digest --data-dir <ai-netacho の clone> --ca <CA 証明書> --commit-db --date YYYY-MM-DD [--dry-run]
+python -m nodal_sync feed-digest-backlog --before YYYY-MM-DD --ca <CA 証明書>
+```
+
+- DB には `FEED_DB_URL`(netacho_feed。表示しない)でつなぐ。application_name は `nodal-digest`
+- feed-digest:読むだけのトランザクション(repeatable read)で、digest_date が null で first_seen_at が7日以内の行と、日本時間の今日の digest_date の行を読み、`--data-dir` の下の `feed_digest/YYYY-MM-DD.json`(日本時間の今日)を書き直す。DB は変えない。0件でも書く。7日より古い null の行は入れずに数え、要約とログに `E-DIGEST-OLD` を出す(終了コードは 0。watch の `W-DIGEST-STALE` でも気づける)
+  - 形:`{"version": 1, "date": "YYYY-MM-DD", "entries": [...]}`。1件のキーは `id・kind・vendor・product・cve_ids・url・published_at・status` だけ(この順。題・本文・訳は入れない)。並びは sort_at の新しい順(同じなら id の順)。published_at は UTC の `YYYY-MM-DDTHH:MM:SSZ`、url・published_at の null は null のまま。`ensure_ascii=False`
+  - 書くのはこのファイルだけ。名前は日付(dt.date)から作る。`--data-dir`・`feed_digest/`・その日のファイルがリンクなら書かずに止まる
+- `--commit-db --date`:push の後に呼ぶ。その日のファイルを読み、形(キー・version・date・id が 32 桁の16進・同じ id が無い)を全部確かめてから、載った id の行の digest_date を1つのトランザクションでその日にする(もうその日の行は書き直さない)。合わなければ DB に何も書かずに `E-DIGEST-FILE`。`--dry-run` はファイルを確かめるだけで DB に接続しない
+- feed-digest-backlog(始めるときの1回だけ):first_seen_at が `--before` の日(日本時間 0 時)より前で digest_date が null の行に、first_seen_at の日本時間の日付を付ける。どの日の一覧にも載らず、watch の 2・3 に当たらなくなる
+- `--date`・`--before` は `YYYY-MM-DD` の実在する日だけ。`--date` は `--commit-db` のときだけ使える。`--before` は日本時間の今日まで(明日以降だと今日の行に今日の印が付き、今日の一覧に載ってしまうので止まる)
+- ファイルは `--data-dir` と `feed_digest/` を `O_DIRECTORY|O_NOFOLLOW` で開いた fd を基準に読み書きする(確かめた後にリンクへ差し替えられても、リンクの先に書かない)
+- 終了コード:0=成功(dry-run を含む)/2=止まった(何も書いていない)
+- 要約とログに出すのは、日付・件数・書いたファイルのパスだけ。id・題・URL は出さない
+- 試験の名前に `TST-DG-xx` を入れてある(`grep -rn TST-DG- tests`)。TST-DG-08(本番の結合テスト)は試験に無い
+
+| 番号 | 意味 |
+|---|---|
+| `E-DIGEST-OLD` | 7日より古い null の行がある(一覧に入れていない。止まらない) |
+| `E-DIGEST-ROW` | DB の行の id・url の形が一覧に合わない(DB の CHECK があるので、ふだんは起きない) |
+| `E-DIGEST-WRITE` | `feed_digest/` かその日のファイルがリンク・フォルダ、または書けない |
+| `E-DIGEST-FILE` | `--commit-db` で読むファイルが無い・リンク・4 MB を超える・形か id が正しくない |
+
 ## 決まりの番号
 
 ### 入力の JSON(schema.py)

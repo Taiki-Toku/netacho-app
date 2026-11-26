@@ -218,6 +218,53 @@ class RestoreSummary:
         return "\n".join(out) + "\n"
 
 
+@dataclass
+class DigestSummary:
+    """feed-digest・feed-digest-backlog の要約(詳細設計 3.15)。日付(dt.date から作った値)と件数だけ。id・題は持たない。"""
+    command: str = "feed-digest"
+    mode: str = "build"  # build / commit / backlog
+    dry_run: bool = False
+    stop_code: str | None = None
+    day: dt.date | None = None
+    path: str | None = None  # 書いたファイル(feed_digest/YYYY-MM-DD.json。日付から作った値)
+    entries: int = 0
+    today_rows: int = 0
+    new_rows: int = 0
+    old: int = 0
+    listed: int = 0
+    updated: int | None = None
+    unchanged: int | None = None
+    missing: int | None = None
+    marked: int | None = None
+
+    def render(self) -> str:
+        out = [f"## nodal-sync {self.command}", ""]
+        if self.dry_run:
+            out.append("- dry-run(ファイルも DB も変えていない)")
+        if self.day is not None:
+            out.append(f"- 日付:{self.day.isoformat()}")
+        if self.stop_code:
+            out.append(f"- 止まった:{self.stop_code}(DB に何も書いていない)")
+            return "\n".join(out) + "\n"
+
+        def num(v: int | None) -> str:
+            return "-" if v is None else str(v)
+
+        if self.mode == "build":
+            out += [
+                f"- 一覧:{self.entries} 件(今日の行 {self.today_rows}/新しい行 {self.new_rows})",
+                f"- ファイル:{self.path or '書いていない'}",
+            ]
+            if self.old:
+                out.append(f"- E-DIGEST-OLD:7日より古い null の行 {self.old}(入れていない)")
+        elif self.mode == "commit":
+            out.append(f"- ファイルの id:{self.listed}/その日にした {num(self.updated)}/"
+                       f"もうその日 {num(self.unchanged)}/DB に無い {num(self.missing)}")
+        else:
+            out.append(f"- 印を付けた行(上の日付より前の null の行):{num(self.marked)}")
+        return "\n".join(out) + "\n"
+
+
 def render_watch(findings: list[tuple[str, int, list[str]]]) -> str:
     out = ["## nodal-sync watch", ""]
     if not findings:
