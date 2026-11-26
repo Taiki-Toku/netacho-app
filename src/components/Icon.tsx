@@ -2,7 +2,7 @@
 import type { SVGProps } from 'react'
 import styles from './Icon.module.css'
 
-export type IconName = 'search' | 'back' | 'bookmark' | 'home' | 'feed' | 'shield' | 'close' | 'up' | 'gear'
+export type IconName = 'search' | 'back' | 'bookmark' | 'home' | 'feed' | 'shield' | 'close' | 'up' | 'gear' | 'calendar'
 
 const PATHS: Record<IconName, string> = {
   // さがす:虫めがね
@@ -23,6 +23,8 @@ const PATHS: Record<IconName, string> = {
   up: 'm6 15 6-6 6 6',
   // 設定:歯車(外側の歯と、中の丸)
   gear: 'M10.3 3h3.4l.5 2.4 1.7 1 2.3-.8 1.7 2.9-1.8 1.6v2l1.8 1.6-1.7 2.9-2.3-.8-1.7 1-.5 2.4h-3.4l-.5-2.4-1.7-1-2.3.8-1.7-2.9 1.8-1.6v-2L3.9 8.5l1.7-2.9 2.3.8 1.7-1ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+  // バックナンバー:暦(枠と上の綴じ目、日付の区切りの線)
+  calendar: 'M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 5h16M8 3v4m8-4v4',
 }
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

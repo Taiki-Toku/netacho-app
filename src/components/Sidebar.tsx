@@ -1,4 +1,4 @@
-// 左メニュー(1101px 以上):ジャンル(トップ + ジャンル)、公式情報(公式のお知らせ、脆弱性)、自分用(保存)
+// 左メニュー(1101px 以上):ジャンル(トップ + ジャンル)、公式情報(公式のお知らせ、脆弱性)、自分用(保存、バックナンバー)
 import { hrefFor, type Route } from '../app/router.ts'
 import type { Genre } from '../data/types.ts'
 import { Icon, type IconName } from './Icon.tsx'
@@ -72,6 +72,8 @@ export function Sidebar({ route, genres, vulnCount, savedCount }: SidebarProps) 
       </p>
       <nav className={styles.group} aria-labelledby="side-mine">
         <NavLink route={route} target={{ name: 'saved' }} label="保存" icon="bookmark" count={savedCount} />
+        {/* 日付なしで開き、最新の過去日に置き換える(詳細設計 5.4.3。スマホの下のメニューには足さない) */}
+        <NavLink route={route} target={{ name: 'archive', date: null }} label="バックナンバー" icon="calendar" />
       </nav>
     </aside>
   )

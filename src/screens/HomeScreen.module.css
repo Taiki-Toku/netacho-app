@@ -18,6 +18,25 @@
   min-height: 0;
 }
 
+/* 日付の導線(v3.9 の 4-1):大きな枠の上に1行。日付は補助の文字、リンクは押せる範囲 44px 以上 */
+.dateGuide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+
+.dateGuideToday {
+  color: var(--muted);
+  font-size: var(--fs-13);
+  font-variant-numeric: tabular-nums;
+}
+
+.dateGuideLink {
+  min-height: var(--tap);
+}
+
 .featureCopy {
   padding: var(--sp-7);
   display: flex;

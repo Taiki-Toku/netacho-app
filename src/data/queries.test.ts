@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   announcements,
+  archiveDates,
   broadcastDates,
   countBySeverity,
   feedOfKinds,
@@ -50,6 +51,25 @@ describe('queries', () => {
   it('放送日の一覧は新しい順', () => {
     expect(broadcastDates(items)).toEqual(['2026-01-02', '2026-01-01'])
     expect(broadcastDates(all.items)).toEqual(['2026-01-03', '2026-01-02', '2026-01-01'])
+  })
+
+  it('TST-ARC-02 バックナンバーの日付は配信日(date)の新しい順で、今日とそれより後の日は入れない。公開日では分けない', () => {
+    expect(archiveDates(all.items, '2026-01-03')).toEqual(['2026-01-02', '2026-01-01'])
+    expect(archiveDates(all.items, '2026-11-25')).toEqual(['2026-01-03', '2026-01-02', '2026-01-01'])
+    expect(archiveDates(all.items, '2026-01-01')).toEqual([])
+    const mixed = parseItems([
+      { id: 'a', date: '2026-11-24', order: 1, publishedAt: '2026-11-01' },
+      { id: 'b', date: '2026-11-23', order: 1, publishedAt: '2026-11-24' },
+      { id: 'c', date: '2026-11-26', order: 1 },
+    ])
+    expect(archiveDates(mixed, '2026-11-25')).toEqual(['2026-11-24', '2026-11-23'])
+  })
+
+  it('TST-ARC-05 バックナンバーから開いたら、その日の一覧(order 順)の中で前後を決める。日付が記事と違えば今の動き', () => {
+    const first = findItem(items, '2026-01-01-01')
+    if (first === null) throw new Error('見本に 2026-01-01-01 がありません')
+    expect(neighbors(items, first, { kind: 'archive', date: '2026-01-01' })).toMatchObject({ position: 1, total: 2, prev: null, next: { id: '2026-01-01-02' } })
+    expect(neighbors(items, first, { kind: 'archive', date: '2026-01-02' })).toMatchObject({ position: 1, total: 2 })
   })
 
   it('ジャンルの一覧(fixtures/genres.json)に「脆弱性」(vuln)は無い。脆弱性は公式情報の画面に一本化した', () => {

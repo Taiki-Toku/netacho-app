@@ -36,12 +36,21 @@ export interface Neighbors {
   next: Item | null
 }
 
+/**
+ * バックナンバーで選べる配信日(新しい順、重複なし)。今日(日本時間)とそれより後の日は入れない。
+ * 公開日ではなく配信日(items.date)で分ける(詳細設計 5.4.2、2026-11-25 オーナー決定)
+ */
+export function archiveDates(items: readonly Item[], today: string): string[] {
+  return broadcastDates(items).filter((date) => date < today)
+}
+
 /** 前後を決める一覧。router の ItemFrom はこの型を使う(data から app へ依存しないよう、ここで定める) */
-export type NeighborsFrom = { kind: 'genre'; id: string } | { kind: 'saved' }
+export type NeighborsFrom = { kind: 'genre'; id: string } | { kind: 'saved' } | { kind: 'archive'; date: string }
 
 /**
  * 前後のネタを返す。詳細の画面の前後移動に使う(仕様 4 章 5)。
- * from がジャンルで記事がそのジャンルなら itemsInGenre の並び、保存で記事が保存の一覧にあれば保存の一覧の並び。
+ * from がジャンルで記事がそのジャンルなら itemsInGenre の並び、保存で記事が保存の一覧にあれば保存の一覧の並び、
+ * バックナンバーで記事がその配信日のものならその日の並び。
  * どちらでもなければ同じ放送日の進行表の中で決める
  */
 export function neighbors(items: readonly Item[], item: Item, from?: NeighborsFrom, saved: readonly string[] = []): Neighbors {
@@ -51,6 +60,9 @@ export function neighbors(items: readonly Item[], item: Item, from?: NeighborsFr
   } else if (from?.kind === 'saved') {
     const savedList = savedItems(items, saved)
     if (savedList.some((candidate) => candidate.id === item.id)) list = savedList
+  } else if (from?.kind === 'archive' && item.date === from.date) {
+    // バックナンバーの一覧と同じ並び(その日の sort_order 順)
+    list = itemsOnDate(items, from.date)
   }
   const index = list.findIndex((candidate) => candidate.id === item.id)
   if (index === -1) return { position: 1, total: 1, prev: null, next: null }

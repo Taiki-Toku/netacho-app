@@ -17,7 +17,8 @@ import { feedErrorMessage, type Backend } from './data/backend.ts'
 import { latestDate, vulnerabilities } from './data/queries.ts'
 import { supabaseData, type LoadedData } from './data/source.ts'
 import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore } from './data/userStore.ts'
-import { formatDateHeader } from './lib/format.ts'
+import { formatDateHeader, tokyoToday } from './lib/format.ts'
+import { ArchiveScreen } from './screens/ArchiveScreen.tsx'
 import { FeedScreen } from './screens/FeedScreen.tsx'
 import { GenreScreen } from './screens/GenreScreen.tsx'
 import { HomeScreen } from './screens/HomeScreen.tsx'
@@ -46,6 +47,9 @@ function screenFor(route: Route, data: LoadedData, loadedAt: Date, homeIntro: bo
       return <ItemScreen data={data} id={route.id} from={route.from} />
     case 'saved':
       return <SavedScreen data={data} />
+    case 'archive':
+      // 「今日」は日本時間で決める(端末のタイムゾーンに依らない)。表示のたびに今の時刻から作る
+      return <ArchiveScreen data={data} date={route.date} today={tokyoToday(new Date())} />
     case 'search':
       return <SearchScreen data={data} q={route.q} />
     case 'settings':
@@ -55,7 +59,14 @@ function screenFor(route: Route, data: LoadedData, loadedAt: Date, homeIntro: bo
 
 /** 右の列を出す画面(詳細と脆弱性の一覧では出さない) */
 function hasRail(route: Route): boolean {
-  return route.name === 'home' || route.name === 'genre' || route.name === 'feed' || route.name === 'saved' || route.name === 'search'
+  return (
+    route.name === 'home' ||
+    route.name === 'genre' ||
+    route.name === 'feed' ||
+    route.name === 'saved' ||
+    route.name === 'archive' ||
+    route.name === 'search'
+  )
 }
 
 function Shell() {

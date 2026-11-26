@@ -25,6 +25,18 @@ describe('parseItems(信用しないデータの整形)', () => {
     expect(parseItem({ id: 'a', date: '2026-01-01', imageUrl: 'javascript:alert(1)' })?.imageUrl).toBe('javascript:alert(1)')
   })
 
+  it('TST-PUB-01 JSON の publishedAt は YYYY-MM-DD だけ通し、無い・null・空・形の違う値は空(行は捨てない)', () => {
+    const base = { id: 'x', date: '2026-01-01' }
+    expect(parseItem({ ...base, publishedAt: '2025-12-31' })?.publishedAt).toBe('2025-12-31')
+    for (const bad of [undefined, null, '', '2025-12-31T23:00:00Z', '12/31', '2025-02-29', 20251231, ['2025-12-31']]) {
+      const item = parseItem({ ...base, publishedAt: bad })
+      expect(item?.id).toBe('x')
+      expect(item?.publishedAt).toBe('')
+    }
+    // 見本(fixtures)には公開日が無い → すべて空(公開日不明)
+    expect(parseItems(sampleItems).every((item) => item.publishedAt === '')).toBe(true)
+  })
+
   it('points は文字列の配列だけを持ち、文字列でない要素と空白だけの要素は捨てる。excerpt は文字列だけ。無ければ空', () => {
     const base = { id: 'x', date: '2026-01-01' }
     expect(parseItem({ ...base, points: ['一', 2, '  ', '三'], excerpt: '抜粋' })).toMatchObject({ points: ['一', '三'], excerpt: '抜粋' })

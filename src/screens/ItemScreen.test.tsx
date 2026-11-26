@@ -600,3 +600,58 @@ describe('ネタの詳細', () => {
     expect(screen.getByRole('link', { name: '今日のニュースへ' })).toHaveAttribute('href', '#/home')
   })
 })
+
+describe('公開日とバックナンバーからの詳細(依頼 13-1)', () => {
+  it('TST-PUB-02 詳細の出典の行に「公開 11月17日」。配信日はその横に今までどおり。公開日が無ければ「公開日不明」', async () => {
+    const items = parseItems([
+      { id: 'p1', date: '2026-11-20', order: 1, title: '公開日あり', publishedAt: '2026-11-17' },
+      { id: 'p2', date: '2026-11-20', order: 2, title: '公開日なし' },
+    ])
+    renderApp('#/item/p1', { ...sample, items })
+    const article = await screen.findByRole('article')
+    const meta = within(article).getByText('公開 11月17日').parentElement
+    expect(meta).not.toBeNull()
+    // 出典と同じ行。配信日(2026年11月20日)とは別の値として並ぶ
+    expect(meta?.textContent).toContain('2026年11月20日')
+    expect(within(article).queryByText('公開 11月20日')).not.toBeInTheDocument()
+
+    window.location.hash = '#/item/p2'
+    expect(await screen.findByRole('heading', { level: 1, name: '公開日なし' })).toBeInTheDocument()
+    expect(within(screen.getByRole('article')).getByText('公開日不明')).toBeInTheDocument()
+  })
+
+  it('TST-ARC-05 from=archive:<日付> なら前後はその日の一覧の並び、「一覧に戻る」はその日のバックナンバー', async () => {
+    // 基本の見本の 2026-01-01 は 01(order 1)と 02(order 2)の2本
+    renderApp('#/item/2026-01-01-01?from=archive:2026-01-01', sample)
+    await screen.findAllByText('1 / 2')
+    const article = screen.getByRole('article')
+    const pager = screen.getByRole('navigation', { name: '前後のニュース' })
+    expect(within(pager).queryByRole('link', { name: '前のニュース' })).not.toBeInTheDocument()
+    expect(within(pager).getByRole('link', { name: '次のニュース' })).toHaveAttribute('href', '#/item/2026-01-01-02?from=archive%3A2026-01-01')
+    expect(within(article).getAllByRole('link', { name: '一覧に戻る' })[0]).toHaveAttribute('href', '#/archive/2026-01-01')
+    // from の値は画面に文字として出さない
+    expect(within(article).queryByText(/archive:/)).not.toBeInTheDocument()
+
+    window.location.hash = '#/item/2026-01-01-02?from=archive%3A2026-01-01'
+    await screen.findAllByText('2 / 2')
+    const last = screen.getByRole('navigation', { name: '前後のニュース' })
+    expect(within(last).getByRole('link', { name: '前のニュース' })).toHaveAttribute('href', '#/item/2026-01-01-01?from=archive%3A2026-01-01')
+    expect(within(last).getByRole('link', { name: '一覧に戻る' })).toHaveAttribute('href', '#/archive/2026-01-01')
+  })
+
+  it('TST-ARC-05 形の違う from=archive は無視する(from なしと同じ戻り先と前後)', async () => {
+    renderApp('#/item/2026-01-01-01?from=archive:2026-02-30', sample)
+    await screen.findAllByText('1 / 2')
+    const article = screen.getByRole('article')
+    // 前の日のネタで from なし → 戻り先はそのジャンル(今までの動き)
+    expect(within(article).getAllByRole('link', { name: '一覧に戻る' })[0]).toHaveAttribute('href', '#/genre/work')
+    const pager = screen.getByRole('navigation', { name: '前後のニュース' })
+    expect(within(pager).getByRole('link', { name: '次のニュース' })).toHaveAttribute('href', '#/item/2026-01-01-02')
+  })
+
+  it('TST-ARC-05 from=archive の日付が記事の配信日と違うときは、戻り先もその日のバックナンバーにしない(前後とそろえる)', async () => {
+    renderApp('#/item/2026-01-01-01?from=archive:2026-01-02', sample)
+    await screen.findAllByText('1 / 2')
+    expect(within(screen.getByRole('article')).getAllByRole('link', { name: '一覧に戻る' })[0]).toHaveAttribute('href', '#/genre/work')
+  })
+})

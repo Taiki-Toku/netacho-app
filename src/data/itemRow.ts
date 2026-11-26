@@ -5,7 +5,7 @@ import type { Item } from './types.ts'
 
 /** 画面が使う列だけを取る(supabase/migrations/0001_init.sql の items) */
 export const ITEM_COLUMNS =
-  'id,date,sort_order,slot,genre,title,lead,summary,points,excerpt,tryit,caution,categories,projects,tags,source_url,source_title,trust,star_hot,star_use,star_fun,image_url'
+  'id,date,sort_order,slot,genre,title,lead,summary,points,excerpt,tryit,caution,categories,projects,tags,source_url,source_title,trust,star_hot,star_use,star_fun,image_url,published_at'
 
 /** 行の列名を、JSON のネタの項目名に置き換える(値の検査は parseItem に任せる) */
 function rowToJson(row: unknown): unknown {
@@ -34,6 +34,8 @@ function rowToJson(row: unknown): unknown {
     stars: { hot: r.star_hot, use: r.star_use, fun: r.star_fun },
     // null は空文字 → parseItem で項目なし。URL の検査は表示の直前の imageHref
     imageUrl: r.image_url ?? '',
+    // date 型の列は "YYYY-MM-DD" の文字列で届く。null や形の違う値は parseItem で空(公開日不明)
+    publishedAt: r.published_at,
     // 評価・状態・メモは item_feedback に分けた(フェーズ1では読まない)
     rating: '',
     status: '',

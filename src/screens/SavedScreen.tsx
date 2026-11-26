@@ -5,7 +5,9 @@ import { EmptyState } from '../components/EmptyState.tsx'
 import { genreLabelMap, genreLabelOf, savedItems } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { useUserState } from '../data/userStore.ts'
+import { hrefFor } from '../app/router.ts'
 import pageStyles from '../components/page.module.css'
+import styles from './SavedScreen.module.css'
 
 export function SavedScreen({ data }: { data: LoadedData }) {
   const labels = genreLabelMap(data.genres)
@@ -27,6 +29,13 @@ export function SavedScreen({ data }: { data: LoadedData }) {
           ))}
         </ol>
       )}
+      {/* バックナンバーへの入口(スマホの入口を兼ねる。下のメニューには足さない。詳細設計 5.4.3) */}
+      <p className={styles.archive}>
+        <a className={pageStyles.textLink} href={hrefFor({ name: 'archive', date: null })}>
+          バックナンバー
+        </a>
+        <span className={pageStyles.caption}>過去の日のニュースを日付で読む</span>
+      </p>
     </section>
   )
 }

@@ -13,6 +13,7 @@ import {
   type Severity,
   type Status,
 } from './types.ts'
+import { isCalendarDate } from '../lib/format.ts'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -50,6 +51,11 @@ export const TITLE_JA_MAX = 1000
 function asTitleJa(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined
   return Array.from(value).length <= TITLE_JA_MAX ? value : undefined
+}
+
+/** 記事の公開日。暦に実在する "YYYY-MM-DD" だけを通し、それ以外(null・空・時刻つき・形の違う値)は空 */
+function asPublishedAt(value: unknown): string {
+  return typeof value === 'string' && isCalendarDate(value) ? value : ''
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -91,6 +97,8 @@ export function parseItem(value: unknown): Item | null {
     rating: asRating(value.rating),
     status: asStatus(value.status),
     memo: asString(value.memo),
+    // 公開日はおまけの情報なので、形が違っても行は捨てず、空にする(詳細設計 5.4.1)
+    publishedAt: asPublishedAt(value.publishedAt),
     // 画像は無いことが普通なので、空のときは項目ごと持たない。URL の中身はここでは見ない(表示の直前に imageHref で検査する)
     ...(imageUrl !== '' ? { imageUrl } : {}),
   }
