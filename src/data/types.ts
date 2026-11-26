@@ -37,6 +37,11 @@ export interface Item {
   rating: Rating
   status: Status
   memo: string
+  /**
+   * 元記事の公開日("YYYY-MM-DD")。無い・形が違うときは空(画面は「公開日不明」)。
+   * 配信日(date)とは別の値。日付だけの値なので Date に変えずに扱う(依頼 13-1、詳細設計 5.4.1)
+   */
+  publishedAt: string
   /** 記事の画像。無いことがある。表示の前に imageHref(src/lib/safeUrl.ts)で検査する */
   imageUrl?: string
 }

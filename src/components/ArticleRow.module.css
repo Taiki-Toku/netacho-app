@@ -70,7 +70,9 @@
 
 .meta {
   display: flex;
-  gap: var(--sp-2h);
+  /* 公開日を足して(依頼 13-1)狭い幅では1行に収まらないことがあるため、折り返す。行の間は詰める */
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2h);
   align-items: center;
   color: var(--muted);
   font-size: var(--fs-12);

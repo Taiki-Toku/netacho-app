@@ -5,6 +5,7 @@ import { hrefFor, type ItemFrom } from '../app/router.ts'
 import { isRated } from '../data/queries.ts'
 import { itemSourceName, sourceInitial } from '../data/sourceName.ts'
 import type { Item } from '../data/types.ts'
+import { formatPublishedDate } from '../lib/format.ts'
 import { SaveButton } from './SaveButton.tsx'
 import { SourceBadge } from './SourceBadge.tsx'
 import { Thumb, useThumb } from './Thumb.tsx'
@@ -20,7 +21,7 @@ interface ArticleRowProps {
   headingLevel?: 2 | 3
   /** リードを1行に詰め、スマホでも出す(今朝のラインナップ。仕様 4 章 1) */
   oneLineLead?: boolean
-  /** どの一覧の行か(ジャンル・保存だけ)。リンクに付け、詳細の前後と戻り先をその一覧で決める(仕様 4 章 5) */
+  /** どの一覧の行か(ジャンル・保存・バックナンバーだけ)。リンクに付け、詳細の前後と戻り先をその一覧で決める(仕様 4 章 5) */
   from?: ItemFrom
 }
 
@@ -52,6 +53,8 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
         <div className={styles.meta}>
           {thumb.shown ? null : <SourceBadge initial={itemInitial(item, genreLabel)} />}
           <span>{itemSourceName(item, genreLabel)}</span>
+          {/* 公開日は出典と同じ補助情報の並びに(design_spec v3.9 の 3-1)。配信日では代わりにしない */}
+          <span>{formatPublishedDate(item.publishedAt)}</span>
           {isRated(item) ? <span>評価済み</span> : null}
           <span className={styles.save}>
             <SaveButton id={item.id} />

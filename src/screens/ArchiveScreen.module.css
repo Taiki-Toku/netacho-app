@@ -1,0 +1,71 @@
+/* バックナンバー(design_spec v3.9 の 4-8)。値はすべて既存のトークン(新しいトークンは足さない) */
+
+/* 日付の選び方:前の日・日付の一覧・次の日を1行に。狭い幅では一覧を上の行に広げる */
+.picker {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-5h);
+}
+
+.select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-16);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+/* 前の日・次の日(詳細の「前後のニュース」と同じ形) */
+.dayLink,
+.dayDisabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3h);
+  border: var(--line-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-13);
+  color: var(--ink-soft);
+}
+
+@media (hover: hover) {
+  .dayLink:hover {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+  }
+}
+
+/* 端:押せない文字。点線の枠で、押せる物と見分ける */
+.dayDisabled {
+  color: var(--muted);
+  border-style: dashed;
+  background: transparent;
+}
+
+/* 空の状態の下の「最も新しい日へ」 */
+.latestLink {
+  margin-top: var(--sp-3);
+}
+
+@media (max-width: 767px) {
+  .select {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .dayLink,
+  .dayDisabled {
+    flex: 1 1 0;
+  }
+}

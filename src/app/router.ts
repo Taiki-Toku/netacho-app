@@ -4,6 +4,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import type { NeighborsFrom } from '../data/queries.ts'
 import { FEED_KINDS, SEVERITIES, type FeedKind, type Severity } from '../data/types.ts'
+import { isCalendarDate } from '../lib/format.ts'
 
 /** 公式のお知らせの絞り込み。all はすべて */
 export type FeedFilter = 'all' | FeedKind
@@ -21,6 +22,8 @@ export type Route =
   | { name: 'vuln-detail'; id: string }
   | { name: 'item'; id: string; from?: ItemFrom }
   | { name: 'saved' }
+  /** バックナンバー。date は配信日。null は日付なし(#/archive)、'' は形の違う・暦に無い日付(空の状態を出す) */
+  | { name: 'archive'; date: string | null }
   | { name: 'search'; q: string }
   | { name: 'settings' }
 
@@ -35,9 +38,14 @@ function asSeverityFilter(value: string | null): SeverityFilter {
   return value !== null && value !== '' && (SEVERITIES as readonly string[]).includes(value) ? (value as SeverityFilter) : 'all'
 }
 
-/** from=genre:<id> / from=saved を読む。形が違う・知らない値は undefined(from なし) */
+/** from=genre:<id> / from=saved / from=archive:<YYYY-MM-DD> を読む。形が違う・知らない値は undefined(from なし) */
 function asItemFrom(value: string | null): ItemFrom | undefined {
   if (value === 'saved') return { kind: 'saved' }
+  if (value?.startsWith('archive:') === true) {
+    const date = value.slice('archive:'.length)
+    // 暦に実在する日付だけ。それ以外は from なし(詳細設計 5.4.3)
+    return isCalendarDate(date) ? { kind: 'archive', date } : undefined
+  }
   if (value?.startsWith('genre:') === true) {
     const id = value.slice('genre:'.length)
     if (id !== '') return { kind: 'genre', id }
@@ -46,7 +54,20 @@ function asItemFrom(value: string | null): ItemFrom | undefined {
 }
 
 function fromParam(from: ItemFrom): string {
-  return from.kind === 'saved' ? 'saved' : `genre:${from.id}`
+  switch (from.kind) {
+    case 'saved':
+      return 'saved'
+    case 'archive':
+      return `archive:${from.date}`
+    case 'genre':
+      return `genre:${from.id}`
+  }
+}
+
+/** #/archive/<x> の x を読む。無ければ null(最新の過去日に置き換える)、暦に無い・形が違う日付は ''(空の状態) */
+function asArchiveDate(value: string | undefined): string | null {
+  if (value === undefined) return null
+  return isCalendarDate(value) ? value : ''
 }
 
 /** "#/genre/product?kind=release" のようなハッシュを Route にする。読めないものはトップ(ホーム)に落とす */
@@ -84,6 +105,8 @@ export function parseHash(hash: string): Route {
     }
     case 'saved':
       return { name: 'saved' }
+    case 'archive':
+      return { name: 'archive', date: asArchiveDate(second) }
     case 'search':
       return { name: 'search', q: (query.get('q') ?? '').trim() }
     case 'settings':
@@ -116,6 +139,9 @@ export function hrefFor(route: Route): string {
       return withQuery(`#/item/${encodeURIComponent(route.id)}`, route.from === undefined ? {} : { from: fromParam(route.from) })
     case 'saved':
       return '#/saved'
+    case 'archive':
+      // date は parseHash を通った値(実在する日付・''・null)だけ。'' と null は日付なしのアドレス
+      return route.date === null || route.date === '' ? '#/archive' : `#/archive/${encodeURIComponent(route.date)}`
     case 'search':
       return withQuery('#/search', { q: route.q })
     case 'settings':
@@ -153,16 +179,30 @@ export function redirectLegacyHash(): boolean {
   return true
 }
 
+/** replaceRoute で URL を変えたことを useRoute に知らせる先(replaceState は hashchange を起こさないため) */
+const replaceListeners = new Set<() => void>()
+
+/**
+ * 今の履歴の項目を置き換えて画面を切り替える(履歴に積まない)。
+ * #/archive を最新の過去日に置き換えるときに使う(積むと「戻る」で #/archive に戻り、また置き換わって先へ戻れなくなる)
+ */
+export function replaceRoute(route: Route) {
+  window.history.replaceState(window.history.state, '', hrefFor(route))
+  for (const listener of replaceListeners) listener()
+}
+
 function subscribe(onChange: () => void): () => void {
   function handle() {
     redirectLegacyHash()
     onChange()
   }
   window.addEventListener('hashchange', handle)
+  replaceListeners.add(onChange)
   // 最初の表示が #/today のとき(ブックマークなど)
   if (redirectLegacyHash()) onChange()
   return () => {
     window.removeEventListener('hashchange', handle)
+    replaceListeners.delete(onChange)
   }
 }
 

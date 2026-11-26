@@ -1,4 +1,4 @@
-// トップ(ホーム):トップ(画像 + 文章の大きな枠)→ 脆弱性ウォッチの帯 → ニュース一覧(全件、配信の順)(仕様 4 章 1)。
+// トップ(ホーム):日付の導線(今日の日付とバックナンバーへのリンク。v3.9)→ トップ(画像 + 文章の大きな枠)→ 脆弱性ウォッチの帯 → ニュース一覧(全件、配信の順)(仕様 4 章 1)。
 // 見出し「今日のニュース」は画面に出さず、読み上げ用の h1 としてだけ置く(日付は上のバー、件数は一覧の見出しの横にあるため)
 import { hrefFor } from '../app/router.ts'
 import { ArticleRow, itemInitial } from '../components/ArticleRow.tsx'
@@ -11,7 +11,7 @@ import { countBySeverity, genreLabelMap, genreLabelOf, itemsOnDate, latestDate, 
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
 import type { FeedEntry, Item } from '../data/types.ts'
-import { formatCvss } from '../lib/format.ts'
+import { formatCvss, formatDateHeader, tokyoToday } from '../lib/format.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './HomeScreen.module.css'
 
@@ -31,37 +31,47 @@ export function HomeScreen({ data, intro }: HomeScreenProps) {
   const step = (n: 1 | 2 | 3) => (intro ? styles[`intro${n}`] : undefined)
 
   return (
-    <section aria-labelledby="home-title">
-      <h1 id="home-title" className="visually-hidden" tabIndex={-1}>
-        今日のニュース
-      </h1>
+    <>
+      {/* 日付の導線(design_spec v3.9 の 4-1):今日の日付(日本時間)と、バックナンバーへのリンクを1行で。上のバーの日付(配信日)とは別。
+          トップの枠より上に置くため、番組の並び(h1 → 枠 → 帯 → 一覧)を持つ section の外の前に置く */}
+      <nav className={styles.dateGuide} aria-label="日付">
+        <span className={styles.dateGuideToday}>{formatDateHeader(tokyoToday(new Date()))}</span>
+        <a className={`${pageStyles.textLink} ${styles.dateGuideLink}`} href={hrefFor({ name: 'archive', date: null })}>
+          バックナンバー
+        </a>
+      </nav>
+      <section aria-labelledby="home-title">
+        <h1 id="home-title" className="visually-hidden" tabIndex={-1}>
+          今日のニュース
+        </h1>
 
-      {top === undefined ? (
-        <EmptyState title="今日のニュースはまだありません" text="配信が届くと、ここに並びます。" spaced />
-      ) : (
-        // key:トップの記事が替わったら、画像の読み込み失敗の記録を持ち越さない
-        <Feature key={top.id} item={top} genreLabel={genreLabelOf(top, labels)} introClass={step(1)} />
-      )}
+        {top === undefined ? (
+          <EmptyState title="今日のニュースはまだありません" text="配信が届くと、ここに並びます。" spaced />
+        ) : (
+          // key:トップの記事が替わったら、画像の読み込み失敗の記録を持ち越さない
+          <Feature key={top.id} item={top} genreLabel={genreLabelOf(top, labels)} introClass={step(1)} />
+        )}
 
-      <div className={step(2)}>
-        <VulnBand feed={feed} />
-      </div>
-
-      {top !== undefined ? (
-        <div className={step(3)}>
-          <div className={pageStyles.sectionHead}>
-            <h2 className={pageStyles.sectionTitle}>ニュース一覧</h2>
-            <span className={pageStyles.caption}>全{list.length}本</span>
-          </div>
-          <ol className={pageStyles.list} aria-label="ニュース一覧">
-            {list.map((item) => (
-              <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} order={item.order} oneLineLead />
-            ))}
-          </ol>
+        <div className={step(2)}>
+          <VulnBand feed={feed} />
         </div>
-      ) : null}
-      {data.source === 'fixtures' ? <p className={pageStyles.sampleNote}>表示しているのは、すべて見本用の架空データです。</p> : null}
-    </section>
+
+        {top !== undefined ? (
+          <div className={step(3)}>
+            <div className={pageStyles.sectionHead}>
+              <h2 className={pageStyles.sectionTitle}>ニュース一覧</h2>
+              <span className={pageStyles.caption}>全{list.length}本</span>
+            </div>
+            <ol className={pageStyles.list} aria-label="ニュース一覧">
+              {list.map((item) => (
+                <ArticleRow key={item.id} item={item} genreLabel={genreLabelOf(item, labels)} order={item.order} oneLineLead />
+              ))}
+            </ol>
+          </div>
+        ) : null}
+        {data.source === 'fixtures' ? <p className={pageStyles.sampleNote}>表示しているのは、すべて見本用の架空データです。</p> : null}
+      </section>
+    </>
   )
 }
 

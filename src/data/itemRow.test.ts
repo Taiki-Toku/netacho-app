@@ -50,6 +50,8 @@ describe('items の行の変換', () => {
       rating: '',
       status: '',
       memo: '',
+      // 依頼 13-1 で足した項目(published_at の無い行は公開日不明 = 空)
+      publishedAt: '',
     })
   })
 
@@ -74,5 +76,18 @@ describe('items の行の変換', () => {
 
   it('TST-IMG-02 items の問い合わせの select に渡す列に image_url が入っている', () => {
     expect(ITEM_COLUMNS.split(',')).toContain('image_url')
+  })
+
+  it('TST-PUB-01 published_at が YYYY-MM-DD なら publishedAt になり、null・空・形の違う値は空(行は捨てない)', () => {
+    expect(rowToItem({ ...row, published_at: '2026-11-17' })?.publishedAt).toBe('2026-11-17')
+    for (const bad of [null, undefined, '', '2026-11-17T09:00:00Z', '2026/11/17', '2026-02-30', '2026-13-01', 20261117]) {
+      const item = rowToItem({ ...row, published_at: bad })
+      expect(item?.id).toBe('2026-11-17-01')
+      expect(item?.publishedAt).toBe('')
+    }
+  })
+
+  it('TST-PUB-01 items の問い合わせの select に渡す列に published_at が入っている', () => {
+    expect(ITEM_COLUMNS.split(',')).toContain('published_at')
   })
 })

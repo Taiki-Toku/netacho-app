@@ -1,0 +1,12 @@
+/* 保存の一覧の下の、バックナンバーへの入口(依頼 13-1)。押せる範囲は 44px 以上 */
+.archive {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-5h);
+}
+
+.archive a {
+  min-height: var(--tap);
+}

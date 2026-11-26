@@ -17,7 +17,7 @@ import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
 import type { Item, Rating } from '../data/types.ts'
 import { useUserState, useUserStore } from '../data/userStore.ts'
-import { formatDateLong } from '../lib/format.ts'
+import { formatDateLong, formatPublishedDate } from '../lib/format.ts'
 import { useSwipe } from '../lib/useSwipe.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './ItemScreen.module.css'
@@ -29,10 +29,15 @@ interface ItemScreenProps {
   from?: ItemFrom
 }
 
-/** 戻り先:ジャンルから開いたらそのジャンル、保存から開いたら保存。無ければ今朝のネタはトップ、前の日のネタはそのジャンル */
+/**
+ * 戻り先:ジャンルから開いたらそのジャンル、保存から開いたら保存、バックナンバーから開いたらその日のバックナンバー。
+ * 無ければ今朝のネタはトップ、前の日のネタはそのジャンル
+ */
 function backRoute(items: readonly Item[], item: Item, from: ItemFrom | undefined): Route {
   if (from?.kind === 'genre') return { name: 'genre', id: from.id, kind: 'all' }
   if (from?.kind === 'saved') return { name: 'saved' }
+  // 記事の配信日と from の日付が違うときは、前後(neighbors)と同じく from なしの戻り先にそろえる
+  if (from?.kind === 'archive' && item.date === from.date) return { name: 'archive', date: from.date }
   return item.date === latestDate(items) || item.genre === null ? { name: 'home' } : { name: 'genre', id: item.genre, kind: 'all' }
 }
 
@@ -127,6 +132,8 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
         <div className={styles.metaRow}>
           {thumb.shown ? null : <SourceBadge initial={itemInitial(item, genreLabel)} />}
           <span>{itemSourceName(item, genreLabel)}</span>
+          {/* 元記事の公開日(無ければ「公開日不明」)。その右の日付は今までどおり配信日 */}
+          <span>{formatPublishedDate(item.publishedAt)}</span>
           <span>{formatDateLong(item.date)}</span>
           <span>
             {nav.position} / {nav.total}

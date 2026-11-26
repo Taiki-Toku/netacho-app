@@ -37,7 +37,6 @@ describe('router(ハッシュの読み書き)', () => {
     expect(parseHash('#/genre')).toEqual({ name: 'home' })
     expect(parseHash('#/item/%E0%A4%A')).toEqual({ name: 'home' })
     expect(parseHash('#/preferences')).toEqual({ name: 'home' })
-    expect(parseHash('#/archive/2026-01-01')).toEqual({ name: 'home' })
     expect(parseHash('#/design-lab')).toEqual({ name: 'home' })
   })
 
@@ -70,6 +69,27 @@ describe('router(ハッシュの読み書き)', () => {
     expect(parseHash('#/item/a?from=genre:')).toEqual({ name: 'item', id: 'a' })
     expect(parseHash('#/item/a?from=')).toEqual({ name: 'item', id: 'a' })
     expect(parseHash('#/item/a')).toEqual({ name: 'item', id: 'a' })
+  })
+
+  it('TST-ARC-01 #/archive と #/archive/<日付> を読み書きする。形の違う・暦に無い日付は空(\'\')', () => {
+    expect(parseHash('#/archive')).toEqual({ name: 'archive', date: null })
+    expect(parseHash('#/archive/2026-01-01')).toEqual({ name: 'archive', date: '2026-01-01' })
+    expect(parseHash('#/archive/2024-02-29')).toEqual({ name: 'archive', date: '2024-02-29' })
+    for (const bad of ['2026-02-29', '2026-13-01', '2026-1-1', '20260101', 'yesterday', '2026-01-01T00:00', '%3Cscript%3E']) {
+      expect(parseHash(`#/archive/${bad}`)).toEqual({ name: 'archive', date: '' })
+    }
+    expect(hrefFor({ name: 'archive', date: '2026-01-01' })).toBe('#/archive/2026-01-01')
+    expect(hrefFor({ name: 'archive', date: null })).toBe('#/archive')
+    expect(parseHash(hrefFor({ name: 'archive', date: '2026-11-24' }))).toEqual({ name: 'archive', date: '2026-11-24' })
+  })
+
+  it('TST-ARC-05 from=archive:<日付> を読み、hrefFor と往復する。形の違う日付は from なし', () => {
+    expect(parseHash('#/item/a?from=archive:2026-11-24')).toEqual({ name: 'item', id: 'a', from: { kind: 'archive', date: '2026-11-24' } })
+    const fromArchive = { name: 'item', id: 'a', from: { kind: 'archive', date: '2026-11-24' } } as const
+    expect(parseHash(hrefFor(fromArchive))).toEqual(fromArchive)
+    for (const bad of ['archive:', 'archive:2026-11-31', 'archive:2026/11/24', 'archive:x', 'archive:2026-11-24x']) {
+      expect(parseHash(`#/item/a?from=${bad}`)).toEqual({ name: 'item', id: 'a' })
+    }
   })
 
   it('screenKey は詳細の from では変わらない(id だけ)', () => {
