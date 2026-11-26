@@ -259,7 +259,7 @@ class DigestSummary:
                 out.append(f"- E-DIGEST-OLD:7日より古い null の行 {self.old}(入れていない)")
         elif self.mode == "commit":
             out.append(f"- ファイルの id:{self.listed}/その日にした {num(self.updated)}/"
-                       f"もうその日 {num(self.unchanged)}/DB に無い {num(self.missing)}")
+                       f"印が付いていて変えない {num(self.unchanged)}/DB に無い {num(self.missing)}")
         else:
             out.append(f"- 印を付けた行(上の日付より前の null の行):{num(self.marked)}")
         return "\n".join(out) + "\n"

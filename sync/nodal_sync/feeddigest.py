@@ -83,10 +83,11 @@ COUNT_OLD = sql.SQL(
     "select count(*) from public.feed_entries "
     "where digest_date is null and first_seen_at < %(cutoff)s::timestamptz")
 
-# その日の値と違う行だけを変える(同じ値の行を書き直すと guard が updated_at を今にし、バックアップの差分が増える)
+# digest_date が null の行だけを変える(3.15.2:同じ行を2つの日に載せない。2026-11-26 のレビューの決定)。
+# 印が付いている行は、別の日でも同じ日でも変えない(書き直すと guard が updated_at を今にし、バックアップの差分も増える)
 COMMIT_DIGEST = sql.SQL(
     "update public.feed_entries set digest_date = %(day)s::date "
-    "where id = any(%(ids)s::text[]) and digest_date is distinct from %(day)s::date")
+    "where id = any(%(ids)s::text[]) and digest_date is null")
 
 COUNT_IDS = sql.SQL("select count(*) from public.feed_entries where id = any(%(ids)s::text[])")
 
@@ -291,13 +292,14 @@ def read_ids(data_dir: str, day: dt.date) -> list[str]:
 @dataclass
 class CommitResult:
     listed: int = 0     # ファイルの id の数
-    updated: int = 0    # digest_date をその日にした行
-    unchanged: int = 0  # もうその日だった行
+    updated: int = 0    # null からその日にした行
+    unchanged: int = 0  # もう digest_date が付いていた行(別の日でも同じ日でも変えない)
     missing: int = 0    # DB に無い id
 
 
 def commit_db(conn: psycopg.Connection[Any], day: dt.date, ids: list[str]) -> CommitResult:
-    """ファイルの id の行だけを、1つのトランザクションでその日にする。失敗したら全部を取り消す。"""
+    """ファイルの id の行のうち digest_date が null の行だけを、1つのトランザクションでその日にする。
+    失敗したら全部を取り消す。"""
     res = CommitResult(listed=len(ids))
     if not ids:
         return res

@@ -139,7 +139,7 @@ python -m nodal_sync feed-digest-backlog --before YYYY-MM-DD --ca <CA 証明書>
 - feed-digest:読むだけのトランザクション(repeatable read)で、digest_date が null で first_seen_at が7日以内の行と、日本時間の今日の digest_date の行を読み、`--data-dir` の下の `feed_digest/YYYY-MM-DD.json`(日本時間の今日)を書き直す。DB は変えない。0件でも書く。7日より古い null の行は入れずに数え、要約とログに `E-DIGEST-OLD` を出す(終了コードは 0。watch の `W-DIGEST-STALE` でも気づける)
   - 形:`{"version": 1, "date": "YYYY-MM-DD", "entries": [...]}`。1件のキーは `id・kind・vendor・product・cve_ids・url・published_at・status` だけ(この順。題・本文・訳は入れない)。並びは sort_at の新しい順(同じなら id の順)。published_at は UTC の `YYYY-MM-DDTHH:MM:SSZ`、url・published_at の null は null のまま。`ensure_ascii=False`
   - 書くのはこのファイルだけ。名前は日付(dt.date)から作る。`--data-dir`・`feed_digest/`・その日のファイルがリンクなら書かずに止まる
-- `--commit-db --date`:push の後に呼ぶ。その日のファイルを読み、形(キー・version・date・id が 32 桁の16進・同じ id が無い)を全部確かめてから、載った id の行の digest_date を1つのトランザクションでその日にする(もうその日の行は書き直さない)。合わなければ DB に何も書かずに `E-DIGEST-FILE`。`--dry-run` はファイルを確かめるだけで DB に接続しない
+- `--commit-db --date`:push の後に呼ぶ。その日のファイルを読み、形(キー・version・date・id が 32 桁の16進・同じ id が無い)を全部確かめてから、載った id の行のうち digest_date が null の行だけを、1つのトランザクションでその日にする。もう digest_date が付いている行は、別の日でも同じ日でも変えずに「印が付いていて変えない」に数える(3.15.2:同じ行を2つの日に載せない。2026-11-26 のレビューの決定)。合わなければ DB に何も書かずに `E-DIGEST-FILE`。`--dry-run` はファイルを確かめるだけで DB に接続しない
 - feed-digest-backlog(始めるときの1回だけ):first_seen_at が `--before` の日(日本時間 0 時)より前で digest_date が null の行に、first_seen_at の日本時間の日付を付ける。どの日の一覧にも載らず、watch の 2・3 に当たらなくなる
 - `--date`・`--before` は `YYYY-MM-DD` の実在する日だけ。`--date` は `--commit-db` のときだけ使える。`--before` は日本時間の今日まで(明日以降だと今日の行に今日の印が付き、今日の一覧に載ってしまうので止まる)
 - ファイルは `--data-dir` と `feed_digest/` を `O_DIRECTORY|O_NOFOLLOW` で開いた fd を基準に読み書きする(確かめた後にリンクへ差し替えられても、リンクの先に書かない)

@@ -271,8 +271,24 @@ def test_tst_dg_04_commit_only_file_ids(sqlrun: Any, dg_db: str, data_dir: Path,
     # もうその日だった行は書き直さない(guard が updated_at を変えない)
     assert sqlrun("select updated_at from public.feed_entries where id = %s", (_id(5),)) == stamp5
     text = summary.read_text(encoding="utf-8")
-    assert "ファイルの id:2/その日にした 1/もうその日 1/DB に無い 0" in text
+    assert "ファイルの id:2/その日にした 1/印が付いていて変えない 1/DB に無い 0" in text
     assert _id(1) not in text
+
+
+def test_tst_dg_04_other_day_row_is_not_changed(sqlrun: Any, dg_db: str, data_dir: Path,
+                                               tmp_path: Path) -> None:
+    """TST-DG-04:ファイルに載っていても、別の日の digest_date が付いた行は変えない(3.15.2。同じ行を2つの日に載せない)。"""
+    insert_entry(sqlrun, 1)
+    insert_entry(sqlrun, 3, digest_date=dt.date(2026, 11, 30))
+    write_file(data_dir, "2026-12-01", [entry(_id(1)), entry(_id(3))])
+    before3 = sqlrun("select digest_date, updated_at from public.feed_entries where id = %s", (_id(3),))
+    summary = tmp_path / "summary.md"
+    assert commit(dg_db, data_dir, "2026-12-01", summary=summary) == 0
+    assert digest_of(sqlrun) == {_id(1): DAY, _id(3): dt.date(2026, 11, 30)}
+    assert sqlrun("select digest_date, updated_at from public.feed_entries where id = %s", (_id(3),)) == before3
+    text = summary.read_text(encoding="utf-8")
+    assert "ファイルの id:2/その日にした 1/印が付いていて変えない 1/DB に無い 0" in text
+    assert _id(3) not in text
 
 
 def test_tst_dg_04_unknown_id_is_counted(sqlrun: Any, dg_db: str, data_dir: Path, tmp_path: Path) -> None:
@@ -282,7 +298,7 @@ def test_tst_dg_04_unknown_id_is_counted(sqlrun: Any, dg_db: str, data_dir: Path
     summary = tmp_path / "summary.md"
     assert commit(dg_db, data_dir, "2026-12-01", summary=summary) == 0
     assert digest_of(sqlrun) == {_id(1): DAY}
-    assert "その日にした 1/もうその日 0/DB に無い 1" in summary.read_text(encoding="utf-8")
+    assert "その日にした 1/印が付いていて変えない 0/DB に無い 1" in summary.read_text(encoding="utf-8")
 
 
 def entry(i: Any) -> dict[str, Any]:
