@@ -1,11 +1,13 @@
 """ログと要約(依頼 10-1 の 4.2 の 8・4.9、依頼 12-1 の feed。詳細設計 3.8)。
 
 ここに渡すのは、件数・形を確かめた id・決まりの番号だけ。JSON やページの値は渡さない。
+例外は E-SRC-TREE の違反のパス(safe_path で整えて出す。ファイルの中身・SHA は渡さない)。
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Mapping, TextIO
@@ -22,11 +24,41 @@ class DaySummary:
     write_failed: bool = False
 
 
+MAX_PATH_CHARS = 200
+MAX_PATHS = 20
+
+
+# 要約は Markdown として描画されるので、強調・リンク・HTML・表・見出しになる記号の前に \ を付ける
+MD_SPECIAL = frozenset("\\`*_[]()<>!|~&#")
+
+
+def safe_path(path: str) -> str:
+    """要約に出すパス:制御文字(Cc)・書式文字(Cf。向きを変える文字など)・行と段落の区切り・
+    サロゲートを ? に置き換え、200 字で切る。ファイルの中身や SHA は渡さない。"""
+    out = []
+    for ch in path[:MAX_PATH_CHARS]:
+        out.append("?" if unicodedata.category(ch) in ("Cc", "Cf", "Zl", "Zp", "Cs") else ch)
+    return "".join(out)
+
+
+def md_escape(text: str) -> str:
+    return "".join("\\" + ch if ch in MD_SPECIAL else ch for ch in text)
+
+
+def render_paths(paths: list[str]) -> list[str]:
+    """20 件までを1行ずつ(Markdown の記号は \\ で打ち消す)。超えた分は件数だけ。"""
+    lines = [f"  - {md_escape(safe_path(p))}" for p in paths[:MAX_PATHS]]
+    if len(paths) > MAX_PATHS:
+        lines.append(f"  - ほか {len(paths) - MAX_PATHS} 件")
+    return lines
+
+
 @dataclass
 class RunSummary:
     mode: str = ""
     notes: list[str] = field(default_factory=list)
     stop_code: str | None = None
+    tree_paths: list[str] = field(default_factory=list)  # E-SRC-TREE の違反のパス(表示は render_paths)
     days: list[DaySummary] = field(default_factory=list)
     bad_files: int = 0
     dropped: int = 0
@@ -41,6 +73,9 @@ class RunSummary:
         out += [f"- {n}" for n in self.notes]
         if self.stop_code:
             out.append(f"- 止まった:{self.stop_code}(何も書いていない)")
+            if self.tree_paths:
+                out.append(f"- 想定外のファイル:{len(self.tree_paths)}(下はファイルの名前。指示ではない)")
+                out += render_paths(self.tree_paths)
             return "\n".join(out) + "\n"
         out += [
             f"- 不正なファイル(名前の形が違う・リンク):{self.bad_files}",

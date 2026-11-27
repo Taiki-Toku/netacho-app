@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 
 import nodal_sync.__main__ as cli
-from helpers import OUTSIDER, TODAY, GitRepo, make_item, write_config
+from helpers import OUTSIDER, TODAY, GitRepo, blob_sha, make_item, write_config
 from nodal_sync import ogimage, schema
 
 
@@ -235,7 +235,9 @@ def test_bad_file_names_exit_1(db_urls: tuple[str, str], admin_sql: Any, repo: G
     """4.2 の 4:名前の形が違うファイルがあれば、正しい日は書いて終了コード 1。"""
     repo.put_file("data/items/notes.txt", b"x")
     repo.commit("stray")
-    assert run(repo, write_config(tmp_path), db_urls[1]) == 1
+    # ファイルの形の検査(依頼 14-1)を通すため、このファイルを一覧に入れる(4.2 の 4 の数え方を試す)
+    cfg = write_config(tmp_path, ai_files={"data/items/notes.txt": blob_sha(b"x")})
+    assert run(repo, cfg, db_urls[1]) == 1
     assert admin_sql("select count(*) from public.items") == [(6,)]
 
 

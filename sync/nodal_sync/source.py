@@ -1,4 +1,5 @@
-"""ai-netacho の checkout を読む:履歴の検査(4.2 の 3)と、日ごとのファイルの一覧(4.2 の 4)。
+"""ai-netacho の checkout を読む:履歴の検査(4.2 の 3)、ファイルの形の検査(詳細設計 2.4 の3)、
+日ごとのファイルの一覧(4.2 の 4)。
 
 git は配列で呼ぶ(シェルを使わない)。git に渡す値は、形を確かめた 40 桁の16進だけ。
 """
@@ -81,6 +82,99 @@ def check_clean(data_dir: str) -> None:
                         "--ignored=matching", "--", "data/items/"])
     if p.returncode != 0 or p.stdout:
         raise SourceError("E-SRC-DIRTY")
+
+
+# ファイルの形の検査(詳細設計 2.4 の3。K-063)。パスの全体に当てる(fullmatch)。
+# \d は全角などの数字にも合うので [0-9] と書く。
+DATA_PATH_RES = (
+    re.compile(r"data/items/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}\.json"),
+    re.compile(r"feed_digest/[0-9]{4}-[0-9]{2}-[0-9]{2}\.json"),
+    re.compile(r"ネタ/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}( [^/]*)?\.md"),
+    re.compile(r"放送/[0-9]{4}-[0-9]{2}-[0-9]{2}\.md"),
+)
+
+
+def is_data_path(path: str) -> bool:
+    return any(r.fullmatch(path) for r in DATA_PATH_RES)
+
+
+class TreeError(SourceError):
+    """ファイルの形の検査で止まった(E-SRC-TREE)。paths は違反のパス(表示の前に report で整える)。"""
+
+    def __init__(self, paths: list[str]) -> None:
+        super().__init__("E-SRC-TREE")
+        self.paths = paths
+
+
+def _nul_fields(raw: bytes) -> list[bytes]:
+    """-z の出力を bytes のまま NUL で区切る(空の欄は捨てる)。"""
+    return [f for f in raw.split(b"\x00") if f]
+
+
+def _decode_path(raw: bytes) -> str | None:
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def check_tree(data_dir: str, head: str, files: dict[str, str]) -> None:
+    """今の木(head)の全部のファイルを調べる。違反があれば TreeError。
+
+    - 種類が blob でモードが 100644 でない(リンク・実行ファイル・サブモジュール)→ 違反
+    - パスがデータの形に合えば通す。合わなければ、files に同じパスと同じ blob の SHA があれば通す
+    - UTF-8 で読めないパス・files にあって木に無いパス → 違反
+    """
+    if not SHA_RE.fullmatch(head):
+        raise SourceError("E-GIT-HEAD")
+    p = _git(data_dir, ["ls-tree", "-r", "-z", "--full-tree", head])
+    if p.returncode != 0:
+        raise SourceError("E-GIT-LOG")
+    bad: list[str] = []
+    seen: set[str] = set()
+    for entry in _nul_fields(p.stdout):
+        meta, tab, raw_path = entry.partition(b"\t")
+        parts = meta.split(b" ")
+        if not tab or len(parts) != 3 or not raw_path:
+            raise SourceError("E-GIT-LOG")
+        mode, kind, oid = (x.decode("ascii", "replace") for x in parts)
+        path = _decode_path(raw_path)
+        if path is None:
+            bad.append(raw_path.decode("utf-8", "replace"))
+            continue
+        seen.add(path)
+        if kind != "blob" or mode != "100644":
+            bad.append(path)
+        elif is_data_path(path):
+            continue
+        elif files.get(path) != oid:
+            bad.append(path)
+    bad += [path for path in files if path not in seen]
+    if bad:
+        raise TreeError(sorted(set(bad)))
+
+
+def check_tree_history(data_dir: str, last_commit: str, head: str, files: dict[str, str]) -> None:
+    """last_commit..head で変わったパスに、データの形にも files にも無いものがあれば TreeError。
+
+    足して次のコミットで消したファイル(今の木には無い)を拾う。-m でマージは親ごとに、
+    --no-renames で名前の変更は「消したパスと足したパス」の両方を出す。
+    """
+    if not SHA_RE.fullmatch(last_commit) or not SHA_RE.fullmatch(head):
+        raise SourceError("E-HISTORY-REWRITE")
+    p = _git(data_dir, ["log", "--full-history", "-m", "--no-renames", "--name-only", "-z",
+                        "--format=", f"{last_commit}..{head}"])
+    if p.returncode != 0:
+        raise SourceError("E-GIT-LOG")
+    bad: set[str] = set()
+    for raw_path in _nul_fields(p.stdout):
+        path = _decode_path(raw_path)
+        if path is None:
+            bad.add(raw_path.decode("utf-8", "replace"))
+        elif not is_data_path(path) and path not in files:
+            bad.add(path)
+    if bad:
+        raise TreeError(sorted(bad))
 
 
 @dataclass

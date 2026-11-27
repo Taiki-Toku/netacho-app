@@ -1,12 +1,15 @@
-"""設定(netacho-sync の config/sync.json)を読んで形を確かめる(依頼 10-1 の 4.6)。"""
+"""設定(netacho-sync の config/sync.json と ai_netacho_files.json)を読んで形を確かめる
+(依頼 10-1 の 4.6、依頼 14-1。詳細設計 2.9)。"""
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from typing import Any
 
 from .schema import JsonFileError, has_bad_chars, parse_json_strict
+from .source import is_data_path
 
 MAX_CONFIG_BYTES = 64 * 1024
 KEYS = frozenset({"slots", "authors", "owner_login", "app_repo", "feed_checks"})
@@ -95,3 +98,46 @@ def load_config(path: str) -> Config:
     except JsonFileError:
         raise ConfigError("E-CONFIG-JSON") from None
     return parse_config(obj)
+
+
+# ai_netacho_files.json(詳細設計 2.9。K-063):データの形に合わないファイルの一覧
+FILES_NAME = "ai_netacho_files.json"
+MAX_FILES = 500
+MAX_FILE_PATH = 300
+MAX_FILES_BYTES = 1024 * 1024  # 300 字 × UTF-8 の 3 バイト × 500 件より大きく
+BLOB_SHA_RE = re.compile(r"[0-9a-f]{40}")
+
+
+def files_path(config_path: str) -> str:
+    """--config と同じフォルダの ai_netacho_files.json。"""
+    return os.path.join(os.path.dirname(os.path.abspath(config_path)), FILES_NAME)
+
+
+def parse_files(obj: Any) -> dict[str, str]:
+    if not isinstance(obj, dict) or set(obj) != {"files"}:
+        raise ConfigError("E-CONFIG-FILES")
+    files = obj["files"]
+    if not isinstance(files, dict) or len(files) > MAX_FILES:
+        raise ConfigError("E-CONFIG-FILES")
+    for path, sha in files.items():
+        if (not isinstance(path, str) or not 1 <= len(path) <= MAX_FILE_PATH
+                or not isinstance(sha, str) or not BLOB_SHA_RE.fullmatch(sha)
+                or is_data_path(path)):
+            raise ConfigError("E-CONFIG-FILES")
+    return dict(files)
+
+
+def load_files(config_path: str) -> dict[str, str]:
+    """無い・読めない・形が違えば E-CONFIG-FILES(fail-closed)。"""
+    try:
+        with open(files_path(config_path), "rb") as f:
+            raw = f.read(MAX_FILES_BYTES + 1)
+    except OSError:
+        raise ConfigError("E-CONFIG-FILES") from None
+    if len(raw) > MAX_FILES_BYTES:
+        raise ConfigError("E-CONFIG-FILES")
+    try:
+        obj = parse_json_strict(raw)
+    except JsonFileError:
+        raise ConfigError("E-CONFIG-FILES") from None
+    return parse_files(obj)
