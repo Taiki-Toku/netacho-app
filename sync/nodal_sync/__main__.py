@@ -27,7 +27,7 @@ from collections import Counter
 from typing import Any, Mapping, NoReturn, TextIO
 
 from . import report, source
-from .config import Config, ConfigError, load_config
+from .config import Config, ConfigError, load_config, load_files
 from .ogimage import Fetcher, fetch_images
 from .schema import parse_date, validate_day
 
@@ -60,6 +60,8 @@ MESSAGES = {
     "E-HISTORY-AUTHOR": "authors に無い人が data/items/ を変えています",
     "E-SRC-DIR": "data/items/ を読めませんでした",
     "E-SRC-DIRTY": "data/items/ に未コミットの変更があります",
+    "E-SRC-TREE": "ai-netacho に想定外のファイルがあります",
+    "E-CONFIG-FILES": "設定の ai_netacho_files.json が無いか、正しくありません",
     "E-GH-TOKEN": "GITHUB_TOKEN がありません",
     "E-FEED-EXPAT": "Expat の版が 2.7.2 より古いので、フィードを読みません",
     "E-FEED-CONFIG-READ": "フィードの設定を読めませんでした",
@@ -191,6 +193,10 @@ def _run(args: argparse.Namespace, today: dt.date, env: Mapping[str, str], out: 
     try:
         days = select_days(args.mode, args.date_from, args.date_to, today)
         cfg = _load(args)
+        try:
+            ai_files = load_files(args.config)  # --config と同じフォルダの ai_netacho_files.json
+        except ConfigError as e:
+            raise Stop(e.code) from None
         url = env.get("SYNC_DB_URL")
         if not url:
             raise Stop("E-DB-URL")
@@ -206,14 +212,14 @@ def _run(args: argparse.Namespace, today: dt.date, env: Mapping[str, str], out: 
         return 2
 
     try:
-        return _run_with_db(args, today, env, out, fetcher, cfg, days, db, conn, summary)
+        return _run_with_db(args, today, env, out, fetcher, cfg, ai_files, days, db, conn, summary)
     finally:
         conn.close()
 
 
 def _run_with_db(args: argparse.Namespace, today: dt.date, env: Mapping[str, str], out: TextIO,
-                 fetcher: Fetcher | None, cfg: Config, days: list[dt.date] | None, db: Any,
-                 conn: Any, summary: report.RunSummary) -> int:
+                 fetcher: Fetcher | None, cfg: Config, ai_files: dict[str, str],
+                 days: list[dt.date] | None, db: Any, conn: Any, summary: report.RunSummary) -> int:
     # 2〜4:読むだけ。ここで止まったら何も書いていない
     try:
         try:
@@ -231,10 +237,16 @@ def _run_with_db(args: argparse.Namespace, today: dt.date, env: Mapping[str, str
                 source.check_history(args.data_dir, last, head, cfg.is_author)
             # 履歴の検査はコミットしか見ないので、作業ツリーが HEAD と同じことを確かめる(検査を飛ばしたときも)
             source.check_clean(args.data_dir)
+            # ファイルの形の検査(詳細設計 2.4 の3):今の木は毎回、履歴は前回の基準があるときだけ
+            source.check_tree(args.data_dir, head, ai_files)
+            if not args.reset_baseline and last is not None:
+                source.check_tree_history(args.data_dir, last, head, ai_files)
             listing = source.list_items(args.data_dir, set(days) if days is not None else None)
         except source.SourceError as e:
             if e.code == "E-HISTORY-REWRITE":
                 summary.notes.append("履歴の書き換え")
+            if isinstance(e, source.TreeError):
+                summary.tree_paths = e.paths
             raise Stop(e.code) from None
     except Stop as e:
         summary.stop_code = e.code

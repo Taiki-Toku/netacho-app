@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import os
 import subprocess
@@ -63,11 +64,31 @@ def dump(obj: Any) -> bytes:
     return json.dumps(obj, ensure_ascii=True).encode("utf-8")
 
 
-def write_config(path: Path, **over: Any) -> str:
+def blob_sha(data: bytes) -> str:
+    """git の blob の SHA-1(git hash-object と同じ)。"""
+    return hashlib.sha1(b"blob %d\x00" % len(data) + data).hexdigest()
+
+
+# GitRepo が最初から置く、データの形に合わないファイル(架空の中身)と、それに合う一覧
+TOOL_PATH = "tools/export.py"
+TOOL_BODY = b"# fictional export tool\n"
+FILES: dict[str, str] = {TOOL_PATH: blob_sha(TOOL_BODY)}
+
+
+def write_files(path: Path, files: dict[str, Any] | None = None, raw: bytes | None = None) -> Path:
+    """config フォルダに ai_netacho_files.json を置く。raw があればそのまま書く。"""
+    p = path / "ai_netacho_files.json"
+    p.write_bytes(raw if raw is not None else dump({"files": FILES if files is None else files}))
+    return p
+
+
+def write_config(path: Path, *, ai_files: dict[str, str] | None = None, **over: Any) -> str:
+    """sync.json と、同じフォルダの ai_netacho_files.json(既定は FILES。ai_files で足す)を書く。"""
     cfg = dict(CONFIG)
     cfg.update(over)
     p = path / "sync.json"
     p.write_bytes(dump(cfg))
+    write_files(path, {**FILES, **(ai_files or {})})
     return str(p)
 
 
@@ -79,6 +100,7 @@ class GitRepo:
         path.mkdir(parents=True, exist_ok=True)
         (path / "data" / "items").mkdir(parents=True, exist_ok=True)
         self.git("init", "-q", "-b", "main")
+        self.put_file(TOOL_PATH, TOOL_BODY)  # 本物の ai-netacho の tools/ に当たるもの(最初のコミットに入る)
 
     def _env(self, author: str, committer: str) -> dict[str, str]:
         env = dict(os.environ)

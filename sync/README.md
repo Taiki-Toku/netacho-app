@@ -41,20 +41,40 @@ python -m nodal_sync watch --config <config/sync.json> --data-dir <ai-netacho �
 }
 ```
 
+`--config` と同じフォルダに、ai-netacho のデータの形に合わないファイルの一覧 `ai_netacho_files.json` を置く(詳細設計 2.9。K-063)。無い・形がおかしいと `E-CONFIG-FILES`(終了コード 2)。
+
+```json
+{"files": {"CLAUDE.md": "<blob の SHA。40 桁の小文字の16進>", "tools/export.py": "<blob の SHA>"}}
+```
+
+- 作り方は設定手順書 4-7(PC の ai-netacho で `git ls-tree -r --full-tree HEAD` を流し、データの形に合わない行を全部並べる)
+- 形:キーは `files` だけ。パスは 1〜300 字、SHA は 40 桁の小文字の16進、500 件まで。データの形(下)に合うパスは入れない
+- オーナーが ai-netacho の tools/ などを直したら、netacho-sync のこの一覧を同じ PR で直す。直さないと次の同期が `E-SRC-TREE` で止まる。ファイルを消したときは一覧から消し、そのあと1回だけ手動の sync を `--reset-baseline` で流す(履歴に消したパスが残るため)
+
 ### 終了コード
 
 | コード | run | watch |
 |---|---|---|
 | 0 | 全部正しい | 当てはまりなし |
-| 1 | 不正な日・書き込みの失敗・不正なファイル(名前の形が違う・シンボリックリンク)のどれかがある。正しい日は書いた | 未着・載せ忘れ・一覧の取りこぼし・main の確認のどれかに当てはまる |
-| 2 | 引数・設定・接続・履歴の検査で止まった(何も書いていない)。想定外の例外も 2(このときだけは、それまでの日を書いた後のことがある) | 引数・設定・接続で止まった |
+| 1 | 不正な日・書き込みの失敗・不正なファイル(名前の形が違う・シンボリックリンク。コミットされたものはファイルの形の検査で先に 2 になるので、ふつうは一覧に入れたものだけ)のどれかがある。正しい日は書いた | 未着・載せ忘れ・一覧の取りこぼし・main の確認のどれかに当てはまる |
+| 2 | 引数・設定・接続・履歴の検査・ファイルの形の検査で止まった(何も書いていない)。想定外の例外も 2(このときだけは、それまでの日を書いた後のことがある) | 引数・設定・接続で止まった |
 
 - `--data-dir` は履歴の全部が要る(actions/checkout なら `fetch-depth: 0`)。浅い clone だと前回のコミットが見つからず、毎回「履歴の書き換え」(終了コード 2)になる
 
 ### run の流れ
 
-1. 設定を読む → 2. DB につなぎ、genres と sync_state を読む → 3. 履歴の検査(前回のコミットが HEAD の祖先か、`data/items/` を変えたコミットの作者とコミットした人が authors にあるか)→
+1. 設定と `ai_netacho_files.json` を読む → 2. DB につなぎ、genres と sync_state を読む → 3. 履歴の検査(前回のコミットが HEAD の祖先か、`data/items/` を変えたコミットの作者とコミットした人が authors にあるか)、`data/items/` が HEAD と同じか、ファイルの形の検査(下)→
 4. 日ごとの検査 → 5. 正しい日だけ、日ごとに1つのトランザクションで upsert → 6. 基準の記録 → 7. og:image の取得(最大 30 件)→ 8. 要約
+
+### ファイルの形の検査(詳細設計 2.4 の3。K-063)
+
+配信タスク(Web を読む無人の AI)が ai-netacho の CLAUDE.md・`.claude/`・tools/ などを書き換えたことに気づいて止める。作者は偽れるので、作者ではなくファイルの形と一覧で判定する。どれかに当たれば、何も書かずに `E-SRC-TREE`(終了コード 2)。
+
+- データの形(パスの全体に当てる):`data/items/YYYY-MM-DD-NN.json`・`feed_digest/YYYY-MM-DD.json`・`ネタ/YYYY-MM-DD-NN.md`(`ネタ/YYYY-MM-DD-NN <題>.md` も)・`放送/YYYY-MM-DD.md`。数字は半角だけ
+- 今の木(`git ls-tree -r -z --full-tree <HEAD>`。初回と `--reset-baseline` でも行う):blob でモードが 100644 でないもの(シンボリックリンク・実行ファイル・サブモジュール)、データの形に合わず一覧にも同じパスと同じ blob の SHA が無いもの、一覧にあって木に無いもの、UTF-8 で読めないパスは違反
+- 履歴(`git log --full-history -m --no-renames --name-only -z --format= <前回>..<HEAD>`。初回と `--reset-baseline` では行わない):その間に変わったパスに、データの形にも一覧にも無いものがあれば違反(足して消したファイルを拾う)
+- 一覧にあるファイルの中身を変えて戻したもの、`feed_digest/` の中身は、この検査では止まらない(詳細設計 2.4 の3)
+- 要約に出すのは違反のパスだけ(制御文字・書式文字・行の区切りは `?`、1つ 200 字、20 件まで。超えた分は件数。Markdown の記号 `` \`*_[]()<>!|~&# `` の前には `\` を付ける)。ファイルの中身と SHA は出さない
 
 ### ログと要約に出すもの
 
@@ -198,6 +218,8 @@ python -m nodal_sync feed-digest-backlog --before YYYY-MM-DD --ca <CA 証明書>
 | `E-HISTORY-AUTHOR` | authors に無い作者かコミットした人が `data/items/` を変えた(マージコミットを含む) |
 | `E-SRC-DIR` | `data/items/` が無い・フォルダでない |
 | `E-SRC-DIRTY` | `data/items/` に未コミットの変更・追跡していないファイル・無視されたファイルがある(履歴の検査を飛ばすときも調べる) |
+| `E-SRC-TREE` | ai-netacho に想定外のファイルがある(ファイルの形の検査。要約に違反のパスを出す) |
+| `E-CONFIG-FILES` | `ai_netacho_files.json` が無い・読めない・形が違う |
 | `E-GH-TOKEN` | watch で `GITHUB_TOKEN` が無い |
 | `E-UNEXPECTED` | 想定外の例外 |
 
