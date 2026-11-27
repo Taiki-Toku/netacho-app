@@ -119,6 +119,25 @@ export function vulnerabilities(feed: readonly FeedEntry[], severity: 'all' | Se
   return severity === 'all' ? list : list.filter((entry) => entry.severity === severity)
 }
 
+export interface VulnNeighbors {
+  /** 一覧の中での位置(1 から) */
+  position: number
+  total: number
+  prev: FeedEntry | null
+  next: FeedEntry | null
+}
+
+/**
+ * 脆弱性の詳細の前後(詳細設計 5.6.2)。脆弱性の一覧と同じ並び(vulnerabilities() の新しい順)で、
+ * 深刻度で絞っていたときはその絞りの中で決める。id がその一覧に無ければ null(前後を出さない)
+ */
+export function vulnNeighbors(feed: readonly FeedEntry[], id: string, severity: 'all' | Severity = 'all'): VulnNeighbors | null {
+  const list = vulnerabilities(feed, severity)
+  const index = list.findIndex((entry) => entry.id === id)
+  if (index === -1) return null
+  return { position: index + 1, total: list.length, prev: list[index - 1] ?? null, next: list[index + 1] ?? null }
+}
+
 export function findFeedEntry(feed: readonly FeedEntry[], id: string): FeedEntry | null {
   return feed.find((entry) => entry.id === id) ?? null
 }

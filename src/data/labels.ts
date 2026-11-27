@@ -57,8 +57,3 @@ export const STAR_AXES: readonly { key: keyof Stars; label: string }[] = [
   { key: 'use', label: '実用度' },
   { key: 'fun', label: '遊べる度' },
 ]
-
-/** 「試してみる」の見出し。セキュリティニュースとプロダクトでは「確かめること」(仕様 4 章 5) */
-export function tryitHeading(genre: string | null): string {
-  return genre === 'security-news' || genre === 'product' ? '確かめること' : '試してみる'
-}

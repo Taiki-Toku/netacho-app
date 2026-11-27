@@ -75,7 +75,9 @@ describe('脆弱性', () => {
     const source = within(article).getByRole('link', { name: /example\.com/ })
     expect(source).toHaveAttribute('href', 'https://example.com/feed/7')
     expect(source).toHaveAttribute('rel', 'noopener noreferrer')
-    expect(within(article).getByRole('heading', { level: 2, name: '確かめること' })).toBeInTheDocument()
+    // TST-VULN-04 決まり文句の「確かめること」は出さない(詳細設計 5.6.3)
+    expect(within(article).queryByRole('heading', { level: 2, name: '確かめること' })).not.toBeInTheDocument()
+    expect(within(article).queryByText(/使っている版が対象に入るかを確かめ/)).not.toBeInTheDocument()
     expect(within(article).getByRole('link', { name: '脆弱性の一覧に戻る' })).toHaveAttribute('href', '#/vuln')
     window.location.hash = ''
   })
@@ -95,6 +97,48 @@ describe('脆弱性', () => {
     expect(within(rail).getByRole('link', { name: '脆弱性をすべて見る' })).toHaveAttribute('href', '#/vuln')
     expect(within(rail).getByRole('link', { name: 'お知らせをすべて見る' })).toHaveAttribute('href', '#/feed')
     expect(within(rail).getByText('しおりの印を押すと、ここに並びます。')).toBeInTheDocument()
+  })
+})
+
+describe('脆弱性のカード全体を押せる(依頼 13-2、詳細設計 5.6.1)', () => {
+  it('TST-VULN-01 カードのリンクは CVE 番号の1つだけ(読み上げの名前も CVE 番号)。訳の行・製品・状況はリンクの外', async () => {
+    renderApp('#/vuln', sample)
+    await waitForHeading('脆弱性')
+    const cards = screen.getByRole('list', { name: '脆弱性の一覧' }).querySelectorAll('li')
+    expect(cards).toHaveLength(5)
+    for (const card of cards) {
+      const links = within(card).getAllByRole('link')
+      expect(links).toHaveLength(1)
+      expect(links[0]).toHaveAccessibleName(/^CVE-2026-\d+$/)
+      expect(links[0]?.textContent).toMatch(/^CVE-2026-\d+$/)
+    }
+    // ::after をカードいっぱいに広げる CSS は、試験の設定(vite.config.ts の css.include)で読み込まれないため、
+    // ここではクラスが付いていることだけを確かめる(CSS の中身は design-check の 375px の点検で確かめる)
+    const first = cards[0]!
+    expect(first.className).not.toBe('')
+    expect(within(first).getByRole('link').className).not.toBe('')
+    window.location.hash = ''
+  })
+
+  it('TST-VULN-01 絞りがあるとき、カードのリンクに ?sev= が付く。「すべて」なら付けない。トップ・さがすのカードも付けない', async () => {
+    renderApp('#/vuln?sev=critical', sample)
+    await screen.findByText('Criticalだけを表示中。2件(新しい順)')
+    expect(screen.getByRole('link', { name: 'CVE-2026-90001' })).toHaveAttribute('href', '#/vuln/feed-007?sev=critical')
+    expect(screen.getByRole('link', { name: 'CVE-2026-90003' })).toHaveAttribute('href', '#/vuln/feed-009?sev=critical')
+
+    window.location.hash = '#/vuln'
+    await screen.findByText('すべてを表示中。5件(新しい順)')
+    expect(within(screen.getByRole('list', { name: '脆弱性の一覧' })).getByRole('link', { name: 'CVE-2026-90001' })).toHaveAttribute(
+      'href',
+      '#/vuln/feed-007',
+    )
+
+    window.location.hash = '#/search?q=CVE-2026-90001'
+    await waitForHeading('「CVE-2026-90001」の結果')
+    for (const link of await screen.findAllByRole('link', { name: 'CVE-2026-90001' })) {
+      expect(link.getAttribute('href')).toBe('#/vuln/feed-007')
+    }
+    window.location.hash = ''
   })
 })
 

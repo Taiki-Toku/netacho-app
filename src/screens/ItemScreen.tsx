@@ -1,5 +1,6 @@
-// ネタの詳細(仕様 4 章 5):ジャンル名、見出し、出典と日付、保存ボタン、画像(無ければ出典の横に小さな札)、要点(AIがまとめたと明記)、
-// 元記事の抜粋、試してみる(確かめること)、気をつけること、出典と元記事へのリンク、評価4つ、メモ(自動保存)、前後のニュース。上のバーの下端に読了バー。
+// ネタの詳細(仕様 4 章 5、詳細設計 5.5.3):ジャンル名、見出し、出典と日付、保存ボタン、画像(無ければ出典の横に小さな札)、リード、要点、
+// 本文(points と summary の両方があるとき)、AI がまとめたことの注記、元記事の抜粋、出典と元記事へのリンク、評価4つ、メモ(自動保存)、前後のニュース。
+// 上のバーの下端に読了バー。「試してみる/確かめること」「気をつけること」は出さない。
 // 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このニュースについて」の欄に残す。前後の移動はボタンと左右スワイプ
 import { useEffect, useRef } from 'react'
 import { hrefFor, navigate, type ItemFrom, type Route } from '../app/router.ts'
@@ -11,7 +12,7 @@ import { SourceBadge } from '../components/SourceBadge.tsx'
 import { SourceLink } from '../components/SourceLink.tsx'
 import { StarMeter } from '../components/StarMeter.tsx'
 import { Thumb, useThumb } from '../components/Thumb.tsx'
-import { RATING_CHOICES, RATING_LABELS, STAR_AXES, STATUS_LABELS, tryitHeading } from '../data/labels.ts'
+import { RATING_CHOICES, RATING_LABELS, STAR_AXES, STATUS_LABELS } from '../data/labels.ts'
 import { findItem, genreLabelMap, genreLabelOf, latestDate, neighbors } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
@@ -94,6 +95,7 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
   const memoSaved = feedback.memo !== undefined
   // 画像が無い・危ない・読み込みに失敗したときは、大きな枠を出さずに出典の横へ小さな札を出す(仕様 4 章-5、5 章)
   const thumb = useThumb(item.imageUrl)
+  const body = item.points.length > 0 ? bodyParagraphs(item.summary) : []
 
   // 左右のスワイプで前後のニュースへ(仕様 7 章)。移り方は下の「前後のニュース」のリンクと同じ(URL が変わり、「戻る」で戻れる)
   const swipeRef = useRef<HTMLDivElement>(null)
@@ -151,7 +153,8 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
         {item.lead !== '' ? <p className={styles.lead}>{item.lead}</p> : null}
 
         {item.points.length > 0 || item.summary !== '' ? (
-          <section className={styles.box} aria-labelledby="item-points">
+          // 本文が続くときは、箱の下を本文までの間にする。続かないときは、すぐ下の AI の注記に寄せる
+          <section className={body.length > 0 ? styles.box : styles.boxBeforeNote} aria-labelledby="item-points">
             <h2 id="item-points" className={pageStyles.label}>
               要点
             </h2>
@@ -166,9 +169,26 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
             ) : (
               <p className={styles.boxText}>{item.summary}</p>
             )}
-            <p className={styles.aiNote}>この要点は、元の記事をもとにAIがまとめたものです。</p>
           </section>
         ) : null}
+
+        {/* 本文:points と summary の両方があるときだけ、summary を段落に分けて出す(points が無いときは上の要点の欄に出すので、2回出さない) */}
+        {body.length > 0 ? (
+          <section className={styles.body} aria-labelledby="item-body">
+            <h2 id="item-body" className={pageStyles.label}>
+              本文
+            </h2>
+            {body.map((paragraph, index) => (
+              // 同じ文の段落が重なることがあるため、順番を鍵にする(並びは変わらない)
+              <p key={index} className={styles.bodyParagraph}>
+                {paragraph}
+              </p>
+            ))}
+          </section>
+        ) : null}
+
+        {/* AI の注記は、本文の後(本文が無ければ要点の後) */}
+        {item.points.length > 0 || item.summary !== '' ? <p className={styles.aiNoteBlock}>要点と本文は、元の記事をもとにAIがまとめたものです。</p> : null}
 
         {item.excerpt !== '' ? (
           <section className={styles.excerpt} aria-labelledby="item-excerpt">
@@ -180,24 +200,7 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
           </section>
         ) : null}
 
-        {item.tryit !== '' ? (
-          <section className={styles.box} aria-labelledby="item-tryit">
-            <h2 id="item-tryit" className={pageStyles.label}>
-              {tryitHeading(item.genre)}
-            </h2>
-            <p className={styles.boxText}>{item.tryit}</p>
-          </section>
-        ) : null}
-
-        {item.caution !== '' ? (
-          <section aria-labelledby="item-caution">
-            <h2 id="item-caution" className={styles.bodyHeading}>
-              気をつけること
-            </h2>
-            <p className={styles.bodyText}>{item.caution}</p>
-          </section>
-        ) : null}
-
+        {/* 「試してみる/確かめること」「気をつけること」は出さない(データの tryit・caution は消さず、画面で使わないだけ。詳細設計 5.5.3) */}
         <SourceLink url={item.sourceUrl} title={item.sourceTitle} />
 
         <section aria-labelledby="item-about">
@@ -288,6 +291,14 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
       </div>
     </article>
   )
+}
+
+/** 本文の段落:summary を改行(1つ以上)で分け、空白だけの段落は捨てる。文字のまま(HTML として解釈しない) */
+function bodyParagraphs(summary: string): string[] {
+  return summary
+    .split(/[\r\n]+/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph !== '')
 }
 
 function Field({ label, value }: { label: string; value: string }) {

@@ -1,4 +1,6 @@
 .card {
+  /* CVE 番号のリンクの ::after を、このカードの大きさに広げるための基準 */
+  position: relative;
   border: var(--line-thin) solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -9,6 +11,28 @@
   .card:hover {
     border-color: var(--accent);
   }
+}
+
+/* フォーカスの枠はカード全体に出す(リンクの文字のまわりではなく、押せる範囲と同じ形)。
+   カードの中にほかの押せる物を足すときは、position: relative と --z-row-control で ::after より前に出す。
+   :has を知らないブラウザーでは、今までどおりリンクの文字に枠が出る(枠を消したままにしない) */
+@supports selector(:has(*)) {
+  .card:has(.link:focus-visible) {
+    outline: var(--line-strong) solid var(--accent-strong);
+    outline-offset: var(--line-strong);
+  }
+
+  .link:focus-visible {
+    outline: none;
+  }
+}
+
+/* 押せる範囲をカード全体に広げる */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
 }
 
 .top {

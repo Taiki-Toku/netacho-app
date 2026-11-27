@@ -1,5 +1,5 @@
 // 脆弱性のカード:深刻度、公開日、CVE 番号(詳細へのリンク)、製品、CVSS、状況(仕様 4 章 4)
-import { hrefFor } from '../app/router.ts'
+import { hrefFor, type SeverityFilter } from '../app/router.ts'
 import { PUBLISHED_UNKNOWN } from '../data/labels.ts'
 import type { FeedEntry } from '../data/types.ts'
 import { formatCvss, formatJstDate } from '../lib/format.ts'
@@ -15,9 +15,13 @@ interface VulnCardProps {
   entry: FeedEntry
   /** 見出しの段階。h1 の直下に並ぶ一覧では 2、h2 の区切りの下では 3 */
   headingLevel?: 2 | 3
+  /** 一覧で絞っていた深刻度。詳細のリンクに ?sev= を付け、詳細の前後をその絞りの中で決める(トップ・さがすは「すべて」) */
+  severity?: SeverityFilter
 }
 
-export function VulnCard({ entry, headingLevel = 3 }: VulnCardProps) {
+// リンクは CVE 番号の <a> 1つだけ(読み上げの名前は CVE 番号)。CSS でリンクの ::after をカードいっぱいに広げ、
+// カードのどこを押しても開く(詳細設計 5.6.1)。訳の行はリンクの外のまま
+export function VulnCard({ entry, headingLevel = 3, severity = 'all' }: VulnCardProps) {
   const Heading = headingLevel === 2 ? 'h2' : 'h3'
   return (
     <li className={styles.card}>
@@ -29,7 +33,7 @@ export function VulnCard({ entry, headingLevel = 3 }: VulnCardProps) {
       <div className={styles.main}>
         <div className={styles.body}>
           <Heading className={styles.id}>
-            <a className={styles.link} href={hrefFor({ name: 'vuln-detail', id: entry.id })}>
+            <a className={styles.link} href={hrefFor({ name: 'vuln-detail', id: entry.id, severity })}>
               {vulnName(entry)}
             </a>
           </Heading>

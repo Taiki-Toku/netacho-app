@@ -19,7 +19,11 @@ export type Route =
   | { name: 'genre'; id: string; kind: FeedFilter }
   | { name: 'feed'; kind: FeedFilter }
   | { name: 'vuln'; severity: SeverityFilter }
-  | { name: 'vuln-detail'; id: string }
+  /**
+   * 脆弱性の詳細。severity は一覧で絞っていた深刻度(URL の ?sev=。前後の移り先と戻り先をその絞りの中で決める)。
+   * 無ければ「すべて」(item の from と同じく、「すべて」のときは鍵ごと付けない。トップ・さがすから開いたとき)
+   */
+  | { name: 'vuln-detail'; id: string; severity?: SeverityFilter }
   | { name: 'item'; id: string; from?: ItemFrom }
   | { name: 'saved' }
   /** バックナンバー。date は配信日。null は日付なし(#/archive)、'' は形の違う・暦に無い日付(空の状態を出す) */
@@ -95,8 +99,12 @@ export function parseHash(hash: string): Route {
       return second !== undefined ? { name: 'genre', id: second, kind: asFeedFilter(query.get('kind')) } : HOME
     case 'feed':
       return { name: 'feed', kind: asFeedFilter(query.get('kind')) }
-    case 'vuln':
-      return second !== undefined ? { name: 'vuln-detail', id: second } : { name: 'vuln', severity: asSeverityFilter(query.get('sev')) }
+    case 'vuln': {
+      // 形の違う sev は「すべて」
+      const severity = asSeverityFilter(query.get('sev'))
+      if (second === undefined) return { name: 'vuln', severity }
+      return severity === 'all' ? { name: 'vuln-detail', id: second } : { name: 'vuln-detail', id: second, severity }
+    }
     case 'item': {
       if (second === undefined) return HOME
       const from = asItemFrom(query.get('from'))
@@ -134,7 +142,7 @@ export function hrefFor(route: Route): string {
     case 'vuln':
       return withQuery('#/vuln', { sev: route.severity })
     case 'vuln-detail':
-      return `#/vuln/${encodeURIComponent(route.id)}`
+      return withQuery(`#/vuln/${encodeURIComponent(route.id)}`, { sev: route.severity ?? 'all' })
     case 'item':
       return withQuery(`#/item/${encodeURIComponent(route.id)}`, route.from === undefined ? {} : { from: fromParam(route.from) })
     case 'saved':

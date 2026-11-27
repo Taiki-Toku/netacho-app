@@ -73,7 +73,8 @@ export function VulnScreen({ data, severity }: VulnScreenProps) {
       ) : (
         <ul className={styles.cards} aria-label="脆弱性の一覧">
           {list.map((entry) => (
-            <VulnCard key={entry.id} entry={entry} headingLevel={2} />
+            // リンクに今の絞りを付ける(詳細の前後と戻り先を、この絞りの中で決めるため)
+            <VulnCard key={entry.id} entry={entry} headingLevel={2} severity={severity} />
           ))}
         </ul>
       )}

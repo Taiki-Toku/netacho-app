@@ -106,11 +106,37 @@
   margin: 0 0 var(--sp-4h);
 }
 
-.box {
+.box,
+.boxBeforeNote {
   background: var(--surface-2);
   border-radius: var(--radius-lg);
   padding: var(--sp-5) var(--sp-5h);
   margin: 0 0 var(--sp-7);
+}
+
+/* 要点の箱のすぐ下に AI の注記が来るとき(本文が無いとき)は、注記を箱に寄せる */
+.boxBeforeNote {
+  margin-bottom: 0;
+}
+
+/* 本文(design_spec 4-5):要点の後、元記事の抜粋の前。箱にせず、詳細の本文と同じ文字(16px、行間 2.0) */
+.body {
+  margin: 0;
+}
+
+.bodyParagraph {
+  margin: var(--sp-2h) 0 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-text);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+/* 要点と本文が AI のまとめであることの注記。本文の後(本文が無ければ要点の箱の後)。次の欄(抜粋)までの間を取る */
+.aiNoteBlock {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  margin: var(--sp-2h) 0 var(--sp-7);
 }
 
 .boxText {
@@ -158,14 +184,6 @@
   font-size: var(--fs-19);
   font-weight: var(--weight-semibold);
   margin: var(--sp-8) 0 var(--sp-2h);
-}
-
-.bodyText {
-  margin: 0 0 var(--sp-4h);
-  font-size: var(--fs-16);
-  line-height: var(--lh-text);
-  color: var(--ink-soft);
-  white-space: pre-line;
 }
 
 .fields {
