@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { rowsToItems } from '../data/itemRow.ts'
 import { parseItems } from '../data/parse.ts'
 import type { LoadedData } from '../data/source.ts'
@@ -53,7 +53,7 @@ const NEAR = 100
 const SLOW = 2000
 
 describe('ネタの詳細', () => {
-  it('ジャンル名・見出し・出典と日付・要点・抜粋・試してみる・気をつけること・このネタについて・評価・メモを出す', async () => {
+  it('ジャンル名・見出し・出典と日付・要点・本文・抜粋・このネタについて・評価・メモを出す', async () => {
     const article = await renderItem('2026-01-02-01')
     expect(within(article).getByRole('heading', { level: 1 })).toHaveTextContent('架空:手順書の差分チェックを半自動にする')
     expect(within(article).getByText('仕事・自動化')).toBeInTheDocument()
@@ -61,12 +61,14 @@ describe('ネタの詳細', () => {
     expect(within(article).getByText('見本のリード文です。')).toBeInTheDocument()
     expect(within(article).getByRole('heading', { level: 2, name: '要点' })).toBeInTheDocument()
     expect(within(article).getByText('見本の要点の1行目です。')).toBeInTheDocument()
-    expect(within(article).getByText('この要点は、元の記事をもとにAIがまとめたものです。')).toBeInTheDocument()
+    expect(within(article).getByRole('heading', { level: 2, name: '本文' })).toBeInTheDocument()
+    expect(within(article).getByText('要点と本文は、元の記事をもとにAIがまとめたものです。')).toBeInTheDocument()
     expect(within(article).getByRole('heading', { level: 2, name: '元記事の抜粋' })).toBeInTheDocument()
-    expect(within(article).getByRole('heading', { level: 2, name: '試してみる' })).toBeInTheDocument()
-    expect(within(article).getByText('最初の一歩の見本です。')).toBeInTheDocument()
-    expect(within(article).getByRole('heading', { level: 2, name: '気をつけること' })).toBeInTheDocument()
-    expect(within(article).getByText('注意点の見本です。')).toBeInTheDocument()
+    // 「試してみる」「気をつけること」の欄は出さない(データに値があっても。詳細設計 5.5.3)
+    expect(within(article).queryByRole('heading', { level: 2, name: '試してみる' })).not.toBeInTheDocument()
+    expect(within(article).queryByText('最初の一歩の見本です。')).not.toBeInTheDocument()
+    expect(within(article).queryByRole('heading', { level: 2, name: '気をつけること' })).not.toBeInTheDocument()
+    expect(within(article).queryByText('注意点の見本です。')).not.toBeInTheDocument()
     // 依頼書の項目(コーナー、情報の確かさ、扱い、分類)は「このネタについて」に残す
     expect(within(article).getByText('取り組みに効く')).toBeInTheDocument()
     expect(within(article).getByText('公式')).toBeInTheDocument()
@@ -81,7 +83,7 @@ describe('ネタの詳細', () => {
     expect(within(article).getAllByText('1 / 7')).toHaveLength(2)
   })
 
-  it('並び:一覧に戻る(1行)→ジャンル名→見出し→出典と日付→保存→画像→要点→抜粋→試してみる→気をつけること→出典→評価→メモ→前後', async () => {
+  it('並び:一覧に戻る(1行)→ジャンル名→見出し→出典と日付→保存→画像→要点→本文→AI の注記→抜粋→出典→評価→メモ→前後', async () => {
     const article = await renderItem('2026-01-02-01')
     const back = within(article).getAllByRole('link', { name: '一覧に戻る' })[0]
     const order = [
@@ -92,9 +94,9 @@ describe('ネタの詳細', () => {
       within(article).getByRole('button', { name: '保存する' }),
       article.querySelector('img'),
       within(article).getByRole('heading', { level: 2, name: '要点' }),
+      within(article).getByRole('heading', { level: 2, name: '本文' }),
+      within(article).getByText('要点と本文は、元の記事をもとにAIがまとめたものです。'),
       within(article).getByRole('heading', { level: 2, name: '元記事の抜粋' }),
-      within(article).getByRole('heading', { level: 2, name: '試してみる' }),
-      within(article).getByRole('heading', { level: 2, name: '気をつけること' }),
       within(article).getByRole('link', { name: /元の記事を読む/ }),
       within(article).getByRole('group', { name: 'このニュース、どうでしたか' }),
       within(article).getByLabelText('メモ'),
@@ -117,9 +119,10 @@ describe('ネタの詳細', () => {
       '見本の要点の2行目です。',
       '見本の要点の3行目です。',
     ])
-    // 箇条があるときは summary の段落を出さない(同じ内容を2度出さない)
+    // 箇条があるときは summary の段落を要点の欄に出さない(本文の欄に出す)
     expect(within(points).queryByText(/2〜4文の長さの要約が入ります/)).not.toBeInTheDocument()
-    expect(within(points).getByText('この要点は、元の記事をもとにAIがまとめたものです。')).toBeInTheDocument()
+    // AI の注記は要点の欄の外(本文の後)
+    expect(within(points).queryByText('要点と本文は、元の記事をもとにAIがまとめたものです。')).not.toBeInTheDocument()
     const quote = article.querySelector('blockquote')
     expect(quote?.textContent).toBe('これは架空の元記事から引用した、という体裁の見本の文です。\n改行もそのまま出ます。')
   })
@@ -152,7 +155,8 @@ describe('ネタの詳細', () => {
     renderApp('#/item/bare', { ...sample, items: [bare, ...sample.items.slice(1)] })
     const article = await screen.findByRole('article')
     expect(within(article).queryByRole('heading', { level: 2, name: '要点' })).not.toBeInTheDocument()
-    expect(within(article).queryByText('この要点は、元の記事をもとにAIがまとめたものです。')).not.toBeInTheDocument()
+    expect(within(article).queryByText('要点と本文は、元の記事をもとにAIがまとめたものです。')).not.toBeInTheDocument()
+    expect(within(article).queryByRole('heading', { level: 2, name: '本文' })).not.toBeInTheDocument()
     expect(within(article).queryByRole('heading', { level: 2, name: '元記事の抜粋' })).not.toBeInTheDocument()
   })
 
@@ -206,11 +210,12 @@ describe('ネタの詳細', () => {
     expect(bar).toHaveAttribute('max', '1')
   })
 
-  it('セキュリティニュース・プロダクトでは「試してみる」が「確かめること」になる', async () => {
+  it('セキュリティニュース・プロダクトでも「確かめること」「試してみる」「気をつけること」の欄を出さない', async () => {
     renderApp('#/item/2026-01-03-05', { ...sample, items: [...sample.items, ...(await import('../test/sampleData.ts')).fullSample.items] })
     const article = await screen.findByRole('article')
-    expect(within(article).getByRole('heading', { level: 2, name: '確かめること' })).toBeInTheDocument()
-    expect(within(article).queryByRole('heading', { level: 2, name: '試してみる' })).not.toBeInTheDocument()
+    for (const name of ['確かめること', '試してみる', '気をつけること']) {
+      expect(within(article).queryByRole('heading', { level: 2, name })).not.toBeInTheDocument()
+    }
   })
 
   it('星の指標を「話題度 3/5」のように読み上げる', async () => {
@@ -653,5 +658,74 @@ describe('公開日とバックナンバーからの詳細(依頼 13-1)', () => 
     renderApp('#/item/2026-01-01-01?from=archive:2026-01-02', sample)
     await screen.findAllByText('1 / 2')
     expect(within(screen.getByRole('article')).getAllByRole('link', { name: '一覧に戻る' })[0]).toHaveAttribute('href', '#/genre/work')
+  })
+})
+
+describe('本文の欄(依頼 13-2、詳細設計 5.5.3)', () => {
+  const AI_NOTE = '要点と本文は、元の記事をもとにAIがまとめたものです。'
+
+  async function renderOne(fields: Record<string, unknown>) {
+    renderApp('#/item/body', { ...sample, items: parseItems([{ id: 'body', date: '2026-01-02', title: '架空:本文の見本', ...fields }]) })
+    return screen.findByRole('article')
+  }
+
+  function sectionOf(article: HTMLElement, name: string): HTMLElement {
+    const section = within(article).getByRole('heading', { level: 2, name }).closest('section')
+    if (section === null) throw new Error(`${name}の欄がありません`)
+    return section
+  }
+
+  it('TST-BODY-01 points と summary があれば「本文」に段落で出す(改行で分かれ、空の段落は出ない)。要点の欄には summary を出さない', async () => {
+    const article = await renderOne({
+      points: ['架空の要点1', '架空の要点2'],
+      summary: '架空の1段落目です。\n\n  \n架空の2段落目です。\r\n架空の3段落目です。\n',
+    })
+    const body = sectionOf(article, '本文')
+    const paragraphs = body.querySelectorAll('p')
+    expect([...paragraphs].map((p) => p.textContent)).toEqual(['架空の1段落目です。', '架空の2段落目です。', '架空の3段落目です。'])
+    expect(within(sectionOf(article, '要点')).queryByText(/架空の1段落目/)).not.toBeInTheDocument()
+    expect(within(sectionOf(article, '要点')).getAllByRole('listitem')).toHaveLength(2)
+    // 並び:要点 → 本文 → AI の注記(本文の後。要点・本文の欄の外)
+    const note = within(article).getByText(AI_NOTE)
+    expect(sectionOf(article, '要点').compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(body.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(body.contains(note)).toBe(false)
+    expect(within(article).getAllByText(AI_NOTE)).toHaveLength(1)
+  })
+
+  it('TST-BODY-01 本文の中の HTML は文字のまま出す', async () => {
+    const article = await renderOne({ points: ['架空の要点'], summary: '<script>alert(1)</script>\n<img src=x onerror=alert(1)>' })
+    const body = sectionOf(article, '本文')
+    expect([...body.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['<script>alert(1)</script>', '<img src=x onerror=alert(1)>'])
+    expect(article.querySelector('script, img')).toBeNull()
+  })
+
+  it('TST-BODY-01 points だけなら要点の欄だけ(本文の欄は出ない)。AI の注記は要点の後', async () => {
+    const article = await renderOne({ points: ['架空の要点'], summary: '' })
+    expect(within(article).queryByRole('heading', { level: 2, name: '本文' })).not.toBeInTheDocument()
+    const points = sectionOf(article, '要点')
+    const note = within(article).getByText(AI_NOTE)
+    expect(points.contains(note)).toBe(false)
+    expect(points.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('TST-BODY-01 summary だけなら要点の欄に出して、本文の欄は出さない(同じ文を2回出さない)', async () => {
+    const article = await renderOne({ summary: '架空の要約だけの文です。' })
+    expect(within(sectionOf(article, '要点')).getByText('架空の要約だけの文です。')).toBeInTheDocument()
+    expect(within(article).queryByRole('heading', { level: 2, name: '本文' })).not.toBeInTheDocument()
+    expect(within(article).getAllByText('架空の要約だけの文です。')).toHaveLength(1)
+    expect(within(article).getByText(AI_NOTE)).toBeInTheDocument()
+  })
+
+  it('TST-BODY-01 tryit・caution に値があっても欄を出さない(どのジャンルでも)', async () => {
+    for (const genre of ['work', 'security-news', 'product']) {
+      const article = await renderOne({ genre, points: ['架空の要点'], tryit: '架空の試すこと', caution: '架空の注意' })
+      for (const name of ['試してみる', '確かめること', '気をつけること']) {
+        expect(within(article).queryByRole('heading', { level: 2, name })).not.toBeInTheDocument()
+      }
+      expect(within(article).queryByText('架空の試すこと')).not.toBeInTheDocument()
+      expect(within(article).queryByText('架空の注意')).not.toBeInTheDocument()
+      cleanup()
+    }
   })
 })

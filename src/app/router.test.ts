@@ -92,6 +92,21 @@ describe('router(ハッシュの読み書き)', () => {
     }
   })
 
+  it('TST-VULN-02 #/vuln/<id>?sev= を読み書きする。形の違う sev は「すべて」(鍵を付けない)。「すべて」は ?… を付けない', () => {
+    expect(parseHash('#/vuln/feed-007?sev=critical')).toEqual({ name: 'vuln-detail', id: 'feed-007', severity: 'critical' })
+    expect(parseHash('#/vuln/feed-007?sev=low')).toEqual({ name: 'vuln-detail', id: 'feed-007', severity: 'low' })
+    for (const bad of ['apocalyptic', '', 'all', 'Critical', '<script>']) {
+      expect(parseHash(`#/vuln/feed-007?sev=${encodeURIComponent(bad)}`)).toEqual({ name: 'vuln-detail', id: 'feed-007' })
+    }
+    expect(hrefFor({ name: 'vuln-detail', id: 'feed-007', severity: 'high' })).toBe('#/vuln/feed-007?sev=high')
+    expect(hrefFor({ name: 'vuln-detail', id: 'feed-007', severity: 'all' })).toBe('#/vuln/feed-007')
+    expect(hrefFor({ name: 'vuln-detail', id: 'feed-007' })).toBe('#/vuln/feed-007')
+    const withSeverity = { name: 'vuln-detail', id: 'a/b c?#', severity: 'medium' } as const
+    expect(parseHash(hrefFor(withSeverity))).toEqual(withSeverity)
+    // 絞りが変わっても、同じ id なら先頭にスクロールしない
+    expect(screenKey({ name: 'vuln-detail', id: 'a', severity: 'high' })).toBe(screenKey({ name: 'vuln-detail', id: 'a' }))
+  })
+
   it('screenKey は詳細の from では変わらない(id だけ)', () => {
     expect(screenKey({ name: 'item', id: 'a', from: { kind: 'saved' } })).toBe(screenKey({ name: 'item', id: 'a' }))
   })

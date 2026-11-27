@@ -7,6 +7,7 @@ import { ErrorState } from './components/ErrorState.tsx'
 import { GenreTabs } from './components/GenreTabs.tsx'
 import { LoadingState } from './components/LoadingState.tsx'
 import { MobileNav } from './components/MobileNav.tsx'
+import { PullIndicator } from './components/PullIndicator.tsx'
 import { RightRail } from './components/RightRail.tsx'
 import { ScrollTopButton } from './components/ScrollTopButton.tsx'
 import { Sidebar } from './components/Sidebar.tsx'
@@ -42,7 +43,7 @@ function screenFor(route: Route, data: LoadedData, loadedAt: Date, homeIntro: bo
     case 'vuln':
       return <VulnScreen data={data} severity={route.severity} />
     case 'vuln-detail':
-      return <VulnDetailScreen data={data} id={route.id} />
+      return <VulnDetailScreen data={data} id={route.id} severity={route.severity ?? 'all'} />
     case 'item':
       return <ItemScreen data={data} id={route.id} from={route.from} />
     case 'saved':
@@ -120,6 +121,8 @@ function Shell() {
           )}
         </main>
       </div>
+      {/* 引っぱって更新(スマホのタッチだけ)。データを読めているときだけ受ける */}
+      <PullIndicator enabled={state.status === 'ready'} />
       <ScrollTopButton />
       <MobileNav route={route} />
     </div>

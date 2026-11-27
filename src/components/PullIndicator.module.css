@@ -1,0 +1,59 @@
+/* 引っぱって更新の表示(design_spec 8 章)。上のバーのすぐ下に、上のバーと同じ地の帯を引き出す。
+   引いた量は usePullToRefresh が --pull-y に入れる(最大 80px = --sp-20)。指で引いている間は指に付いていき、
+   離したあと(戻る・更新中の高さへ)だけなめらかに動かす。押す操作は下の画面へ通す */
+.indicator {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  right: 0;
+  z-index: var(--z-topbar);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: var(--pull-y, 0);
+  max-height: var(--sp-20);
+  overflow: hidden;
+  background: var(--bar);
+  color: var(--muted);
+  font-size: var(--fs-13);
+  pointer-events: none;
+  transition: height var(--duration) var(--ease);
+}
+
+.text {
+  padding-bottom: var(--sp-3);
+}
+
+.indicator[data-phase='pulling'],
+.indicator[data-phase='armed'] {
+  border-bottom: var(--line-thin) solid var(--line);
+  transition: none;
+}
+
+/* 64px を越えて、離せば更新できるところまで引いた */
+.indicator[data-phase='armed'] {
+  color: var(--accent-strong);
+}
+
+.indicator[data-phase='refreshing'] {
+  height: var(--tap);
+  border-bottom: var(--line-thin) solid var(--line);
+}
+
+@media (max-width: 767px) {
+  .indicator {
+    top: var(--topbar-h-mobile);
+  }
+}
+
+/* 動きを減らす設定:表示を動かさず(--pull-y は付かない)、決まった高さで文言だけを出す */
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+
+  .indicator[data-phase='pulling'],
+  .indicator[data-phase='armed'] {
+    height: var(--tap);
+  }
+}
