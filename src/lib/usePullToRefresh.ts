@@ -1,21 +1,37 @@
-// 引っぱって更新(詳細設計 5.5.2)。スマホ(タッチ)だけ。PC はタッチのイベントが来ないので何も変わらない。
+// 引っぱって更新(詳細設計 5.5.2 の始め方、5.7.2 の iOS の形)。スマホ(タッチ)だけ。PC はタッチのイベントが来ないので何も変わらない。
 // - ページの一番上(window.scrollY === 0)で、下へ引いたときだけ始める。最初の約 10px で縦か横かを決め、
-//   横・上向きなら何もしない(詳細の左右のスワイプ useSwipe と取り合わない)
+//   横・上向きなら何もしない(詳細の左右のスワイプ useSwipe と取り合わない)。入力欄の中では始めない
 // - 引いている間は touchmove の preventDefault で、iPhone の標準の引っぱり(ページの弾み)と重ねない。
 //   止めるのは引っぱりを始めたあとだけ(ふだんのスクロールは止めない)。そのため touchmove は passive: false で登録する
-// - 引いた量(最大 80px)は CSS 変数 --pull-y に入れ、見た目は CSS 側に書く(ADR-004 の --swipe-x と同じ方法)
-// - 64px 以上で離すと onRefresh を呼び、終わるまで 'refreshing'。届かなければ戻す
-// - 動きを減らす設定(prefers-reduced-motion)では --pull-y を付けない(表示を動かさず、文言だけを出す)
-import { useEffect, useRef, useState, type RefObject } from 'react'
+// - 指の動きに重さを付けた「表示の量」(pullDistance)を、動かす枠(App の .pullArea)の CSS 変数 --pull-y に入れ、
+//   data-pull で引っぱり中(pulling)・更新中(refreshing)を示す。transform は CSS 側で data-pull があるときだけ付ける
+//   (ADR-004 の --swipe-x と同じ方法)。更新中は --pull-y を var(--sp-13)(画面を止める高さ)にする
+// - 表示の量 64px 以上で離すと onRefresh を呼び、終わるまで 'refreshing'。届かなければ戻す
+// - 動きを減らす設定(prefers-reduced-motion)では --pull-y も data-pull も付けない(画面を動かさない)
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 export type PullPhase = 'idle' | 'pulling' | 'armed' | 'refreshing'
 
 /** 縦か横かを決めるまでの距離(px)。useSwipe と同じ */
 const AXIS_LOCK = 10
-/** 表示を引き出せる最大の量(px)。design_spec の --sp-20 と同じ */
-export const PULL_MAX = 80
-/** 離すと更新する量(px) */
+/** 重さの式の R(px)。表示の量はこの値に近づくが越えない */
+export const PULL_RESISTANCE = 200
+/** 離すと更新する表示の量(px) */
 export const PULL_THRESHOLD = 64
+/** 更新中に画面を止める高さ(design_spec の --sp-13) */
+const REFRESHING_OFFSET = 'var(--sp-13)'
+
+/** 表示の量 = R ×(1 − 1 /(1 + 引いた量 / R))。引くほど重くなる(詳細設計 5.7.2) */
+export function pullDistance(dragged: number): number {
+  const amount = Math.max(dragged, 0)
+  return PULL_RESISTANCE * (1 - 1 / (1 + amount / PULL_RESISTANCE))
+}
+
+export interface PullState {
+  phase: PullPhase
+  /** いまの表示の量(px)。引っぱり中だけ 0 より大きい(更新中・戻したあとは 0) */
+  distance: number
+}
 
 interface Gesture {
   startX: number
@@ -36,13 +52,16 @@ function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/** ref:引いた量に合わせて動かす表示の要素 */
-export function usePullToRefresh(ref: RefObject<HTMLElement | null>, { enabled, onRefresh }: PullOptions): PullPhase {
-  const [phase, setPhase] = useState<PullPhase>('idle')
+const IDLE: PullState = { phase: 'idle', distance: 0 }
+
+/** ref:指に付けて動かす枠(App の .pullArea) */
+export function usePullToRefresh(ref: RefObject<HTMLElement | null>, { enabled, onRefresh }: PullOptions): PullState {
+  const [state, setState] = useState<PullState>(IDLE)
   // イベントの処理から今の値を見るため(登録し直さずに済むよう、ref に置く)
   const options = useRef({ enabled, onRefresh })
   const busy = useRef(false)
-  useEffect(() => {
+  // 描画の直後(画面に出る前)に入れ替える。useEffect だと、読み込みが終わって画面が出てから少しの間、前の値(enabled: false)のままになる
+  useLayoutEffect(() => {
     options.current = { enabled, onRefresh }
   }, [enabled, onRefresh])
 
@@ -50,17 +69,21 @@ export function usePullToRefresh(ref: RefObject<HTMLElement | null>, { enabled, 
     let gesture: Gesture | null = null
     let mounted = true
 
-    function place(distance: number) {
-      ref.current?.style.setProperty('--pull-y', `${distance}px`)
+    function place(offset: string, mode: 'pulling' | 'refreshing') {
+      ref.current?.style.setProperty('--pull-y', offset)
+      ref.current?.setAttribute('data-pull', mode)
     }
     function clear() {
       ref.current?.style.removeProperty('--pull-y')
+      ref.current?.removeAttribute('data-pull')
     }
     function reset() {
       const wasPulling = gesture?.axis === 'pull'
       gesture = null
+      // 引っぱり中だけ戻す(更新中の高さは、更新が終わるまで残す)
+      if (!wasPulling) return
       clear()
-      if (wasPulling) setPhase('idle')
+      setState(IDLE)
     }
 
     function handleStart(event: TouchEvent) {
@@ -98,29 +121,35 @@ export function usePullToRefresh(ref: RefObject<HTMLElement | null>, { enabled, 
       }
       // 引っぱりの間だけ、ブラウザーのスクロールと弾みを止める
       if (event.cancelable) event.preventDefault()
-      const distance = Math.min(Math.max(dy, 0), PULL_MAX)
+      const distance = pullDistance(dy)
       current.distance = distance
-      if (!current.reducedMotion) place(distance)
-      setPhase(distance >= PULL_THRESHOLD ? 'armed' : 'pulling')
+      if (!current.reducedMotion) place(`${distance}px`, 'pulling')
+      setState({ phase: distance >= PULL_THRESHOLD ? 'armed' : 'pulling', distance })
     }
 
     function handleEnd() {
       const current = gesture
       gesture = null
       if (current?.axis !== 'pull') return
-      clear()
       if (current.distance < PULL_THRESHOLD) {
-        setPhase('idle')
+        clear()
+        setState(IDLE)
         return
       }
       busy.current = true
-      setPhase('refreshing')
+      // 更新中は決まった高さで止める(動きを減らす設定では動かさない)
+      if (current.reducedMotion) clear()
+      else place(REFRESHING_OFFSET, 'refreshing')
+      setState({ phase: 'refreshing', distance: 0 })
       void options.current
         .onRefresh()
         .catch(() => undefined)
         .finally(() => {
           busy.current = false
-          if (mounted) setPhase('idle')
+          // 外したあと(画面の切り替え)には触らない
+          if (!mounted) return
+          clear()
+          setState(IDLE)
         })
     }
 
@@ -138,5 +167,5 @@ export function usePullToRefresh(ref: RefObject<HTMLElement | null>, { enabled, 
     }
   }, [ref])
 
-  return phase
+  return state
 }

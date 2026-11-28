@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
 import type { LoadedData } from '../data/source.ts'
 import { renderApp, waitForHeading } from '../test/renderApp.tsx'
 import { baseSample, fullSample } from '../test/sampleData.ts'
+import type * as GenreImages from '../data/genreImages.ts'
+
+// この試験は「ジャンルの画像が無いとき」の形を確かめる。ジャンルの画像の表は空に差し替える(ジャンルの画像は genreImages.test.tsx の TST-GIMG-01)
+vi.mock('../data/genreImages.ts', async () => {
+  const actual = await vi.importActual<typeof GenreImages>('../data/genreImages.ts')
+  return { GENRE_IMAGES: {}, genreImageOf: (genre: string | null) => actual.genreImageOf(genre, {}) }
+})
 
 // 基本の 9 本(最新日 2026-01-02 の 7 本に「表示の安全確認」のネタがある)で、画面の作りと安全性を確かめる
 const sample: LoadedData = baseSample
@@ -112,12 +119,12 @@ describe('トップ(今朝のネタ)', () => {
     }
   })
 
-  it('評価済みのネタにはその旨が付き、未評価には付かない', async () => {
+  it('TST-DETAIL-02 一覧の行に「評価済み」を出さない(rating に値がある見本でも)', async () => {
     const list = await renderHome()
-    const rows = within(list).getAllByRole('listitem')
     // 見本で rating が入っているのは 01、02、04、06
-    expect(within(list).getAllByText('評価済み')).toHaveLength(4)
-    expect(within(rows[2]!).queryByText('評価済み')).not.toBeInTheDocument()
+    expect(within(list).getAllByRole('listitem').length).toBeGreaterThan(0)
+    expect(within(list).queryByText('評価済み')).not.toBeInTheDocument()
+    expect(screen.queryByText('評価済み')).not.toBeInTheDocument()
   })
 
   it('ジャンルの名前と出典を出す。ジャンルの一覧は fixtures から引く', async () => {

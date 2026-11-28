@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { createLocalUserStore } from '../data/userStore.ts'
 import { follow, freshUserStore, renderApp, waitForHeading } from '../test/renderApp.tsx'
 import { fullSample as sample } from '../test/sampleData.ts'
 
@@ -44,52 +45,54 @@ describe('設定', () => {
     expect(rowValue('ニュースの読み込み元')).toBe('見本')
   })
 
-  it('件数は localStorage の中身と合う(外した評価・空のメモは数えない)', async () => {
+  it('TST-DETAIL-03 件数の行は「保存」だけ。前の版の評価・メモが無ければ、その行は出ない', async () => {
     const store = freshUserStore()
     store.toggleSaved('2026-01-02-01')
     store.toggleSaved('2026-01-03-06')
-    store.setRating('2026-01-02-01', 'good')
-    store.setRating('2026-01-03-06', 'hot')
-    store.setRating('2026-01-03-01', '')
-    store.setMemo('2026-01-02-01', '試す')
-    store.setMemo('2026-01-03-06', '  ')
-    // 画面ではなく、端末に書かれた値から数え直して比べる
-    const raw = JSON.parse(window.localStorage.getItem('nodal-user') ?? '{}') as {
-      saved: string[]
-      feedback: Record<string, { rating?: string; memo?: string }>
-    }
-    const entries = Object.values(raw.feedback)
     renderApp('#/settings', sample, store)
     await waitForHeading('設定')
-    expect(rowValue('保存')).toBe(`${raw.saved.length}件`)
-    expect(rowValue('評価')).toBe(`${entries.filter((entry) => entry.rating !== undefined && entry.rating !== '').length}件`)
-    expect(rowValue('メモ')).toBe(`${entries.filter((entry) => (entry.memo ?? '').trim() !== '').length}件`)
-    expect([rowValue('保存'), rowValue('評価'), rowValue('メモ')]).toEqual(['2件', '2件', '1件'])
+    const device = screen.getByRole('region', { name: 'この端末のデータ' })
+    expect(within(device).getAllByRole('term').map((term) => term.textContent)).toEqual(['保存', 'ニュースの読み込み元'])
+    expect(rowValue('保存')).toBe('2件')
+    expect(screen.queryByText('前の版の評価・メモ')).not.toBeInTheDocument()
   })
 
-  it('削除:確認で「いいえ」なら何も消えない。「はい」なら保存・評価・メモが 0 になり、sb- のキーは残る', async () => {
-    const store = freshUserStore()
-    store.toggleSaved('2026-01-02-01')
-    store.setRating('2026-01-02-01', 'good')
-    store.setMemo('2026-01-02-01', '試す')
+  it('TST-DETAIL-03 前の版の評価・メモが残っているときだけ「前の版の評価・メモ n件(画面では使っていません)」。削除で消える。sb- のキーは残る', async () => {
+    // 前の版で付けた評価・メモが残っている端末(架空の値。外した評価と空白だけのメモは数えない)
+    window.localStorage.clear()
+    window.localStorage.setItem(
+      'nodal-user',
+      JSON.stringify({
+        saved: ['2026-01-02-01'],
+        feedback: { '2026-01-02-01': { rating: 'good', memo: '架空のめも' }, '2026-01-03-06': { rating: '', memo: '  ' } },
+      }),
+    )
+    const store = createLocalUserStore(window.localStorage)
     // Supabase のセッション(supabase-js が置くキー)の代わり
     window.localStorage.setItem('sb-example-auth-token', 'session')
     window.localStorage.setItem('other-app', 'keep')
     renderApp('#/settings', sample, store)
     await waitForHeading('設定')
+    const device = screen.getByRole('region', { name: 'この端末のデータ' })
+    expect(within(device).getAllByRole('term').map((term) => term.textContent)).toEqual(['保存', '前の版の評価・メモ', 'ニュースの読み込み元'])
+    expect(rowValue('保存')).toBe('1件')
+    expect(rowValue('前の版の評価・メモ')).toBe('2件(画面では使っていません)')
+    // メモの中身は画面に出さない
+    expect(screen.queryByText(/架空のめも/)).not.toBeInTheDocument()
     const user = userEvent.setup()
     const button = screen.getByRole('button', { name: 'この端末の NODAL データをすべて削除' })
 
     const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false)
     await user.click(button)
-    expect(confirm).toHaveBeenCalledWith('この端末の保存・評価・メモをすべて削除します。元に戻せません。')
+    expect(confirm).toHaveBeenCalledWith('この端末の NODAL のデータ(保存と、前の版の評価・メモ)をすべて削除します。元に戻せません。')
     expect(window.localStorage.getItem('nodal-user')).not.toBeNull()
-    expect([rowValue('保存'), rowValue('評価'), rowValue('メモ')]).toEqual(['1件', '1件', '1件'])
+    expect(rowValue('前の版の評価・メモ')).toBe('2件(画面では使っていません)')
 
     confirm.mockReturnValueOnce(true)
     await user.click(button)
     expect(window.localStorage.getItem('nodal-user')).toBeNull()
-    expect([rowValue('保存'), rowValue('評価'), rowValue('メモ')]).toEqual(['0件', '0件', '0件'])
+    expect(rowValue('保存')).toBe('0件')
+    expect(screen.queryByText('前の版の評価・メモ')).not.toBeInTheDocument()
     expect(window.localStorage.getItem('sb-example-auth-token')).toBe('session')
     expect(window.localStorage.getItem('other-app')).toBe('keep')
     expect(screen.getByText('この端末のデータを削除しました')).toHaveAttribute('aria-live', 'polite')

@@ -74,10 +74,6 @@ export function neighbors(items: readonly Item[], item: Item, from?: NeighborsFr
   }
 }
 
-export function isRated(item: Item): boolean {
-  return item.rating !== ''
-}
-
 export function genreLabelMap(genres: readonly Genre[]): ReadonlyMap<string, string> {
   return new Map(genres.map((genre) => [genre.id, genre.label]))
 }
@@ -185,7 +181,7 @@ function matches(haystack: readonly string[], query: string): boolean {
   return words.every((word) => text.includes(word))
 }
 
-/** ネタの検索(見出し・リード・要約・タグ・カテゴリ・取り組み・出典名・ジャンル名)。新しい順 */
+/** ネタの検索(見出し・リード・要約・タグ・カテゴリ・出典名・ジャンル名)。新しい順。取り組み(projects)は画面に出さないので探さない(詳細設計 5.7.1) */
 export function searchItems(items: readonly Item[], genres: readonly Genre[], query: string): Item[] {
   const labels = genreLabelMap(genres)
   return items
@@ -199,7 +195,6 @@ export function searchItems(items: readonly Item[], genres: readonly Genre[], qu
           item.genre === null ? '' : (labels.get(item.genre) ?? item.genre),
           ...item.tags,
           ...item.categories,
-          ...item.projects,
         ],
         query,
       ),

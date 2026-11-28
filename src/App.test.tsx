@@ -264,6 +264,118 @@ describe('App(骨組み)', () => {
   })
 })
 
+describe('戻ったら元の位置へ(依頼 15-1、詳細設計 5.7.3)', () => {
+  /** window.scrollTo は試験の準備で vi.fn に置き換えてある */
+  function scrollCalls() {
+    // (spyOn は同じ vi.fn を返す)
+    return vi.spyOn(window, 'scrollTo')
+  }
+  /** 読み進めた位置(ブラウザーと同じく scroll のイベントも出す) */
+  function atY(value: number) {
+    act(() => {
+      Object.defineProperty(window, 'scrollY', { value, configurable: true, writable: true })
+      window.dispatchEvent(new Event('scroll'))
+    })
+  }
+
+  it('TST-BACK-01 一覧 → 詳細 → 戻るで元の scrollY へ。詳細・設定は先頭。絞り込みの変更では動かない', async () => {
+    // jsdom には scrollRestoration が無いので、ブラウザーと同じく 'auto' から始まる形を作る
+    Object.defineProperty(window.history, 'scrollRestoration', { value: 'auto', writable: true, configurable: true })
+    renderApp('#/home', sample)
+    await waitForHeading('今日のニュース')
+    expect(window.history.scrollRestoration).toBe('manual')
+
+    // トップを 640px まで読んでから詳細へ:詳細は先頭
+    atY(640)
+    scrollCalls().mockClear()
+    const [firstItem] = screen.getAllByRole('link').filter((a) => a.getAttribute('href')?.startsWith('#/item/'))
+    if (firstItem === undefined) throw new Error('ネタへのリンクがありません')
+    follow(firstItem)
+    await screen.findByRole('link', { name: /に戻る$/ })
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 0)
+    })
+
+    // ブラウザーの戻る:トップの 640px へ
+    atY(0)
+    scrollCalls().mockClear()
+    await goHistory(-1)
+    await waitForHeading('今日のニュース')
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 640)
+    })
+
+    // 設定は先頭(トップの位置は 640px のまま覚え直す)
+    atY(640)
+    window.location.hash = '#/settings'
+    await waitForHeading('設定')
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 0)
+    })
+    // 設定の中で読み進めた位置は覚えない(一覧ではない)
+    atY(320)
+
+    // 「戻る」のリンク(戻る操作でなくても)でトップへ来たら、覚えた位置へ
+    follow(screen.getByRole('link', { name: '戻る' }))
+    await waitForHeading('今日のニュース')
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 640)
+    })
+
+    // 覚えていない一覧は先頭
+    window.location.hash = '#/genre/product'
+    await waitForHeading('プロダクト')
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 0)
+    })
+
+    // 絞り込みの変更では動かさない
+    atY(400)
+    scrollCalls().mockClear()
+    window.location.hash = '#/genre/product?kind=release'
+    await screen.findByRole('link', { name: 'リリース', current: true })
+    expect(scrollCalls()).not.toHaveBeenCalled()
+    atY(0)
+    window.location.hash = ''
+  })
+
+  it('TST-BACK-01 読み込み中は位置を移さず、読めた後に移す', async () => {
+    window.location.hash = '#/home'
+    scrollCalls().mockClear()
+    let finish: (data: typeof sample) => void = () => undefined
+    render(<App load={() => new Promise((resolve) => (finish = resolve))} />)
+    expect(screen.getByText('読み込み中')).toBeInTheDocument()
+    expect(scrollCalls()).not.toHaveBeenCalled()
+    await act(async () => {
+      finish(sample)
+      await Promise.resolve()
+    })
+    await waitForHeading('今日のニュース')
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 0)
+    })
+    window.location.hash = ''
+  })
+
+  it('TST-BACK-01 離れる直前に控えた位置を覚える(hashchange の時点で位置が変わっていても)', async () => {
+    renderApp('#/home', sample)
+    await waitForHeading('今日のニュース')
+    atY(500)
+    // ブラウザーでは、先に動いた処理が位置を変えてから hashchange を受けることがある(scroll のイベントはまだ来ていない)
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true })
+    window.location.hash = '#/settings'
+    await waitForHeading('設定')
+    scrollCalls().mockClear()
+    await goHistory(-1)
+    await waitForHeading('今日のニュース')
+    await waitFor(() => {
+      expect(scrollCalls()).toHaveBeenLastCalledWith(0, 500)
+    })
+    atY(0)
+    window.location.hash = ''
+  })
+})
+
 function setViewport(width: number, height: number) {
   act(() => {
     Object.defineProperty(window, 'innerWidth', { value: width, configurable: true })

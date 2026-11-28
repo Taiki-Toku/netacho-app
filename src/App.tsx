@@ -1,6 +1,6 @@
 // アプリの骨組み(仕様 3 章):上のバー + 左メニュー(PC)/ジャンルのタブ(スマホ)+ 中央 + 右の列(PC)+ 下のメニュー(スマホ)
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { navigate, screenKey, useRoute, type Route } from './app/router.ts'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { navigate, parseHash, screenKey, useRoute, type Route } from './app/router.ts'
 import { AccountContext, type Account } from './app/session.ts'
 import { EmptyState } from './components/EmptyState.tsx'
 import { ErrorState } from './components/ErrorState.tsx'
@@ -19,6 +19,7 @@ import { latestDate, vulnerabilities } from './data/queries.ts'
 import { supabaseData, type LoadedData } from './data/source.ts'
 import { createDefaultUserStore, UserStoreProvider, useUserState, type UserStore } from './data/userStore.ts'
 import { formatDateHeader, tokyoToday } from './lib/format.ts'
+import { useScrollMemory } from './lib/useScrollMemory.ts'
 import { ArchiveScreen } from './screens/ArchiveScreen.tsx'
 import { FeedScreen } from './screens/FeedScreen.tsx'
 import { GenreScreen } from './screens/GenreScreen.tsx'
@@ -58,6 +59,27 @@ function screenFor(route: Route, data: LoadedData, loadedAt: Date, homeIntro: bo
   }
 }
 
+/**
+ * 戻ったときに前の位置へ戻す一覧の画面(詳細設計 5.7.3):トップ・ジャンル・保存・バックナンバー・さがす・公式情報・脆弱性の一覧。
+ * 詳細(ニュース・脆弱性)と設定は入れない(いつも先頭)
+ */
+function isListHash(hash: string): boolean {
+  switch (parseHash(hash).name) {
+    case 'home':
+    case 'genre':
+    case 'saved':
+    case 'archive':
+    case 'search':
+    case 'feed':
+    case 'vuln':
+      return true
+    case 'item':
+    case 'vuln-detail':
+    case 'settings':
+      return false
+  }
+}
+
 /** 右の列を出す画面(詳細と脆弱性の一覧では出さない) */
 function hasRail(route: Route): boolean {
   return (
@@ -89,40 +111,42 @@ function Shell() {
     if (shownScreen === 'home' && data !== null) setHomeIntroPlayed(true)
   }
 
-  // 画面の種類が変わったら先頭に戻す(絞り込みを変えただけのときは動かさない)
-  const key = screenKey(route)
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [key])
+  // 画面の種類が変わったら、一覧なら前にいた位置へ、それ以外は先頭へ(絞り込みを変えただけのときは動かさない。詳細設計 5.7.3)
+  useScrollMemory({ screenKey: screenKey(route), ready: data !== null, isList: isListHash })
+
+  // 引っぱって更新で指に付けて動かす枠(上のバー・ジャンルのタブ・本文)。下のメニュー・「先頭へ戻る」・トーストはこの外
+  const pullRef = useRef<HTMLDivElement>(null)
 
   return (
     <div className={styles.app}>
       <a className={styles.skip} href="#main">
         本文へ移動
       </a>
-      <TopBar route={route} dateLabel={date === null ? '' : formatDateHeader(date)} data={data} />
-      <GenreTabs route={route} genres={genres} />
-      <div className={styles.workspace}>
-        <Sidebar route={route} genres={genres} vulnCount={vulnCount} savedCount={savedCount} />
-        <main id="main" className={styles.main} tabIndex={-1}>
-          {state.status === 'loading' ? (
-            <LoadingState />
-          ) : state.status === 'error' ? (
-            <ErrorState detail={state.message} onRetry={reload} />
-          ) : state.data.source === 'supabase' && state.data.items.length === 0 && route.name !== 'settings' ? (
-            // Supabase から1本も読めないとき。RLS で許可ユーザー以外は 0 行になる(エラーにはならない)。
-            // 設定の画面だけは出す(ログアウトのボタンがあるため)
-            <EmptyState title="表示できるニュースがありません" text="(許可ユーザーに登録されていない可能性があります)" spaced />
-          ) : (
-            <div className={hasRail(route) ? styles.contentGrid : route.name === 'item' ? styles.contentDetail : styles.contentSingle}>
-              <section className={styles.mainColumn}>{screenFor(route, state.data, state.loadedAt, !homeIntroPlayed)}</section>
-              {hasRail(route) ? <RightRail data={state.data} /> : null}
-            </div>
-          )}
-        </main>
+      <div ref={pullRef} className={styles.pullArea}>
+        {/* 引っぱって更新(スマホのタッチだけ)。データを読めているときだけ受ける */}
+        <PullIndicator targetRef={pullRef} enabled={state.status === 'ready'} />
+        <TopBar route={route} dateLabel={date === null ? '' : formatDateHeader(date)} data={data} />
+        <GenreTabs route={route} genres={genres} />
+        <div className={styles.workspace}>
+          <Sidebar route={route} genres={genres} vulnCount={vulnCount} savedCount={savedCount} />
+          <main id="main" className={styles.main} tabIndex={-1}>
+            {state.status === 'loading' ? (
+              <LoadingState />
+            ) : state.status === 'error' ? (
+              <ErrorState detail={state.message} onRetry={reload} />
+            ) : state.data.source === 'supabase' && state.data.items.length === 0 && route.name !== 'settings' ? (
+              // Supabase から1本も読めないとき。RLS で許可ユーザー以外は 0 行になる(エラーにはならない)。
+              // 設定の画面だけは出す(ログアウトのボタンがあるため)
+              <EmptyState title="表示できるニュースがありません" text="(許可ユーザーに登録されていない可能性があります)" spaced />
+            ) : (
+              <div className={hasRail(route) ? styles.contentGrid : route.name === 'item' ? styles.contentDetail : styles.contentSingle}>
+                <section className={styles.mainColumn}>{screenFor(route, state.data, state.loadedAt, !homeIntroPlayed)}</section>
+                {hasRail(route) ? <RightRail data={state.data} /> : null}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
-      {/* 引っぱって更新(スマホのタッチだけ)。データを読めているときだけ受ける */}
-      <PullIndicator enabled={state.status === 'ready'} />
       <ScrollTopButton />
       <MobileNav route={route} />
     </div>
@@ -197,7 +221,7 @@ function SupabaseRoot({ backend }: { backend: Backend }) {
 interface AppProps {
   /** 試験で差し替えるため */
   load?: () => Promise<LoadedData>
-  /** 保存・評価・メモの置き場。試験で差し替えるため。既定は端末の localStorage */
+  /** 保存(と前の版の評価・メモ)の置き場。試験で差し替えるため。既定は端末の localStorage */
   userStore?: UserStore
   /** Supabase モードのときだけ渡す(main.tsx が環境変数を見て決める)。無ければ今までどおり local-data → fixtures */
   backend?: Backend

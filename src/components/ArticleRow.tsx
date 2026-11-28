@@ -2,7 +2,6 @@
 // 見出しが本物のリンク(a)。行全体をクリックにはしない。保存ボタンはリンクの外(仕様 7 章)。
 // 押せる範囲は、リンクの疑似要素(::after)で行全体に広げ、保存ボタンだけをその上に出す(CSS 側)
 import { hrefFor, type ItemFrom } from '../app/router.ts'
-import { isRated } from '../data/queries.ts'
 import { itemSourceName, sourceInitial } from '../data/sourceName.ts'
 import type { Item } from '../data/types.ts'
 import { formatPublishedDate } from '../lib/format.ts'
@@ -55,7 +54,6 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
           <span>{itemSourceName(item, genreLabel)}</span>
           {/* 公開日は出典と同じ補助情報の並びに(design_spec v3.9 の 3-1)。配信日では代わりにしない */}
           <span>{formatPublishedDate(item.publishedAt)}</span>
-          {isRated(item) ? <span>評価済み</span> : null}
           <span className={styles.save}>
             <SaveButton id={item.id} />
           </span>
@@ -63,7 +61,7 @@ export function ArticleRow({ item, genreLabel, order, headingLevel = 3, oneLineL
       </div>
       {thumb.shown ? (
         <div className={styles.thumb}>
-          <Thumb url={item.imageUrl} onFail={thumb.onFail} />
+          <Thumb thumb={thumb} />
         </div>
       ) : null}
     </li>

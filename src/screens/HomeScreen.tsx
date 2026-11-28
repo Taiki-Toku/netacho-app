@@ -7,6 +7,7 @@ import { SaveButton } from '../components/SaveButton.tsx'
 import { SourceBadge } from '../components/SourceBadge.tsx'
 import { Thumb, useThumb } from '../components/Thumb.tsx'
 import { vulnName } from '../components/VulnCard.tsx'
+import { genreImageOf } from '../data/genreImages.ts'
 import { countBySeverity, genreLabelMap, genreLabelOf, itemsOnDate, latestDate, vulnerabilities } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
@@ -87,7 +88,8 @@ interface FeatureProps {
  * 押せる範囲は、見出しのリンクの ::after で枠全体に広げる。保存ボタンはリンクの外に置き、その上に出す(仕様 7 章。記事の行と同じ作り)
  */
 function Feature({ item, genreLabel, introClass }: FeatureProps) {
-  const thumb = useThumb(item.imageUrl)
+  // 元記事の画像が無い・読めないときは、そのジャンルの画像(表にあれば。詳細設計 5.7.4)
+  const thumb = useThumb(item.imageUrl, genreImageOf(item.genre))
   return (
     <article
       className={[thumb.shown ? styles.feature : styles.featureTextOnly, introClass].filter(Boolean).join(' ')}
@@ -112,7 +114,7 @@ function Feature({ item, genreLabel, introClass }: FeatureProps) {
       </div>
       {thumb.shown ? (
         <div className={styles.featureImage}>
-          <Thumb url={item.imageUrl} eager onFail={thumb.onFail} />
+          <Thumb thumb={thumb} eager />
         </div>
       ) : null}
     </article>

@@ -2,6 +2,31 @@
   min-height: 100%;
 }
 
+/* 引っぱって更新で指に付けて動かす枠(上のバー・ジャンルのタブ・本文。design_spec 8-1)。
+   位置(--pull-y)と印(data-pull)は usePullToRefresh が、引っぱり中と更新中だけ付ける。
+   印が無いときは transform を付けない(付けたままにすると、中の position: fixed の部品(読了バー)の基準が変わる)。
+   指で引いている間(pulling)はそのまま付いていき、離したあと(更新中の高さへ・元へ)だけなめらかに動かす。
+   上に空く所の印(PullIndicator)を、この枠を基準に置く */
+.pullArea {
+  position: relative;
+  transition: transform var(--duration) var(--ease);
+}
+
+.pullArea[data-pull] {
+  transform: translateY(var(--pull-y));
+}
+
+.pullArea[data-pull='pulling'] {
+  transition: none;
+}
+
+/* 動きを減らす設定では動かさない(usePullToRefresh も --pull-y と data-pull を付けない) */
+@media (prefers-reduced-motion: reduce) {
+  .pullArea {
+    transition: none;
+  }
+}
+
 /* キーボードの人のための「本文へ」。焦点が当たったときだけ見える */
 .skip {
   position: absolute;
@@ -64,7 +89,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* 中央が右端の近くまで広がり、「先頭へ戻る」(右下に固定)がメモ欄のつまみや「前/次のニュース」に重なるため、
+  /* 中央が右端の近くまで広がり、「先頭へ戻る」(右下に固定)が「前/次のニュース」に重なるため、
      画面の下にボタンの分(下からの位置 + 高さ)の余白を足す。767px 以下は位置が違うので下で上書きする(仕様 4 章の共通) */
   .main {
     padding-bottom: calc(var(--sp-20) + var(--sp-8) + var(--tap));
