@@ -5,25 +5,3 @@
   /* 記事の画像は色調をそろえる(仕様 5 章)。ジャンルの画像も同じ */
   filter: var(--image-filter);
 }
-
-/* ジャンルの画像の枠。呼ぶ側の画像の枠いっぱいに広げ、札を重ねる基準にする */
-.genreFrame {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* ジャンルの画像の右下の札「イメージ」(design_spec 5 章) */
-.genreTag {
-  position: absolute;
-  right: var(--sp-2);
-  bottom: var(--sp-2);
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--ink-soft);
-  font-size: var(--fs-12);
-  line-height: var(--lh-tight);
-  pointer-events: none;
-}

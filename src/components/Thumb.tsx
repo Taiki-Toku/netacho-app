@@ -60,13 +60,6 @@ export function Thumb({ thumb, eager = false }: ThumbProps) {
       onError={thumb.onFail}
     />
   )
-  if (thumb.kind !== 'genre') return image
-  // ジャンルの画像は元記事の写真ではないことを、画像の右下の札で示す(取り違えないため)。
-  // 札を重ねる基準の枠をここで持つ(呼ぶ側の枠の CSS を変えずに済む)
-  return (
-    <span className={styles.genreFrame}>
-      {image}
-      <span className={styles.genreTag}>イメージ</span>
-    </span>
-  )
+  // ジャンルの画像にも札は付けない(2026-11-28 オーナー決定。詳細設計 5.7.4)
+  return image
 }
