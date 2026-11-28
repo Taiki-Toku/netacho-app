@@ -1,4 +1,4 @@
-"""DB を使う run の試験。TST-SYNC-04〜12・15。
+"""DB を使う run の試験。TST-SYNC-04〜12・15・24。
 
 NODAL_TEST_ADMIN_URL・NODAL_TEST_SYNC_URL が無ければ skip(NODAL_REQUIRE_DB=1 なら失敗)。
 """
@@ -190,7 +190,7 @@ def test_tst_sync_11_outsider_run_exits_2(db_urls: tuple[str, str], admin_sql: A
 
 def test_tst_sync_12_reset_baseline(db_urls: tuple[str, str], admin_sql: Any, repo: GitRepo,
                                     tmp_path: Path) -> None:
-    """TST-SYNC-12:reset_baseline で検査を飛ばし、基準が付け直される。"""
+    """TST-SYNC-12(改):reset_baseline と、HEAD と一致する expected_head で、検査を飛ばし、基準が付け直される。"""
     cfg = write_config(tmp_path)
     base = repo.head()
     repo.put_item(make_item("2026-11-20-03"))
@@ -201,7 +201,8 @@ def test_tst_sync_12_reset_baseline(db_urls: tuple[str, str], admin_sql: Any, re
     new_head = repo.commit("rewritten")
     assert run(repo, cfg, db_urls[1]) == 2
     summary = tmp_path / "summary.md"
-    assert run(repo, cfg, db_urls[1], "--reset-baseline", "--mode", "recent", summary=summary) == 0
+    assert run(repo, cfg, db_urls[1], "--reset-baseline", "--expected-head", new_head, "--mode", "recent",
+               summary=summary) == 0
     assert admin_sql("select last_commit from public.sync_state") == [(new_head,)]
     assert admin_sql("select count(*) from public.items where id = '2026-11-20-04'") == [(1,)]
     text = summary.read_text(encoding="utf-8")
@@ -224,10 +225,42 @@ def test_tst_sync_11b_dirty_tree_writes_nothing(db_urls: tuple[str, str], admin_
     make_dirty(repo, kind)
     summary = tmp_path / "summary.md"
     assert run(repo, cfg, db_urls[1], summary=summary) == 2
-    assert run(repo, cfg, db_urls[1], "--reset-baseline", "--mode", "recent") == 2
+    assert "E-SRC-DIRTY" in summary.read_text(encoding="utf-8")
+    summary2 = tmp_path / "summary2.md"
+    assert run(repo, cfg, db_urls[1], "--reset-baseline", "--expected-head", repo.head(), "--mode", "recent",
+               summary=summary2) == 2
     assert admin_sql("select id, title, synced_at from public.items order by id") == before_items
     assert admin_sql("select last_commit, updated_at from public.sync_state") == before_state
-    assert "E-SRC-DIRTY" in summary.read_text(encoding="utf-8")
+    assert "E-SRC-DIRTY" in summary2.read_text(encoding="utf-8")  # 引数や照合ではなく、作業ツリーの検査で止まった
+
+
+@pytest.mark.parametrize("which", ["previous", "other"])
+def test_tst_sync_24_head_mismatch_writes_nothing(db_urls: tuple[str, str], admin_sql: Any, repo: GitRepo,
+                                                  tmp_path: Path, which: str) -> None:
+    """TST-SYNC-24:reset_baseline で expected_head が HEAD と違えば、何も書かずに 2・E-HEAD-MISMATCH。
+    出力と要約に、期待した SHA も HEAD の SHA も出ない。"""
+    cfg = write_config(tmp_path)
+    assert run(repo, cfg, db_urls[1]) == 0
+    previous = repo.head()
+    repo.put_item(make_item("2026-11-20-03"))
+    repo.put_item(make_item("2026-11-20-01", title="架空の見出し(変えた)"))
+    head = repo.commit("third")
+    expected = previous if which == "previous" else "0123456789abcdef" * 2 + "01234567"
+    assert expected != head and re.fullmatch(r"[0-9a-f]{40}", expected)
+    before_items = admin_sql("select id, title, synced_at from public.items order by id")
+    before_state = admin_sql("select last_commit, updated_at from public.sync_state")
+    out = io.StringIO()
+    summary = tmp_path / "summary.md"
+    assert run(repo, cfg, db_urls[1], "--reset-baseline", "--expected-head", expected,
+               out=out, summary=summary) == 2
+    assert admin_sql("select id, title, synced_at from public.items order by id") == before_items
+    assert admin_sql("select last_commit, updated_at from public.sync_state") == before_state
+    text = out.getvalue() + summary.read_text(encoding="utf-8")
+    assert "E-HEAD-MISMATCH" in text
+    assert "HEAD が --expected-head と違います(何も書いていない)" in text
+    assert "基準を付け直した" not in text
+    for sha in (expected, head, previous):
+        assert sha[:12] not in text  # 短縮した形でも出ない(::stop-commands:: の乱数との偶然の一致を避けて 12 桁)
 
 
 def test_bad_file_names_exit_1(db_urls: tuple[str, str], admin_sql: Any, repo: GitRepo,
