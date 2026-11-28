@@ -2,7 +2,7 @@
 // 画像(元記事の画像、無ければジャンルの画像、それも無ければ出典の横に小さな札)、リード、要点、
 // 本文(points と summary の両方があるとき)、AI がまとめたことの注記、元記事の抜粋、出典と元記事へのリンク、このニュースについて、前後のニュース。
 // 上のバーの下端に読了バー。「試してみる/確かめること」「気をつけること」、扱い・取り組み・評価・メモは出さない(データは消さず、画面で使わないだけ)。
-// 「このニュースについて」にはコーナー・情報の確かさ・カテゴリ・タグ・星3つを出す。前後の移動はボタンと左右スワイプ
+// 「このニュースについて」にはコーナー・情報の確かさ・カテゴリ・タグを出す。前後の移動はボタンと左右スワイプ
 import { useEffect, useRef } from 'react'
 import { hrefFor, navigate, type ItemFrom, type Route } from '../app/router.ts'
 import { itemInitial } from '../components/ArticleRow.tsx'
@@ -11,10 +11,8 @@ import { ReadingProgress } from '../components/ReadingProgress.tsx'
 import { SaveButton } from '../components/SaveButton.tsx'
 import { SourceBadge } from '../components/SourceBadge.tsx'
 import { SourceLink } from '../components/SourceLink.tsx'
-import { StarMeter } from '../components/StarMeter.tsx'
 import { Thumb, useThumb } from '../components/Thumb.tsx'
 import { genreImageOf } from '../data/genreImages.ts'
-import { STAR_AXES } from '../data/labels.ts'
 import { findItem, genreLabelMap, genreLabelOf, latestDate, neighbors } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
@@ -210,11 +208,6 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
             {item.categories.length > 0 ? <Field label="カテゴリ" value={item.categories.join('、')} /> : null}
             {item.tags.length > 0 ? <Field label="タグ" value={item.tags.join('、')} /> : null}
           </dl>
-          <div className={styles.meters}>
-            {STAR_AXES.map((axis) => (
-              <StarMeter key={axis.key} label={axis.label} value={item.stars[axis.key]} />
-            ))}
-          </div>
         </section>
 
         <nav className={styles.pager} aria-label="前後のニュース">

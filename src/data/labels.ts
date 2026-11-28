@@ -1,7 +1,7 @@
-// 決まった値(stars の軸、フィードの種類・深刻度)の、画面に出す日本語。値の定義は types.ts、名前はここ。
+// 決まった値(フィードの種類・深刻度)の、画面に出す日本語。値の定義は types.ts、名前はここ。
 // rating / status は画面に出さない(詳細設計 5.7.1)ので名前を持たない。
 // 文言は docs/design_spec.md と docs/design_reference/nodal-prototype.html に合わせる
-import type { FeedKind, Severity, Stars } from './types.ts'
+import type { FeedKind, Severity } from './types.ts'
 
 export const FEED_KIND_LABELS: Record<FeedKind, string> = {
   release: 'リリース',
@@ -32,9 +32,3 @@ export const PUBLISHED_UNKNOWN = '公開日不明'
 
 /** 深刻度の順(件数のカードの並びと、脆弱性ウォッチで先頭に出す順) */
 export const SEVERITY_ORDER: readonly Exclude<Severity, ''>[] = ['critical', 'high', 'medium', 'low']
-
-export const STAR_AXES: readonly { key: keyof Stars; label: string }[] = [
-  { key: 'hot', label: '話題度' },
-  { key: 'use', label: '実用度' },
-  { key: 'fun', label: '遊べる度' },
-]
