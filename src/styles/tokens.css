@@ -157,6 +157,8 @@
   --duration-fade: 300ms;
   /* スケルトンの明滅の片道 */
   --duration-pulse: 900ms;
+  /* 引っぱって更新の印(8本の線)の1周 */
+  --duration-spin: 800ms;
   /* トップの登場(最初の表示だけ)。下から少し浮かび上がる距離と、枠ごとのずれ */
   --duration-intro: 420ms;
   --intro-rise: 8px;

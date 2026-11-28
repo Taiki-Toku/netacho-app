@@ -33,8 +33,8 @@ describe('さがす', () => {
     const items = screen.getByRole('list', { name: '一致するニュース' })
     expect([...items.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual([
       '#/item/2026-01-03-06',
+      // 2026-01-02-03 は取り組み(projects)にだけ「手順書」があるので当たらない(依頼 15-1、TST-DETAIL-04)
       '#/item/2026-01-02-01',
-      '#/item/2026-01-02-03',
     ])
     window.location.hash = '#/search?q=手順書 差分'
     await waitForHeading('「手順書 差分」の結果')
@@ -109,9 +109,10 @@ describe('さがす:入力中の候補', () => {
     ])
     const [news, genre] = groups
     if (news === undefined || genre === undefined) throw new Error('分類が足りません')
-    expect(within(news).getAllByRole('option')).toHaveLength(2)
+    // 取り組み(projects)にだけ語があるニュース(2026-01-02-05)は候補に出さない(依頼 15-1)
+    expect(within(news).getAllByRole('option')).toHaveLength(1)
     expect(within(genre).getByRole('option', { name: 'エージェント' })).toBeInTheDocument()
-    expect(within(screen.getByRole('search')).getByRole('status')).toHaveTextContent('候補 3件')
+    expect(within(screen.getByRole('search')).getByRole('status')).toHaveTextContent('候補 2件')
     // キーボードの案内は読み上げに出さない(PC だけに見せる。CSS の media query で隠すので、ここでは確かめられない)
     expect(screen.getByText('↑↓ で選ぶ / Enter で開く / Esc で閉じる')).toHaveAttribute('aria-hidden', 'true')
     window.location.hash = ''
@@ -123,13 +124,15 @@ describe('さがす:入力中の候補', () => {
     await user.keyboard('{ArrowDown}')
     expect(options[0]).toHaveAttribute('aria-selected', 'true')
     expect(input).toHaveAttribute('aria-activedescendant', options[0]?.id)
+    // 候補はニュース1件(2026-01-02-03)とジャンル1件。上で端から最後へ、下で最後から先頭へ折り返す
     await user.keyboard('{ArrowUp}')
-    expect(options[2]).toHaveAttribute('aria-selected', 'true')
-    await user.keyboard('{ArrowDown}{ArrowDown}')
     expect(options[1]).toHaveAttribute('aria-selected', 'true')
     expect(options[0]).toHaveAttribute('aria-selected', 'false')
+    await user.keyboard('{ArrowDown}')
+    expect(options[0]).toHaveAttribute('aria-selected', 'true')
+    expect(options[1]).toHaveAttribute('aria-selected', 'false')
     await user.keyboard('{Enter}')
-    expect(window.location.hash).toBe('#/item/2026-01-02-05')
+    expect(window.location.hash).toBe('#/item/2026-01-02-03')
     expect(input).toHaveAttribute('aria-expanded', 'false')
     expect(input).toHaveValue('')
     await goHistory(-1)

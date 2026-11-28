@@ -134,13 +134,20 @@ describe('queries', () => {
   })
 
   it('検索:語を空白で区切り、全部含むものだけ。大文字小文字は区別しない。空の語は何も返さない', () => {
-    expect(searchItems(all.items, all.genres, '手順書').map((i) => i.id)).toEqual(['2026-01-03-06', '2026-01-02-01', '2026-01-02-03'])
+    expect(searchItems(all.items, all.genres, '手順書').map((i) => i.id)).toEqual(['2026-01-03-06', '2026-01-02-01'])
     expect(searchItems(all.items, all.genres, '手順書 差分').map((i) => i.id)).toEqual(['2026-01-02-01'])
     // ジャンル名でも探せる
     expect(searchItems(all.items, all.genres, 'ローカルllm').map((i) => i.id)).toEqual(['2026-01-02-05'])
     expect(searchItems(all.items, all.genres, '   ')).toEqual([])
     expect(searchFeed(all.feed, 'cve-2026-90002').map((e) => e.id)).toEqual(['feed-008'])
     expect(searchFeed(all.feed, '見本ソフト').map((e) => e.id)).toEqual(['feed-001', 'feed-002', 'feed-005', 'feed-008'])
+  })
+
+  it('TST-DETAIL-04 取り組み(projects)にだけある語では当たらない(画面に出ない語で当たらないように)', () => {
+    // 見本の 2026-01-02-01 の取り組みは「自動化パイプライン」(見出し・リード・要約・タグ・カテゴリには無い語)
+    expect(all.items.some((item) => item.projects.includes('自動化パイプライン'))).toBe(true)
+    expect(searchItems(all.items, all.genres, '自動化パイプライン')).toEqual([])
+    expect(searchItems(all.items, all.genres, 'パイプライン')).toEqual([])
   })
 
   it('TST-TRUI-04 公式フィードの検索は見出しの訳でも当たる(原文と訳のどちらかに当たれば出す)', () => {

@@ -1,23 +1,48 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { countUserData, createLocalUserStore } from './userStore.ts'
 
-describe('userStore(保存・評価・メモの置き場。いまは localStorage)', () => {
+/** 前の版で付けた評価・メモが残っている端末(架空の値) */
+function seedLegacyFeedback() {
+  window.localStorage.setItem('nodal-user', JSON.stringify({ saved: [], feedback: { b: { rating: 'good', memo: '架空のめも' } } }))
+}
+
+describe('userStore(保存と、前の版の評価・メモの置き場。いまは localStorage)', () => {
   beforeEach(() => {
     window.localStorage.clear()
   })
 
-  it('保存の付け外しと、評価・メモを持ち、localStorage に書く', () => {
+  it('保存の付け外しを localStorage に書く。評価・メモを付ける関数は無い', () => {
     const store = createLocalUserStore(window.localStorage)
     expect(store.getState()).toEqual({ saved: [], feedback: {} })
     expect(store.toggleSaved('a')).toBe(true)
     expect(store.toggleSaved('b')).toBe(true)
     expect(store.toggleSaved('a')).toBe(false)
-    store.setRating('b', 'good')
-    store.setMemo('b', 'めも')
-    store.setRating('b', '')
-    expect(store.getState()).toEqual({ saved: ['b'], feedback: { b: { rating: '', memo: 'めも' } } })
+    expect(store.getState()).toEqual({ saved: ['b'], feedback: {} })
     // 別のインスタンスでも同じ中身を読める(再読み込み相当)
     expect(createLocalUserStore(window.localStorage).getState()).toEqual(store.getState())
+    expect(Object.keys(store)).not.toContain('setRating')
+    expect(Object.keys(store)).not.toContain('setMemo')
+  })
+
+  it('TST-DETAIL-03 保存の付け外しの後も、前の版の評価・メモ(feedback)が端末に残る', () => {
+    seedLegacyFeedback()
+    const store = createLocalUserStore(window.localStorage)
+    store.toggleSaved('a')
+    store.toggleSaved('a')
+    store.toggleSaved('c')
+    const written = JSON.parse(window.localStorage.getItem('nodal-user') ?? '{}') as unknown
+    expect(written).toEqual({ saved: ['c'], feedback: { b: { rating: 'good', memo: '架空のめも' } } })
+    expect(createLocalUserStore(window.localStorage).getState().feedback).toEqual({ b: { rating: 'good', memo: '架空のめも' } })
+  })
+
+  it('TST-DETAIL-03 件数は保存と、前の版の評価・メモ(外した評価・空白だけのメモは数えない)', () => {
+    expect(
+      countUserData({
+        saved: ['a', 'b'],
+        feedback: { a: { rating: 'hot', memo: '架空' }, b: { rating: '' }, c: { memo: '  ' }, d: { memo: '架空' } },
+      }),
+    ).toEqual({ saved: 2, legacyFeedback: 3 })
+    expect(countUserData({ saved: [], feedback: { a: { rating: '' } } })).toEqual({ saved: 0, legacyFeedback: 0 })
   })
 
   it('変わるたびに購読者に知らせ、状態のオブジェクトは変わったときだけ入れ替わる', () => {
@@ -56,13 +81,12 @@ describe('userStore(保存・評価・メモの置き場。いまは localStorag
     expect(store.toggleSaved('a')).toBe(true)
     expect(store.getState().saved).toEqual(['a'])
   })
-  it('clear で保存・評価・メモを空にし、このアプリのキー(nodal-user)だけを消して購読者に知らせる', () => {
+  it('clear で保存と前の版の評価・メモを空にし、このアプリのキー(nodal-user)だけを消して購読者に知らせる', () => {
     window.localStorage.setItem('sb-example-auth-token', 'session')
+    seedLegacyFeedback()
     const store = createLocalUserStore(window.localStorage)
     store.toggleSaved('a')
-    store.setRating('a', 'good')
-    store.setMemo('b', 'めも')
-    expect(countUserData(store.getState())).toEqual({ saved: 1, ratings: 1, memos: 1 })
+    expect(countUserData(store.getState())).toEqual({ saved: 1, legacyFeedback: 2 })
     let count = 0
     store.subscribe(() => {
       count += 1
@@ -70,7 +94,7 @@ describe('userStore(保存・評価・メモの置き場。いまは localStorag
     store.clear()
     expect(count).toBe(1)
     expect(store.getState()).toEqual({ saved: [], feedback: {} })
-    expect(countUserData(store.getState())).toEqual({ saved: 0, ratings: 0, memos: 0 })
+    expect(countUserData(store.getState())).toEqual({ saved: 0, legacyFeedback: 0 })
     expect(window.localStorage.getItem('nodal-user')).toBeNull()
     expect(window.localStorage.getItem('sb-example-auth-token')).toBe('session')
   })

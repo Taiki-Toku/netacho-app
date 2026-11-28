@@ -1,59 +1,60 @@
-/* 引っぱって更新の表示(design_spec 8 章)。上のバーのすぐ下に、上のバーと同じ地の帯を引き出す。
-   引いた量は usePullToRefresh が --pull-y に入れる(最大 80px = --sp-20)。指で引いている間は指に付いていき、
-   離したあと(戻る・更新中の高さへ)だけなめらかに動かす。押す操作は下の画面へ通す */
+/* 引っぱって更新の印(design_spec 8-1、詳細設計 5.7.2)。App の .pullArea の中の先頭に置く。
+   .pullArea が --pull-y だけ下がると、枠の上に同じ高さの空きができる。その空きに重ねて(top を −--pull-y に)、中央に印を出す。
+   --pull-y は usePullToRefresh が .pullArea に付ける(引っぱり中は表示の量、更新中は --sp-13)。押す操作は下の画面へ通す */
 .indicator {
-  position: fixed;
-  top: var(--topbar-h);
+  position: absolute;
   left: 0;
   right: 0;
-  z-index: var(--z-topbar);
+  top: calc(-1 * var(--pull-y));
+  height: var(--pull-y);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  height: var(--pull-y, 0);
-  max-height: var(--sp-20);
   overflow: hidden;
-  background: var(--bar);
-  color: var(--muted);
-  font-size: var(--fs-13);
+  background: var(--bg);
   pointer-events: none;
-  transition: height var(--duration) var(--ease);
 }
 
-.text {
-  padding-bottom: var(--sp-3);
+/* 引いていないときは場所ごと出さない(読み上げの欄は印の外にあり、消えない) */
+.indicator[data-phase='idle'] {
+  display: none;
 }
 
-.indicator[data-phase='pulling'],
-.indicator[data-phase='armed'] {
-  border-bottom: var(--line-thin) solid var(--line);
-  transition: none;
+.spinner,
+.spinnerSpinning {
+  width: var(--sp-7);
+  height: var(--sp-7);
+  stroke: var(--muted);
+  flex: none;
 }
 
-/* 64px を越えて、離せば更新できるところまで引いた */
-.indicator[data-phase='armed'] {
-  color: var(--accent-strong);
+/* 更新中:8本で回る。1周を8段に分けて、線1本分ずつ進む(iOS と同じ動き) */
+.spinnerSpinning {
+  animation: spin var(--duration-spin) steps(8) infinite;
 }
 
-.indicator[data-phase='refreshing'] {
-  height: var(--tap);
-  border-bottom: var(--line-thin) solid var(--line);
-}
-
-@media (max-width: 767px) {
-  .indicator {
-    top: var(--topbar-h-mobile);
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
   }
 }
 
-/* 動きを減らす設定:表示を動かさず(--pull-y は付かない)、決まった高さで文言だけを出す */
+/* 動きを減らす設定:画面は動かさず(--pull-y は付かない)、上のバーのすぐ下に回らない印を出す */
 @media (prefers-reduced-motion: reduce) {
   .indicator {
-    transition: none;
+    position: fixed;
+    top: var(--topbar-h);
+    height: var(--sp-13);
+    z-index: var(--z-topbar);
   }
 
-  .indicator[data-phase='pulling'],
-  .indicator[data-phase='armed'] {
-    height: var(--tap);
+  .spinnerSpinning {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (max-width: 767px) {
+  .indicator {
+    top: var(--topbar-h-mobile);
   }
 }

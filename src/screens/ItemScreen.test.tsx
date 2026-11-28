@@ -3,6 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { rowsToItems } from '../data/itemRow.ts'
 import { parseItems } from '../data/parse.ts'
 import type { LoadedData } from '../data/source.ts'
+import { createLocalUserStore } from '../data/userStore.ts'
 import { freshUserStore, renderApp } from '../test/renderApp.tsx'
 import { baseSample } from '../test/sampleData.ts'
 
@@ -53,7 +54,7 @@ const NEAR = 100
 const SLOW = 2000
 
 describe('ネタの詳細', () => {
-  it('ジャンル名・見出し・出典と日付・要点・本文・抜粋・このネタについて・評価・メモを出す', async () => {
+  it('TST-DETAIL-01 ジャンル名・見出し・出典と日付・要点・本文・抜粋・このニュースについてを出す。扱い・取り組み・評価・メモは出さない', async () => {
     const article = await renderItem('2026-01-02-01')
     expect(within(article).getByRole('heading', { level: 1 })).toHaveTextContent('架空:手順書の差分チェックを半自動にする')
     expect(within(article).getByText('仕事・自動化')).toBeInTheDocument()
@@ -69,21 +70,31 @@ describe('ネタの詳細', () => {
     expect(within(article).queryByText('最初の一歩の見本です。')).not.toBeInTheDocument()
     expect(within(article).queryByRole('heading', { level: 2, name: '気をつけること' })).not.toBeInTheDocument()
     expect(within(article).queryByText('注意点の見本です。')).not.toBeInTheDocument()
-    // 依頼書の項目(コーナー、情報の確かさ、扱い、分類)は「このネタについて」に残す
-    expect(within(article).getByText('取り組みに効く')).toBeInTheDocument()
-    expect(within(article).getByText('公式')).toBeInTheDocument()
-    expect(within(article).getByText('試す予定')).toBeInTheDocument()
-    expect(within(article).getByText('自動化パイプライン')).toBeInTheDocument()
-    expect(within(article).getByText('業務効率◎、無料')).toBeInTheDocument()
-    // 元から付いている評価とメモ
-    expect(within(article).getByRole('button', { name: '熱い' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(article).getByText('評価:熱い')).toBeInTheDocument()
-    expect(within(article).getByLabelText('メモ')).toHaveValue('見本のメモ')
+    // 「このニュースについて」:コーナー・情報の確かさ・カテゴリ・タグ・星3つ(詳細設計 5.7.1)
+    const about = within(article).getByRole('region', { name: 'このニュースについて' })
+    expect(within(about).getAllByRole('term').map((term) => term.textContent)).toEqual(['コーナー', '情報の確かさ', 'カテゴリ', 'タグ'])
+    expect(within(about).getByText('取り組みに効く')).toBeInTheDocument()
+    expect(within(about).getByText('公式')).toBeInTheDocument()
+    expect(within(about).getByText('業務自動化、Copilot')).toBeInTheDocument()
+    expect(within(about).getByText('業務効率◎、無料')).toBeInTheDocument()
+    expect(within(about).getAllByRole('img', { name: /\d\/5$/ })).toHaveLength(3)
+    // 扱い(status)・取り組み(projects)・評価(rating)・メモ(memo)は、データに値があっても出さない
+    expect(within(article).queryByText('扱い')).not.toBeInTheDocument()
+    expect(within(article).queryByText('試す予定')).not.toBeInTheDocument()
+    expect(within(article).queryByText('取り組み')).not.toBeInTheDocument()
+    expect(within(article).queryByText('自動化パイプライン')).not.toBeInTheDocument()
+    expect(within(article).queryByRole('group', { name: 'このニュース、どうでしたか' })).not.toBeInTheDocument()
+    expect(within(article).queryByRole('button', { name: '熱い' })).not.toBeInTheDocument()
+    expect(within(article).queryByText(/評価/)).not.toBeInTheDocument()
+    expect(within(article).queryByLabelText('メモ')).not.toBeInTheDocument()
+    expect(within(article).queryByText('見本のメモ')).not.toBeInTheDocument()
+    expect(within(article).queryByText('メモを保存しました')).not.toBeInTheDocument()
+    expect(article.querySelector('textarea')).toBeNull()
     // 位置は見出しの下と、前後のボタンの間(aria-hidden)の2か所に同じ書き方で出る
     expect(within(article).getAllByText('1 / 7')).toHaveLength(2)
   })
 
-  it('並び:一覧に戻る(1行)→ジャンル名→見出し→出典と日付→保存→画像→要点→本文→AI の注記→抜粋→出典→評価→メモ→前後', async () => {
+  it('並び:一覧に戻る(1行)→ジャンル名→見出し→出典と日付→保存→画像→要点→本文→AI の注記→抜粋→出典→このニュースについて→前後', async () => {
     const article = await renderItem('2026-01-02-01')
     const back = within(article).getAllByRole('link', { name: '一覧に戻る' })[0]
     const order = [
@@ -98,8 +109,7 @@ describe('ネタの詳細', () => {
       within(article).getByText('要点と本文は、元の記事をもとにAIがまとめたものです。'),
       within(article).getByRole('heading', { level: 2, name: '元記事の抜粋' }),
       within(article).getByRole('link', { name: /元の記事を読む/ }),
-      within(article).getByRole('group', { name: 'このニュース、どうでしたか' }),
-      within(article).getByLabelText('メモ'),
+      within(article).getByRole('heading', { level: 2, name: 'このニュースについて' }),
       screen.getByRole('navigation', { name: '前後のニュース' }),
     ]
     for (const [index, element] of order.entries()) {
@@ -274,11 +284,11 @@ describe('ネタの詳細', () => {
     expect(img).toHaveAttribute('height')
   })
 
-  it('出典が無いときは「出典なし」。評価・扱いが空なら未評価・未設定。前の日のネタの戻り先はそのジャンル', async () => {
+  it('出典が無いときは「出典なし」。評価・扱いが空でも「未評価」「未設定」は出さない。前の日のネタの戻り先はそのジャンル', async () => {
     const article = await renderItem('2026-01-01-02')
     expect(within(article).getByText('出典なし')).toBeInTheDocument()
-    expect(within(article).getByText('未評価')).toBeInTheDocument()
-    expect(within(article).getByText('未設定')).toBeInTheDocument()
+    expect(within(article).queryByText('未評価')).not.toBeInTheDocument()
+    expect(within(article).queryByText('未設定')).not.toBeInTheDocument()
     // 戻るリンクは上と、最後のネタなので前後のボタンの右にも出る
     const backLinks = within(article).getAllByRole('link', { name: '一覧に戻る' })
     expect(backLinks).toHaveLength(2)
@@ -296,30 +306,20 @@ describe('ネタの詳細', () => {
     expect(JSON.parse(window.localStorage.getItem('nodal-user') ?? '{}')).toMatchObject({ saved: [] })
   })
 
-  it('評価の4つのボタンは1つだけ選べ、もう一度押すと外れる。端末に残る', async () => {
-    const article = await renderItem('2026-01-02-03')
-    const group = within(article).getByRole('group', { name: 'このニュース、どうでしたか' })
-    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['熱い', '良い', 'ふつう', 'いまいち'])
-    fireEvent.click(within(group).getByRole('button', { name: '良い' }))
-    expect(within(group).getByRole('button', { name: '良い' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(article).getByText('評価:良い')).toBeInTheDocument()
-    fireEvent.click(within(group).getByRole('button', { name: 'ふつう' }))
-    expect(within(group).getByRole('button', { name: '良い' })).toHaveAttribute('aria-pressed', 'false')
-    expect(within(group).getByRole('button', { name: 'ふつう' })).toHaveAttribute('aria-pressed', 'true')
-    expect(JSON.parse(window.localStorage.getItem('nodal-user') ?? '{}')).toMatchObject({ feedback: { '2026-01-02-03': { rating: 'meh' } } })
-    fireEvent.click(within(group).getByRole('button', { name: 'ふつう' }))
-    expect(within(article).getByText('未評価')).toBeInTheDocument()
-  })
-
-  it('メモは書くたびに保存し、「メモを保存しました」と知らせる', async () => {
-    const article = await renderItem('2026-01-02-03')
-    const memo = within(article).getByLabelText('メモ')
-    expect(memo).toHaveValue('')
-    expect(within(article).queryByText('メモを保存しました')).not.toBeInTheDocument()
-    fireEvent.change(memo, { target: { value: '試してみた' } })
-    expect(memo).toHaveValue('試してみた')
-    expect(within(article).getByText('メモを保存しました')).toBeInTheDocument()
-    expect(JSON.parse(window.localStorage.getItem('nodal-user') ?? '{}')).toMatchObject({ feedback: { '2026-01-02-03': { memo: '試してみた' } } })
+  it('TST-DETAIL-03 前の版の評価・メモが端末にあっても詳細には出さず、保存の付け外しの後も端末に残る', async () => {
+    window.localStorage.clear()
+    window.localStorage.setItem('nodal-user', JSON.stringify({ saved: [], feedback: { '2026-01-02-03': { rating: 'good', memo: '架空のめも' } } }))
+    const store = createLocalUserStore(window.localStorage)
+    renderApp('#/item/2026-01-02-03', sample, store)
+    const article = await screen.findByRole('article')
+    expect(within(article).queryByText('架空のめも')).not.toBeInTheDocument()
+    expect(within(article).queryByText(/評価/)).not.toBeInTheDocument()
+    fireEvent.click(within(article).getByRole('button', { name: '保存する' }))
+    fireEvent.click(within(article).getByRole('button', { name: '保存済み' }))
+    expect(JSON.parse(window.localStorage.getItem('nodal-user') ?? '{}')).toEqual({
+      saved: [],
+      feedback: { '2026-01-02-03': { rating: 'good', memo: '架空のめも' } },
+    })
   })
 
   it('前後のボタン:1本目は前が無く、最後は次の代わりに戻り先へ', async () => {
@@ -581,15 +581,6 @@ describe('ネタの詳細', () => {
       expect(window.location.hash).toBe('#/item/2026-01-02-03')
       await screen.findAllByText('3 / 7')
       expect(moverOf(screen.getByRole('article'))).not.toHaveAttribute('data-swipe-enter')
-    })
-
-    it('メモの欄から始めた横の動きは、スワイプにしない', async () => {
-      const article = await renderItem('2026-01-02-02')
-      const memo = within(article).getByLabelText('メモ')
-      drag(memo, -FAR, 0, SLOW)
-      expect(moverOf(article)).not.toHaveAttribute('data-swipe')
-      lift(memo, -FAR, 0, SLOW)
-      expect(window.location.hash).toBe('#/item/2026-01-02-02')
     })
 
     it('読了バーは、スワイプで動く枠の外にある(記事と一緒に動かない)', async () => {

@@ -173,13 +173,6 @@
   overflow-wrap: anywhere;
 }
 
-.aiNote {
-  font-size: var(--fs-12);
-  color: var(--muted);
-  margin: var(--sp-2h) 0 0;
-  min-height: var(--sp-5);
-}
-
 .bodyHeading {
   font-size: var(--fs-19);
   font-weight: var(--weight-semibold);
@@ -215,46 +208,6 @@
   display: grid;
   gap: var(--sp-2);
   margin-top: var(--sp-4);
-}
-
-.rate {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
-
-.rateButton,
-.rateOn {
-  min-height: var(--tap-lg);
-  border: var(--line-thin) solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: var(--fs-14);
-  cursor: pointer;
-}
-
-.rateOn {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-  font-weight: var(--weight-bold);
-}
-
-.memo {
-  width: 100%;
-  margin-top: var(--sp-2h);
-  padding: var(--sp-3h);
-  border: var(--line-thin) solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: var(--fs-15);
-  line-height: var(--lh-body);
-  resize: vertical;
-}
-
-.memo::placeholder {
-  color: var(--muted);
 }
 
 /* 前後の移動 */

@@ -1,4 +1,4 @@
-// 設定(仕様 4 章の 8):アカウント(ログアウト)、この端末のデータ(件数と削除)、このアプリについて(版と最後に読み込んだ時刻)
+// 設定(仕様 4 章の 8):アカウント(ログアウト)、この端末のデータ(保存の件数、残っていれば前の版の評価・メモの件数、削除)、このアプリについて(版と最後に読み込んだ時刻)
 import { useState, type ReactNode } from 'react'
 import { hrefFor } from '../app/router.ts'
 import { useAccount } from '../app/session.ts'
@@ -10,7 +10,7 @@ import { formatLoadedAt } from '../lib/format.ts'
 import pageStyles from '../components/page.module.css'
 import styles from './SettingsScreen.module.css'
 
-const CONFIRM_TEXT = 'この端末の保存・評価・メモをすべて削除します。元に戻せません。'
+const CONFIRM_TEXT = 'この端末の NODAL のデータ(保存と、前の版の評価・メモ)をすべて削除します。元に戻せません。'
 
 interface PartProps {
   id: string
@@ -93,11 +93,12 @@ export function SettingsScreen({ data, loadedAt }: SettingsScreenProps) {
           )}
         </Part>
         <Part id="settings-device" eyebrow="THIS DEVICE / 02" title="この端末のデータ" badge="DEVICE ONLY">
+          {/* 前の版で付けた評価・メモは画面では使わないが、メモには会社の情報が入りうるため、残っているときだけ件数を出し、
+              下の「すべて削除」で消せることが分かるようにする(詳細設計 5.7.1、REQ-F-17) */}
           <Rows
             rows={[
               { label: '保存', value: `${counts.saved}件` },
-              { label: '評価', value: `${counts.ratings}件` },
-              { label: 'メモ', value: `${counts.memos}件` },
+              ...(counts.legacyFeedback > 0 ? [{ label: '前の版の評価・メモ', value: `${counts.legacyFeedback}件(画面では使っていません)` }] : []),
               { label: 'ニュースの読み込み元', value: data.source === 'supabase' ? 'Supabase' : '見本' },
             ]}
           />

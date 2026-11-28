@@ -112,12 +112,12 @@ describe('トップ(今朝のネタ)', () => {
     }
   })
 
-  it('評価済みのネタにはその旨が付き、未評価には付かない', async () => {
+  it('TST-DETAIL-02 一覧の行に「評価済み」を出さない(rating に値がある見本でも)', async () => {
     const list = await renderHome()
-    const rows = within(list).getAllByRole('listitem')
     // 見本で rating が入っているのは 01、02、04、06
-    expect(within(list).getAllByText('評価済み')).toHaveLength(4)
-    expect(within(rows[2]!).queryByText('評価済み')).not.toBeInTheDocument()
+    expect(within(list).getAllByRole('listitem').length).toBeGreaterThan(0)
+    expect(within(list).queryByText('評価済み')).not.toBeInTheDocument()
+    expect(screen.queryByText('評価済み')).not.toBeInTheDocument()
   })
 
   it('ジャンルの名前と出典を出す。ジャンルの一覧は fixtures から引く', async () => {

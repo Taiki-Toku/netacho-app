@@ -1,7 +1,8 @@
-// ネタの詳細(仕様 4 章 5、詳細設計 5.5.3):ジャンル名、見出し、出典と日付、保存ボタン、画像(無ければ出典の横に小さな札)、リード、要点、
-// 本文(points と summary の両方があるとき)、AI がまとめたことの注記、元記事の抜粋、出典と元記事へのリンク、評価4つ、メモ(自動保存)、前後のニュース。
-// 上のバーの下端に読了バー。「試してみる/確かめること」「気をつけること」は出さない。
-// 依頼書(docs/beta_brief.md)にあった指標・情報の確かさ・分類・扱いは「このニュースについて」の欄に残す。前後の移動はボタンと左右スワイプ
+// ネタの詳細(仕様 4 章 5、詳細設計 5.5.3・5.7):ジャンル名、見出し、出典と日付、保存ボタン、
+// 画像(元記事の画像、無ければジャンルの画像と札「イメージ」、それも無ければ出典の横に小さな札)、リード、要点、
+// 本文(points と summary の両方があるとき)、AI がまとめたことの注記、元記事の抜粋、出典と元記事へのリンク、このニュースについて、前後のニュース。
+// 上のバーの下端に読了バー。「試してみる/確かめること」「気をつけること」、扱い・取り組み・評価・メモは出さない(データは消さず、画面で使わないだけ)。
+// 「このニュースについて」にはコーナー・情報の確かさ・カテゴリ・タグ・星3つを出す。前後の移動はボタンと左右スワイプ
 import { useEffect, useRef } from 'react'
 import { hrefFor, navigate, type ItemFrom, type Route } from '../app/router.ts'
 import { itemInitial } from '../components/ArticleRow.tsx'
@@ -12,12 +13,13 @@ import { SourceBadge } from '../components/SourceBadge.tsx'
 import { SourceLink } from '../components/SourceLink.tsx'
 import { StarMeter } from '../components/StarMeter.tsx'
 import { Thumb, useThumb } from '../components/Thumb.tsx'
-import { RATING_CHOICES, RATING_LABELS, STAR_AXES, STATUS_LABELS } from '../data/labels.ts'
+import { genreImageOf } from '../data/genreImages.ts'
+import { STAR_AXES } from '../data/labels.ts'
 import { findItem, genreLabelMap, genreLabelOf, latestDate, neighbors } from '../data/queries.ts'
 import type { LoadedData } from '../data/source.ts'
 import { itemSourceName } from '../data/sourceName.ts'
-import type { Item, Rating } from '../data/types.ts'
-import { useUserState, useUserStore } from '../data/userStore.ts'
+import type { Item } from '../data/types.ts'
+import { useUserState } from '../data/userStore.ts'
 import { formatDateLong, formatPublishedDate } from '../lib/format.ts'
 import { useSwipe } from '../lib/useSwipe.ts'
 import pageStyles from '../components/page.module.css'
@@ -87,14 +89,9 @@ interface ItemViewProps {
 function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
   const routeOf = (target: Item): Route => ({ name: 'item', id: target.id, from })
   const titleRef = useRef<HTMLHeadingElement>(null)
-  const store = useUserStore()
-  const feedback = useUserState().feedback[item.id] ?? {}
-  // 自分で付けた評価・メモがあればそれを、無ければネタに元から付いているものを出す
-  const rating: Rating = feedback.rating ?? item.rating
-  const memo = feedback.memo ?? item.memo
-  const memoSaved = feedback.memo !== undefined
-  // 画像が無い・危ない・読み込みに失敗したときは、大きな枠を出さずに出典の横へ小さな札を出す(仕様 4 章-5、5 章)
-  const thumb = useThumb(item.imageUrl)
+  // 画像が無い・危ない・読み込みに失敗したときは、そのジャンルの画像(表にあれば。詳細設計 5.7.4)。
+  // それも無い・失敗したときは、大きな枠を出さずに出典の横へ小さな札を出す(仕様 4 章-5、5 章)
+  const thumb = useThumb(item.imageUrl, genreImageOf(item.genre))
   const body = item.points.length > 0 ? bodyParagraphs(item.summary) : []
 
   // 左右のスワイプで前後のニュースへ(仕様 7 章)。移り方は下の「前後のニュース」のリンクと同じ(URL が変わり、「戻る」で戻れる)
@@ -146,7 +143,7 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
         </div>
         {thumb.shown ? (
           <div className={styles.hero}>
-            <Thumb url={item.imageUrl} eager onFail={thumb.onFail} />
+            <Thumb thumb={thumb} eager />
           </div>
         ) : null}
 
@@ -210,9 +207,7 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
           <dl className={styles.fields}>
             {item.slot !== '' ? <Field label="コーナー" value={item.slot} /> : null}
             {item.trust !== '' ? <Field label="情報の確かさ" value={item.trust} /> : null}
-            <Field label="扱い" value={STATUS_LABELS[item.status]} />
             {item.categories.length > 0 ? <Field label="カテゴリ" value={item.categories.join('、')} /> : null}
-            {item.projects.length > 0 ? <Field label="取り組み" value={item.projects.join('、')} /> : null}
             {item.tags.length > 0 ? <Field label="タグ" value={item.tags.join('、')} /> : null}
           </dl>
           <div className={styles.meters}>
@@ -221,51 +216,6 @@ function ItemView({ item, genreLabel, back, nav, from }: ItemViewProps) {
             ))}
           </div>
         </section>
-
-        <div className={pageStyles.sectionHead}>
-          <h2 id="item-rating" className={pageStyles.sectionTitle}>
-            このニュース、どうでしたか
-          </h2>
-          <span className={pageStyles.caption}>{rating === '' ? '未評価' : `評価:${RATING_LABELS[rating]}`}</span>
-        </div>
-        <div className={styles.rate} role="group" aria-labelledby="item-rating">
-          {RATING_CHOICES.map((choice) => {
-            const on = rating === choice
-            return (
-              <button
-                key={choice}
-                type="button"
-                className={on ? styles.rateOn : styles.rateButton}
-                aria-pressed={on}
-                onClick={() => {
-                  // もう一度押すと外す
-                  store.setRating(item.id, on ? '' : choice)
-                }}
-              >
-                {RATING_LABELS[choice]}
-              </button>
-            )
-          })}
-        </div>
-
-        <div className={pageStyles.sectionHead}>
-          <label className={pageStyles.sectionTitle} htmlFor="item-memo">
-            メモ
-          </label>
-        </div>
-        <textarea
-          id="item-memo"
-          className={styles.memo}
-          rows={3}
-          placeholder="試した結果や、思いついたことを書く"
-          value={memo}
-          onChange={(event) => {
-            store.setMemo(item.id, event.target.value)
-          }}
-        />
-        <p className={styles.aiNote} aria-live="polite">
-          {memoSaved ? 'メモを保存しました' : ''}
-        </p>
 
         <nav className={styles.pager} aria-label="前後のニュース">
           {nav.prev !== null ? (
