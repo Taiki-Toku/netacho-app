@@ -42,13 +42,13 @@ describe('ジャンルの画像(依頼 15-1、詳細設計 5.7.4)', () => {
     expect(genreImageOf('work')).toBe('fixtures/genre-work.jpg')
   })
 
-  it('TST-GIMG-01 トップ:元記事の画像が無いとき、トップの枠にジャンルの画像と札「イメージ」。一覧の行には出さない', async () => {
+  it('TST-GIMG-01 トップ:元記事の画像が無いとき、トップの枠にジャンルの画像(札「イメージ」は付けない)。一覧の行には出さない', async () => {
     renderApp('#/home', sampleWith({}))
     await waitForHeading('今日のニュース')
     const img = feature().querySelector('img')
     expect(img?.getAttribute('src')).toMatch(/\/fixtures\/genre-work\.jpg$/)
     expect(img).toHaveAttribute('alt', '')
-    expect(within(feature()).getByText('イメージ')).toBeInTheDocument()
+    expect(within(feature()).queryByText('イメージ')).not.toBeInTheDocument()
     // 画像を出しているので、出典の横の札は出さない
     expect(within(feature()).queryByText('E')).not.toBeInTheDocument()
     const list = screen.getByRole('list', { name: 'ニュース一覧' })
@@ -57,16 +57,16 @@ describe('ジャンルの画像(依頼 15-1、詳細設計 5.7.4)', () => {
     window.location.hash = ''
   })
 
-  it('TST-GIMG-01 詳細:元記事の画像が無いとき、ジャンルの画像と札「イメージ」', async () => {
+  it('TST-GIMG-01 詳細:元記事の画像が無いとき、ジャンルの画像(札「イメージ」は付けない)', async () => {
     renderApp(`#/item/${TOP}`, sampleWith({}))
     const article = await screen.findByRole('article')
     const img = article.querySelector('img')
     expect(img?.getAttribute('src')).toMatch(/\/fixtures\/genre-work\.jpg$/)
-    expect(within(article).getByText('イメージ')).toBeInTheDocument()
+    expect(within(article).queryByText('イメージ')).not.toBeInTheDocument()
     window.location.hash = ''
   })
 
-  it('TST-GIMG-01 元記事の画像があるときはそれを出し、札は出さない。読み込みに失敗したらジャンルの画像、それも失敗したら札', async () => {
+  it('TST-GIMG-01 元記事の画像があるときはそれを出し、読み込みに失敗したらジャンルの画像、それも失敗したら札', async () => {
     renderApp(`#/item/${TOP}`, sampleWith({ imageUrl: 'fixtures/images/desk.svg' }))
     const article = await screen.findByRole('article')
     const first = article.querySelector('img')
@@ -77,7 +77,7 @@ describe('ジャンルの画像(依頼 15-1、詳細設計 5.7.4)', () => {
     const second = article.querySelector('img')
     if (second === null) throw new Error('ジャンルの画像がありません')
     expect(second.getAttribute('src')).toMatch(/genre-work\.jpg$/)
-    expect(within(article).getByText('イメージ')).toBeInTheDocument()
+    expect(within(article).queryByText('イメージ')).not.toBeInTheDocument()
     fireEvent.error(second)
     expect(article.querySelector('img')).toBeNull()
     expect(within(article).queryByText('イメージ')).not.toBeInTheDocument()
