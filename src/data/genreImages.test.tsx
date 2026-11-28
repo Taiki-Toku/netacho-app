@@ -6,7 +6,7 @@ import type { LoadedData } from './source.ts'
 import { renderApp, waitForHeading } from '../test/renderApp.tsx'
 import { baseSample } from '../test/sampleData.ts'
 
-// 試験の中でジャンルの画像の表を差し替える(本物の表はまだ空。画像のファイルは後で足す)。仕事・自動化(work)だけ画像がある
+// 試験の中でジャンルの画像の表を差し替える。仕事・自動化(work)だけ画像がある
 // (vi.mock は import より先に動くため、表も vi.hoisted で先に作る)
 const { TABLE } = vi.hoisted(() => ({ TABLE: { work: 'fixtures/genre-work.jpg' } }))
 vi.mock('./genreImages.ts', async () => {
@@ -36,9 +36,9 @@ describe('ジャンルの画像(依頼 15-1、詳細設計 5.7.4)', () => {
     expect(actual.genreImageOf(null, TABLE)).toBeNull()
     expect(actual.genreImageOf('constructor', TABLE)).toBeNull()
     expect(actual.genreImageOf('__proto__', TABLE)).toBeNull()
-    // 本物の表は空(ファイルがあるジャンルだけ載せる)
-    expect(actual.GENRE_IMAGES).toEqual({})
-    expect(actual.genreImageOf('work')).toBeNull()
+    // 本物の表は8ジャンルすべて(ファイルは public/genres/。TST-GIMG-02)
+    expect(Object.keys(actual.GENRE_IMAGES)).toHaveLength(8)
+    expect(actual.genreImageOf('work')).toBe('genres/work.jpg')
     expect(genreImageOf('work')).toBe('fixtures/genre-work.jpg')
   })
 

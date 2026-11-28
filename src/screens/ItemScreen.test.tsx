@@ -6,6 +6,13 @@ import type { LoadedData } from '../data/source.ts'
 import { createLocalUserStore } from '../data/userStore.ts'
 import { freshUserStore, renderApp } from '../test/renderApp.tsx'
 import { baseSample } from '../test/sampleData.ts'
+import type * as GenreImages from '../data/genreImages.ts'
+
+// この試験は「ジャンルの画像が無いとき」の形を確かめる。ジャンルの画像の表は空に差し替える(ジャンルの画像は genreImages.test.tsx の TST-GIMG-01)
+vi.mock('../data/genreImages.ts', async () => {
+  const actual = await vi.importActual<typeof GenreImages>('../data/genreImages.ts')
+  return { GENRE_IMAGES: {}, genreImageOf: (genre: string | null) => actual.genreImageOf(genre, {}) }
+})
 
 // 基本の 9 本(最新日 2026-01-02)。「表示の安全確認」のネタ(2026-01-02-07)が最新日にあり、前後の移動と一緒に確かめられる
 const sample: LoadedData = baseSample

@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
 import type { LoadedData } from '../data/source.ts'
 import { renderApp, waitForHeading } from '../test/renderApp.tsx'
 import { baseSample, fullSample } from '../test/sampleData.ts'
+import type * as GenreImages from '../data/genreImages.ts'
+
+// この試験は「ジャンルの画像が無いとき」の形を確かめる。ジャンルの画像の表は空に差し替える(ジャンルの画像は genreImages.test.tsx の TST-GIMG-01)
+vi.mock('../data/genreImages.ts', async () => {
+  const actual = await vi.importActual<typeof GenreImages>('../data/genreImages.ts')
+  return { GENRE_IMAGES: {}, genreImageOf: (genre: string | null) => actual.genreImageOf(genre, {}) }
+})
 
 // 基本の 9 本(最新日 2026-01-02 の 7 本に「表示の安全確認」のネタがある)で、画面の作りと安全性を確かめる
 const sample: LoadedData = baseSample
