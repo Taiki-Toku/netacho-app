@@ -204,12 +204,6 @@
   min-width: 0;
 }
 
-.meters {
-  display: grid;
-  gap: var(--sp-2);
-  margin-top: var(--sp-4);
-}
-
 /* 前後の移動 */
 .pager {
   display: grid;

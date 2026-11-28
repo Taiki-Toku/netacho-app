@@ -77,14 +77,13 @@ describe('ネタの詳細', () => {
     expect(within(article).queryByText('最初の一歩の見本です。')).not.toBeInTheDocument()
     expect(within(article).queryByRole('heading', { level: 2, name: '気をつけること' })).not.toBeInTheDocument()
     expect(within(article).queryByText('注意点の見本です。')).not.toBeInTheDocument()
-    // 「このニュースについて」:コーナー・情報の確かさ・カテゴリ・タグ・星3つ(詳細設計 5.7.1)
+    // 「このニュースについて」:コーナー・情報の確かさ・カテゴリ・タグ(詳細設計 5.7.1、5.8.1)
     const about = within(article).getByRole('region', { name: 'このニュースについて' })
     expect(within(about).getAllByRole('term').map((term) => term.textContent)).toEqual(['コーナー', '情報の確かさ', 'カテゴリ', 'タグ'])
     expect(within(about).getByText('取り組みに効く')).toBeInTheDocument()
     expect(within(about).getByText('公式')).toBeInTheDocument()
     expect(within(about).getByText('業務自動化、Copilot')).toBeInTheDocument()
     expect(within(about).getByText('業務効率◎、無料')).toBeInTheDocument()
-    expect(within(about).getAllByRole('img', { name: /\d\/5$/ })).toHaveLength(3)
     // 扱い(status)・取り組み(projects)・評価(rating)・メモ(memo)は、データに値があっても出さない
     expect(within(article).queryByText('扱い')).not.toBeInTheDocument()
     expect(within(article).queryByText('試す予定')).not.toBeInTheDocument()
@@ -235,11 +234,16 @@ describe('ネタの詳細', () => {
     }
   })
 
-  it('星の指標を「話題度 3/5」のように読み上げる', async () => {
+  it('TST-DETAIL-05 詳細に星の指標(話題度・実用度・遊べる度と n/5 の読み上げ)を出さない(stars に値がある見本でも)', async () => {
+    // 見本 2026-01-02-01 は stars に値がある(データの stars は残し、画面で使わないだけ。詳細設計 5.8.1)
+    const [first] = sample.items
+    expect(first?.id).toBe('2026-01-02-01')
+    expect(first?.stars).toEqual({ hot: 3, use: 5, fun: 2 })
     const article = await renderItem('2026-01-02-01')
-    expect(within(article).getByRole('img', { name: '話題度 3/5' })).toBeInTheDocument()
-    expect(within(article).getByRole('img', { name: '実用度 5/5' })).toBeInTheDocument()
-    expect(within(article).getByRole('img', { name: '遊べる度 2/5' })).toBeInTheDocument()
+    for (const label of ['話題度', '実用度', '遊べる度']) {
+      expect(within(article).queryByText(new RegExp(label))).not.toBeInTheDocument()
+    }
+    expect(within(article).queryAllByRole('img', { name: /\d\/5$/ })).toHaveLength(0)
   })
 
   it('https: の出典はリンクになり、新しいタブで安全に開く', async () => {
