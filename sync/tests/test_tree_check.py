@@ -173,7 +173,7 @@ def test_tst_sync_21_reset_baseline_still_checks_tree(monkeypatch: pytest.Monkey
     last = repo.head()
     repo.put_file("CLAUDE.md", b"x")
     repo.commit("add")
-    code, fake, text = run(monkeypatch, repo, tmp_path, last, "--reset-baseline")
+    code, fake, text = run(monkeypatch, repo, tmp_path, last, "--reset-baseline", "--expected-head", repo.head())
     assert_stopped(code, fake, text, "CLAUDE.md")
 
 
@@ -250,7 +250,7 @@ def test_tst_sync_22_added_then_removed_stops(monkeypatch: pytest.MonkeyPatch, r
 
     code, fake, text = run(monkeypatch, repo, tmp_path, None)
     assert code == 0, text
-    code, fake, text = run(monkeypatch, repo, tmp_path, last, "--reset-baseline")
+    code, fake, text = run(monkeypatch, repo, tmp_path, last, "--reset-baseline", "--expected-head", repo.head())
     assert code == 0, text
     assert "write_last_commit" in fake.writes
 

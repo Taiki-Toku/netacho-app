@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import os
+import re
 import secrets
 import sys
 from collections import Counter
@@ -58,6 +59,8 @@ MESSAGES = {
     "E-GIT-LOG": "git の履歴を読めませんでした",
     "E-HISTORY-REWRITE": "履歴の書き換え:前回のコミットが HEAD の祖先ではありません",
     "E-HISTORY-AUTHOR": "authors に無い人が data/items/ を変えています",
+    "E-ARGS-EXPECTED-HEAD": "--expected-head が無いか、40 桁の小文字の SHA ではありません",
+    "E-HEAD-MISMATCH": "HEAD が --expected-head と違います(何も書いていない)",
     "E-SRC-DIR": "data/items/ を読めませんでした",
     "E-SRC-DIRTY": "data/items/ に未コミットの変更があります",
     "E-SRC-TREE": "ai-netacho に想定外のファイルがあります",
@@ -130,6 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--from", dest="date_from")
     run.add_argument("--to", dest="date_to")
     run.add_argument("--reset-baseline", action="store_true")
+    run.add_argument("--expected-head")
     feed = sub.add_parser("feed")
     feed.add_argument("--config", required=True)
     feed.add_argument("--ca")
@@ -172,6 +176,17 @@ def select_days(mode: str, date_from: str | None, date_to: str | None,
     if n > MAX_RANGE_DAYS:
         raise ArgError("E-ARGS-DATE")
     return [start + dt.timedelta(days=i) for i in range(n)]
+
+
+def check_expected_head(reset_baseline: bool, expected_head: str | None) -> None:
+    """--reset-baseline には 40 桁の小文字の SHA が要る。無いのに有るのも不正(詳細設計 2.4)。おかしければ ArgError。"""
+    if not reset_baseline:
+        if expected_head is not None:
+            raise ArgError("E-ARGS-EXPECTED-HEAD")
+        return
+    # strip しない(前後の空白も不正)
+    if expected_head is None or not re.fullmatch(r"[0-9a-f]{40}", expected_head):
+        raise ArgError("E-ARGS-EXPECTED-HEAD")
 
 
 def _say(out: TextIO, code: str) -> None:
@@ -229,6 +244,9 @@ def _run_with_db(args: argparse.Namespace, today: dt.date, env: Mapping[str, str
             raise Stop(e.code) from None
         try:
             head = source.head_commit(args.data_dir)
+            # オーナーが確かめた HEAD のときだけ基準を付け直す。SHA の値はどこにも出さない
+            if args.reset_baseline and head != args.expected_head:
+                raise Stop("E-HEAD-MISMATCH")
             if args.reset_baseline:
                 summary.notes.append("基準を付け直した(履歴の検査を飛ばした)")
             elif last is None:
@@ -683,6 +701,7 @@ def main(argv: list[str] | None = None, *, today: dt.date | None = None,
         if args.command == "run":
             try:
                 select_days(args.mode, args.date_from, args.date_to, d)
+                check_expected_head(args.reset_baseline, args.expected_head)
             except ArgError as err:
                 _say(o, err.code)
                 return 2
